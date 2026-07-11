@@ -79,7 +79,7 @@ export default function Leaderboard() {
         tier: u.tier as "Bronze" | "Silver" | "Gold",
         points: u.points,
         isVerified: u.isVerified,
-        isCurrentUser: u.name === currentUser.name
+        isCurrentUser: currentUser ? u.name === currentUser.name : false
       }))
     : leaderboard;
 
@@ -103,7 +103,7 @@ export default function Leaderboard() {
           
           return (
             <div
-              key={u.name}
+              key={`${u.rank}-${u.name}`}
               className={`flex items-center justify-between p-3 border transition-all duration-200 ${
                 u.isCurrentUser
                   ? "bg-earth-sand/70 border-earth-terracotta/40 shadow-sm"
@@ -165,7 +165,7 @@ export default function Leaderboard() {
       </div>
 
       {/* Persistent rank drawer for user if not in top 3 */}
-      {!isCurrentUserInTopThree && currentUserRankInfo && (
+      {!isCurrentUserInTopThree && currentUserRankInfo && currentUser && (
         <div className="pt-4 border-t border-earth-clay/10 space-y-4">
           <div className="flex items-center justify-between text-xs font-sans text-earth-clay font-medium">
             <span>Your Standing</span>

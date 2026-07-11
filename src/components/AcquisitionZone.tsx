@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Star, MapPin, Compass, ShieldCheck, Gift, X, Heart } from "lucide-react";
 import { CATEGORIES, mockDestinations } from "../app/data/mockData";
 import { useUser } from "./UserContext";
@@ -10,8 +11,9 @@ interface AcquisitionZoneProps {
 }
 
 export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
+  const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("All");
-  const { hiddenGems, submitGem, toggleWishlist, isWishlisted } = useUser();
+  const { hiddenGems, submitGem, toggleWishlist, isWishlisted, isAuthenticated } = useUser();
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -229,7 +231,13 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
             </div>
             <div>
               <button
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => {
+                  if (!isAuthenticated) {
+                    router.push("/signin");
+                  } else {
+                    setIsModalOpen(true);
+                  }
+                }}
                 className="px-6 py-3.5 bg-earth-terracotta text-earth-sand rounded-none font-sans text-xs font-bold uppercase tracking-widest hover:bg-earth-saffron hover:text-earth-forest transition-all duration-300 cursor-pointer shadow-md"
               >
                 Submit a Spot (+100 pts)

@@ -1,5 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const INITIAL_PROFILES = [
   {
@@ -54,21 +55,42 @@ export async function ensureUsersSeeded(db: any) {
 }
 
 // Helper to determine tier from points
-export function calculateTier(points: number): "Explorer" | "Trailblazer" | "Local Legend" {
-  if (points >= 2500) return "Local Legend";
-  if (points >= 1000) return "Trailblazer";
-  return "Explorer";
+export function calculateTier(points: number): "Bronze" | "Silver" | "Gold" {
+  if (points >= 2500) return "Gold";
+  if (points >= 1000) return "Silver";
+  return "Bronze";
 }
 
 // Get user profile details
 export const getUser = query({
   args: { name: v.string() },
   handler: async (ctx, args) => {
-    await ensureUsersSeeded(ctx.db);
     return await ctx.db
       .query("users")
       .filter((q) => q.eq(q.field("name"), args.name))
       .first();
+  },
+});
+
+// Fetch current authenticated user
+export const viewer = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (userId === null) {
+      return null;
+    }
+    const user = await ctx.db.get(userId);
+    if (!user) return null;
+    
+    return {
+      ...user,
+      name: user.name || user.email?.split("@")[0] || "Traveler",
+      tier: (user.tier || "Bronze") as "Bronze" | "Silver" | "Gold",
+      totalPoints: user.totalPoints ?? 0,
+      isVerified: user.isVerified ?? false,
+      role: user.role || "user",
+    };
   },
 });
 
@@ -101,32 +123,46 @@ export const updateRole = mutation({
 // Award points mutation
 export const awardPoints = mutation({
   args: {
-    userName: v.string(),
+    userName: v.optional(v.string()),
     actionType: v.string(), // "submit_gem" | "gem_approved" | "review" | "blog"
     pointsEarned: v.number(),
     referenceId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("name"), args.userName))
-      .first();
+    let userId;
+    if (args.userName) {
+      const user = await ctx.db
+        .query("users")
+        .filter((q) => q.eq(q.field("name"), args.userName))
+        .first();
+      if (!user) {
+        throw new Error("User not found");
+      }
+      userId = user._id;
+    } else {
+      userId = await getAuthUserId(ctx);
+      if (!userId) {
+        throw new Error("Not authenticated");
+      }
+    }
+
+    const user = await ctx.db.get(userId);
     if (!user) {
       throw new Error("User not found");
     }
 
-    const newPoints = user.totalPoints + args.pointsEarned;
+    const newPoints = (user.totalPoints ?? 0) + args.pointsEarned;
     const newTier = calculateTier(newPoints);
 
     // Update user profile
-    await ctx.db.patch(user._id, {
+    await ctx.db.patch(userId, {
       totalPoints: newPoints,
       tier: newTier,
     });
 
     // Add entry in pointsLedger
     await ctx.db.insert("pointsLedger", {
-      userId: user._id,
+      userId: userId,
       actionType: args.actionType,
       pointsEarned: args.pointsEarned,
       timestamp: Date.now(),
@@ -137,24 +173,59 @@ export const awardPoints = mutation({
   },
 });
 
+// Toggle user verification status
+export const toggleVerification = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    await ctx.db.patch(userId, {
+      isVerified: !user.isVerified,
+    });
+    return { isVerified: !user.isVerified };
+  },
+});
+
+// Fetch point ledger entries for the authenticated user
+export const getPointsLedger = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return [];
+    
+    const entries = await ctx.db
+      .query("pointsLedger")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .collect();
+
+    // Sort entries newest first
+    return entries.sort((a, b) => b.timestamp - a.timestamp);
+  },
+});
+
 // Query user standings for the Leaderboard
 export const getLeaderboard = query({
   handler: async (ctx) => {
-    await ensureUsersSeeded(ctx.db);
     const users = await ctx.db
       .query("users")
       .collect();
 
     // Sort by points descending
-    const sorted = users.sort((a, b) => b.totalPoints - a.totalPoints);
+    const sorted = users.sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0));
 
     return sorted.map((u, index) => ({
       rank: index + 1,
       id: u._id,
-      name: u.name || "Anonymous",
-      tier: u.tier,
-      points: u.totalPoints,
-      isVerified: u.isVerified,
+      name: u.name || u.email?.split("@")[0] || "Anonymous",
+      tier: (u.tier || "Bronze") as "Bronze" | "Silver" | "Gold",
+      points: u.totalPoints ?? 0,
+      isVerified: u.isVerified ?? false,
     }));
   },
 });

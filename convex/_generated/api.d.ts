@@ -8,9 +8,11 @@
  * @module
  */
 
+import type * as auth from "../auth.js";
 import type * as blogs from "../blogs.js";
 import type * as gems from "../gems.js";
 import type * as reviews from "../reviews.js";
+import type * as seed from "../seed.js";
 import type * as users from "../users.js";
 
 import type {
@@ -20,9 +22,11 @@ import type {
 } from "convex/server";
 
 declare const fullApi: ApiFromModules<{
+  auth: typeof auth;
   blogs: typeof blogs;
   gems: typeof gems;
   reviews: typeof reviews;
+  seed: typeof seed;
   users: typeof users;
 }>;
 

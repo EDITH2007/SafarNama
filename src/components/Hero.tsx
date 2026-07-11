@@ -20,7 +20,7 @@ export default function Hero({ onSearch }: HeroProps) {
   };
 
   return (
-    <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden py-20 px-4">
+    <section className="relative min-h-[85vh] flex items-center justify-center overflow-hidden py-20 px-4 isolate">
       {/* 3D background */}
       <ThreeParticles />
 

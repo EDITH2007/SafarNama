@@ -133,6 +133,14 @@ export default function Dashboard() {
   const [uploadProgress, setUploadProgress] = useState<number>(-1);
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
 
+  if (!currentUser) {
+    return (
+      <div className="min-h-screen bg-earth-sand flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-earth-terracotta" />
+      </div>
+    );
+  }
+
   const handleImageUploadSimulation = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;

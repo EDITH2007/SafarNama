@@ -3,10 +3,10 @@ import { v } from "convex/values";
 import { ensureUsersSeeded } from "./users";
 
 // Helper to determine tier from points
-function calculateTier(points: number): "Explorer" | "Trailblazer" | "Local Legend" {
-  if (points >= 2500) return "Local Legend";
-  if (points >= 1000) return "Trailblazer";
-  return "Explorer";
+function calculateTier(points: number): "Bronze" | "Silver" | "Gold" {
+  if (points >= 2500) return "Gold";
+  if (points >= 1000) return "Silver";
+  return "Bronze";
 }
 
 export async function ensureGemsSeeded(db: any) {
@@ -23,6 +23,7 @@ export async function ensureGemsSeeded(db: any) {
         description: "A stunning gorge carved by the Pennar River through red granite rocks, resembling the American Grand Canyon.",
         location: "Kadapa, Andhra Pradesh",
         state: "Andhra Pradesh",
+        geo: { lat: 14.8011, lng: 78.2664 },
         photos: ["https://images.unsplash.com/photo-1626590212990-2e40026e6cb5?auto=format&fit=crop&w=800&q=80"],
         category: "Offbeat",
         submittedBy: aarav?._id,
@@ -34,6 +35,7 @@ export async function ensureGemsSeeded(db: any) {
         description: "A 12th-century Buddhist monastery built directly into the cliffside of a remote gorge in southeastern Zanskar.",
         location: "Zanskar, Ladakh",
         state: "Ladakh",
+        geo: { lat: 33.1711, lng: 77.2356 },
         photos: ["https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80"],
         category: "Offbeat",
         submittedBy: tenzing?._id,
@@ -45,6 +47,7 @@ export async function ensureGemsSeeded(db: any) {
         description: "A hyper-saline alkaline lake created by a meteorite impact during the Pleistocene Epoch, surrounded by temples.",
         location: "Buldhana, Maharashtra",
         state: "Maharashtra",
+        geo: { lat: 19.9763, lng: 76.5096 },
         photos: ["https://images.unsplash.com/photo-1583143874828-de3d288be51a?auto=format&fit=crop&w=800&q=80"],
         category: "Offbeat",
         submittedBy: priya?._id,
@@ -116,7 +119,6 @@ export const submitGem = mutation({
 export const getPendingGems = query({
   args: { adminUserName: v.string() },
   handler: async (ctx, args) => {
-    await ensureGemsSeeded(ctx.db);
     await checkAdmin(ctx.db, args.adminUserName);
     
     return await ctx.db
@@ -161,7 +163,7 @@ export const approveGem = mutation({
     // Award points to the submitter
     const submitter = await ctx.db.get(gem.submittedBy);
     if (submitter) {
-      const newPoints = submitter.totalPoints + pointsToAward;
+      const newPoints = (submitter.totalPoints ?? 0) + pointsToAward;
       const newTier = calculateTier(newPoints);
 
       await ctx.db.patch(gem.submittedBy, {

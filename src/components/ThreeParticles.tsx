@@ -131,12 +131,12 @@ export default function ThreeParticles() {
 
     // Animation Loop
     let animationFrameId: number;
-    const clock = new THREE.Clock();
+    const startTime = performance.now();
 
     const animate = () => {
       animationFrameId = requestAnimationFrame(animate);
 
-      const elapsedTime = clock.getElapsedTime();
+      const elapsedTime = (performance.now() - startTime) * 0.001;
 
       // Smooth mouse interpolation (lerp)
       mouseX += (targetMouseX - mouseX) * 0.05;
@@ -186,7 +186,7 @@ export default function ThreeParticles() {
   return (
     <div
       ref={containerRef}
-      className="absolute inset-0 -z-10 w-full h-full overflow-hidden bg-gradient-to-b from-stone-900 via-stone-850 to-stone-900 pointer-events-none"
+      className="absolute inset-0 -z-10 w-full h-full overflow-hidden bg-stone-950 bg-gradient-to-b from-stone-950 via-stone-900 to-stone-950 pointer-events-none"
     >
       <canvas ref={canvasRef} className="block w-full h-full" />
     </div>

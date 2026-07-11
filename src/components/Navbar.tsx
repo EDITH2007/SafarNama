@@ -9,7 +9,7 @@ import { useUser } from "./UserContext";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const { currentUser } = useUser();
+  const { currentUser, isAuthenticated, isLoading, logout } = useUser();
 
   const isDashboard = pathname === "/dashboard";
 
@@ -72,41 +72,70 @@ export default function Navbar() {
             ))}
             <div className="h-4 w-[1px] bg-earth-clay/20" />
             
-            {/* User status card / Toggle Dashboard */}
-            <Link
-              href={isDashboard ? "/" : "/dashboard"}
-              className="flex items-center space-x-3 p-1.5 px-3 border border-earth-clay/25 bg-white hover:border-earth-terracotta/40 hover:bg-earth-sand/20 transition-all duration-200 group"
-            >
-              {/* Avatar Circle */}
-              <div className="h-7 w-7 rounded-full bg-earth-terracotta/15 flex items-center justify-center font-bold text-[10px] text-earth-terracotta font-sans border border-earth-terracotta/25 group-hover:bg-earth-terracotta group-hover:text-white transition-all duration-200">
-                {currentUser.avatar}
-              </div>
-              
-              <div className="flex flex-col">
-                <div className="flex items-center space-x-1">
-                  <span className="font-sans text-[11px] font-bold text-earth-charcoal group-hover:text-earth-terracotta transition-colors">
-                    {currentUser.name}
-                  </span>
-                  {currentUser.isVerified && (
-                    <ShieldCheck className="h-3 w-3 text-blue-500 fill-blue-50 shrink-0" />
-                  )}
-                </div>
-                <div className="flex items-center space-x-1.5 leading-none">
-                  {renderMiniTierBadge(currentUser.tier)}
-                  <span className="text-[10px] text-earth-terracotta font-bold">
-                    {currentUser.points} PTS
-                  </span>
-                </div>
-              </div>
-            </Link>
+            {isLoading ? (
+              <div className="h-8 w-24 bg-earth-clay/10 animate-pulse rounded-none" />
+            ) : isAuthenticated && currentUser ? (
+              <>
+                {/* User status card / Toggle Dashboard */}
+                <Link
+                  href={isDashboard ? "/" : "/dashboard"}
+                  className="flex items-center space-x-3 p-1.5 px-3 border border-earth-clay/25 bg-white hover:border-earth-terracotta/40 hover:bg-earth-sand/20 transition-all duration-200 group"
+                >
+                  {/* Avatar Circle */}
+                  <div className="h-7 w-7 rounded-full bg-earth-terracotta/15 flex items-center justify-center font-bold text-[10px] text-earth-terracotta font-sans border border-earth-terracotta/25 group-hover:bg-earth-terracotta group-hover:text-white transition-all duration-200">
+                    {currentUser.avatar}
+                  </div>
+                  
+                  <div className="flex flex-col">
+                    <div className="flex items-center space-x-1">
+                      <span className="font-sans text-[11px] font-bold text-earth-charcoal group-hover:text-earth-terracotta transition-colors">
+                        {currentUser.name}
+                      </span>
+                      {currentUser.isVerified && (
+                        <ShieldCheck className="h-3 w-3 text-blue-500 fill-blue-50 shrink-0" />
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-1.5 leading-none">
+                      {renderMiniTierBadge(currentUser.tier)}
+                      <span className="text-[10px] text-earth-terracotta font-bold">
+                        {currentUser.points} PTS
+                      </span>
+                    </div>
+                  </div>
+                </Link>
 
-            {/* Dashboard Navigation Action */}
-            <Link
-              href={isDashboard ? "/" : "/dashboard"}
-              className="px-4 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest transition-all duration-200 rounded-none"
-            >
-              {isDashboard ? "View Site" : "Dashboard"}
-            </Link>
+                {/* Dashboard Navigation Action */}
+                <Link
+                  href={isDashboard ? "/" : "/dashboard"}
+                  className="px-4 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest transition-all duration-200 rounded-none"
+                >
+                  {isDashboard ? "View Site" : "Dashboard"}
+                </Link>
+
+                {/* Sign Out Button */}
+                <button
+                  onClick={() => logout()}
+                  className="px-4 py-2 border border-earth-clay/35 hover:border-red-500 hover:text-red-500 text-earth-charcoal font-sans text-xs font-bold uppercase tracking-widest transition-all duration-200 rounded-none cursor-pointer"
+                >
+                  Sign Out
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  href="/signin"
+                  className="px-4 py-2 border border-earth-forest text-earth-forest hover:bg-earth-forest hover:text-white font-sans text-xs font-bold uppercase tracking-widest transition-all duration-200 rounded-none"
+                >
+                  Sign In
+                </Link>
+                <Link
+                  href="/signup"
+                  className="px-4 py-2 bg-earth-terracotta hover:bg-earth-saffron hover:text-earth-forest text-white font-sans text-xs font-bold uppercase tracking-widest transition-all duration-200 rounded-none"
+                >
+                  Sign Up
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile menu button */}
@@ -136,32 +165,64 @@ export default function Navbar() {
                 {item.name}
               </a>
             ))}
-            <div className="px-3 pt-4 border-t border-earth-clay/10 space-y-3">
-              {/* User profile details in mobile menu */}
-              <div className="flex items-center space-x-3 p-2 bg-white border border-earth-clay/10">
-                <div className="h-8 w-8 rounded-full bg-earth-terracotta/15 flex items-center justify-center font-bold text-xs text-earth-terracotta font-sans">
-                  {currentUser.avatar}
-                </div>
-                <div className="flex flex-col">
-                  <div className="flex items-center space-x-1">
-                    <span className="font-sans text-xs font-bold text-earth-charcoal">{currentUser.name}</span>
-                    {currentUser.isVerified && (
-                      <ShieldCheck className="h-3 w-3 text-blue-500 fill-blue-50 shrink-0" />
-                    )}
+             <div className="px-3 pt-4 border-t border-earth-clay/10 space-y-3">
+              {isLoading ? (
+                <div className="h-8 w-full bg-earth-clay/10 animate-pulse rounded-none" />
+              ) : isAuthenticated && currentUser ? (
+                <>
+                  {/* User profile details in mobile menu */}
+                  <div className="flex items-center space-x-3 p-2 bg-white border border-earth-clay/10">
+                    <div className="h-8 w-8 rounded-full bg-earth-terracotta/15 flex items-center justify-center font-bold text-xs text-earth-terracotta font-sans">
+                      {currentUser.avatar}
+                    </div>
+                    <div className="flex flex-col">
+                      <div className="flex items-center space-x-1">
+                        <span className="font-sans text-xs font-bold text-earth-charcoal">{currentUser.name}</span>
+                        {currentUser.isVerified && (
+                          <ShieldCheck className="h-3 w-3 text-blue-500 fill-blue-50 shrink-0" />
+                        )}
+                      </div>
+                      <div className="flex items-center space-x-1.5">
+                        {renderMiniTierBadge(currentUser.tier)}
+                        <span className="text-[10px] text-earth-terracotta font-bold">{currentUser.points} PTS</span>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center space-x-1.5">
-                    {renderMiniTierBadge(currentUser.tier)}
-                    <span className="text-[10px] text-earth-terracotta font-bold">{currentUser.points} PTS</span>
-                  </div>
-                </div>
-              </div>
-              <Link
-                href={isDashboard ? "/" : "/dashboard"}
-                onClick={() => setIsOpen(false)}
-                className="flex items-center justify-center w-full px-5 py-3 rounded-none bg-earth-forest text-white font-sans text-xs font-semibold uppercase tracking-widest hover:bg-earth-terracotta transition-all duration-200"
-              >
-                {isDashboard ? "Return to Site" : "Go to Dashboard"}
-              </Link>
+                  <Link
+                    href={isDashboard ? "/" : "/dashboard"}
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-center w-full px-5 py-3 rounded-none bg-earth-forest text-white font-sans text-xs font-semibold uppercase tracking-widest hover:bg-earth-terracotta transition-all duration-200"
+                  >
+                    {isDashboard ? "Return to Site" : "Go to Dashboard"}
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setIsOpen(false);
+                      logout();
+                    }}
+                    className="flex items-center justify-center w-full px-5 py-3 border border-red-200 text-red-650 hover:bg-red-50 font-sans text-xs font-semibold uppercase tracking-widest transition-all duration-250 cursor-pointer"
+                  >
+                    Sign Out
+                  </button>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/signin"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-center w-full px-5 py-3 border border-earth-forest text-earth-forest font-sans text-xs font-semibold uppercase tracking-widest hover:bg-earth-forest hover:text-white transition-all duration-200"
+                  >
+                    Sign In
+                  </Link>
+                  <Link
+                    href="/signup"
+                    onClick={() => setIsOpen(false)}
+                    className="flex items-center justify-center w-full px-5 py-3 bg-earth-terracotta text-white font-sans text-xs font-semibold uppercase tracking-widest hover:bg-earth-saffron hover:text-earth-forest transition-all duration-200"
+                  >
+                    Sign Up
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@ import { Geist, Geist_Mono, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { UserProvider } from "@/components/UserContext";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
+import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -52,17 +53,19 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col bg-earth-sand text-earth-charcoal font-sans">
-        <ConvexClientProvider>
-          <UserProvider>
-            {children}
-          </UserProvider>
-        </ConvexClientProvider>
-      </body>
-    </html>
+    <ConvexAuthNextjsServerProvider>
+      <html
+        lang="en"
+        className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
+      >
+        <body className="min-h-full flex flex-col bg-earth-sand text-earth-charcoal font-sans">
+          <ConvexClientProvider>
+            <UserProvider>
+              {children}
+            </UserProvider>
+          </ConvexClientProvider>
+        </body>
+      </html>
+    </ConvexAuthNextjsServerProvider>
   );
 }

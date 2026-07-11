@@ -1,6 +1,9 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect } from "react";
+import { useQuery, useMutation } from "convex/react";
+import { useAuthActions, useConvexAuth } from "@convex-dev/auth/react";
+import { api } from "../../convex/_generated/api";
 import {
   HiddenGem,
   Blog,
@@ -25,6 +28,7 @@ export interface PointsLedgerEntry {
 }
 
 export interface UserProfile {
+  id?: string;
   name: string;
   points: number;
   tier: "Bronze" | "Silver" | "Gold";
@@ -54,7 +58,7 @@ export interface PlanDay {
 }
 
 interface UserContextType {
-  currentUser: UserProfile;
+  currentUser: UserProfile | null;
   profiles: UserProfile[];
   switchProfile: (name: string) => void;
   hiddenGems: HiddenGem[];
@@ -81,6 +85,9 @@ interface UserContextType {
   deleteReview: (reviewId: string) => void;
   flagBlog: (blogId: string) => void;
   deleteBlog: (blogId: string) => void;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  logout: () => Promise<void>;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
@@ -129,11 +136,70 @@ const AVAILABLE_PROFILES: UserProfile[] = [
 ];
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
-  // Profiles state
-  const [profiles, setProfiles] = useState<UserProfile[]>(AVAILABLE_PROFILES);
-  const [currentUserName, setCurrentUserName] = useState<string>("Sneha Gupta");
+  const { isAuthenticated, isLoading } = useConvexAuth();
+  const { signOut } = useAuthActions();
+  const viewer = useQuery(api.users.viewer);
 
-  const currentUser = profiles.find((p) => p.name === currentUserName) || profiles[0];
+  const awardPointsMutation = useMutation(api.users.awardPoints);
+  const toggleVerificationMutation = useMutation(api.users.toggleVerification);
+  const dbPointsLedger = useQuery(api.users.getPointsLedger);
+  const rawLeaderboard = useQuery(api.users.getLeaderboard);
+  const dbLeaderboard = rawLeaderboard || [];
+  
+  const seedDatabase = useMutation(api.seed.seedDatabase);
+
+  useEffect(() => {
+    if (rawLeaderboard !== undefined && rawLeaderboard.length === 0) {
+      seedDatabase().catch((err) => {
+        console.error("Autoseeding failed:", err);
+      });
+    }
+  }, [rawLeaderboard, seedDatabase]);
+
+  const placeholderUser: UserProfile = {
+    id: "loading",
+    name: "Loading...",
+    points: 0,
+    tier: "Bronze",
+    isVerified: false,
+    avatar: "L",
+    bio: "Loading user profile...",
+    homeTown: "SafarNama",
+    role: "user",
+  };
+
+  const currentUser: UserProfile | null = viewer
+    ? {
+        id: viewer._id,
+        name: viewer.name || viewer.email?.split("@")[0] || "Traveler",
+        points: viewer.totalPoints ?? 0,
+        tier: (viewer.tier || "Bronze") as "Bronze" | "Silver" | "Gold",
+        isVerified: viewer.isVerified ?? false,
+        avatar: (viewer.name || viewer.email || "TR")
+          .split(" ")
+          .map((n) => n[0])
+          .join("")
+          .substring(0, 2)
+          .toUpperCase(),
+        bio: viewer.bio || "Wanderer",
+        homeTown: viewer.homeTown || "Unknown",
+        role: (viewer.role || "user") as "user" | "admin",
+      }
+    : isLoading
+    ? placeholderUser
+    : null;
+
+  const profiles: UserProfile[] = dbLeaderboard.map((u) => ({
+    id: u.id,
+    name: u.name,
+    points: u.points,
+    tier: u.tier,
+    isVerified: u.isVerified,
+    avatar: u.name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase(),
+    bio: "Explorer profile on SafarNama",
+    homeTown: "India",
+    role: "user",
+  }));
 
   const [hiddenGems, setHiddenGems] = useState<HiddenGem[]>(mockHiddenGems);
   const [blogs, setBlogs] = useState<Blog[]>(mockBlogs);
@@ -185,72 +251,69 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   ]);
 
-  const [pointsLedger, setPointsLedger] = useState<PointsLedgerEntry[]>([
-    { id: "1", action: "SafarNama Welcoming Gift", points: 50, date: "June 15, 2026" },
-    { id: "2", action: "Written Review: Munnar Tea Hills", points: 30, date: "June 25, 2026" },
-    { id: "3", action: "Completed Journey: Coastal Gokarna Trek", points: 50, date: "July 02, 2026" },
-    { id: "4", action: "Logged trip expenses to Munnar", points: 50, date: "July 08, 2026" },
-  ]);
+  const pointsLedger: PointsLedgerEntry[] = dbPointsLedger
+    ? dbPointsLedger.map((entry) => ({
+        id: entry._id,
+        action: entry.actionType === "submit_gem" ? "Submit Gem" :
+                entry.actionType === "gem_approved" ? `Approved Hidden Gem: ${entry.referenceId || ""}` :
+                entry.actionType === "review" ? "Written Review" :
+                entry.actionType === "blog" ? "Published Story" : entry.actionType,
+        points: entry.pointsEarned,
+        date: new Date(entry.timestamp).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+      }))
+    : [
+        { id: "1", action: "SafarNama Welcoming Gift", points: 50, date: "June 15, 2026" },
+        { id: "2", action: "Written Review: Munnar Tea Hills", points: 30, date: "June 25, 2026" },
+        { id: "3", action: "Completed Journey: Coastal Gokarna Trek", points: 50, date: "July 02, 2026" },
+        { id: "4", action: "Logged trip expenses to Munnar", points: 50, date: "July 08, 2026" },
+      ];
 
   // Recalculate leaderboard dynamically
   const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
 
   useEffect(() => {
-    // Dynamically build the leaderboard from our profile states
-    const sorted = [...profiles].sort((a, b) => b.points - a.points);
-    const ranked = sorted.map((user, index) => ({
-      rank: index + 1,
-      name: user.name,
-      tier: user.tier,
-      points: user.points,
-      isVerified: user.isVerified,
-      isCurrentUser: user.name === currentUser.name,
-    }));
-    setLeaderboard(ranked);
-  }, [profiles, currentUser.name]);
+    if (dbLeaderboard && dbLeaderboard.length > 0) {
+      const ranked = dbLeaderboard.map((user, index) => ({
+        rank: index + 1,
+        name: user.name,
+        tier: user.tier,
+        points: user.points,
+        isVerified: user.isVerified,
+        isCurrentUser: currentUser ? user.name === currentUser.name : false,
+      }));
+      setLeaderboard(ranked);
+    }
+  }, [dbLeaderboard, currentUser]);
 
   // Sync profile tiers when points change
   const updateProfilePointsAndTier = (name: string, pointsDelta: number, ledgerAction: string) => {
-    const today = new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-
-    setProfiles((prev) =>
-      prev.map((prof) => {
-        if (prof.name === name) {
-          const nextPoints = prof.points + pointsDelta;
-          const nextTier = getTier(nextPoints);
-          return {
-            ...prof,
-            points: nextPoints,
-            tier: nextTier,
-          };
-        }
-        return prof;
-      })
-    );
-
-    // Only add to points ledger if it is the current logged-in user
-    if (name === currentUser.name) {
-      setPointsLedger((prev) => [
-        {
-          id: Math.random().toString(),
-          action: ledgerAction,
-          points: pointsDelta,
-          date: today,
-        },
-        ...prev,
-      ]);
+    if (!name || (currentUser && name === currentUser.name)) {
+      awardPointsMutation({
+        pointsEarned: pointsDelta,
+        actionType: "client_action",
+        referenceId: ledgerAction,
+      }).catch(console.error);
+    } else {
+      awardPointsMutation({
+        userName: name,
+        pointsEarned: pointsDelta,
+        actionType: "client_action",
+        referenceId: ledgerAction,
+      }).catch(console.error);
     }
   };
 
   // Switch Profiles (simulated auth)
   const switchProfile = (name: string) => {
-    if (profiles.some((p) => p.name === name)) {
-      setCurrentUserName(name);
-    }
+    console.log("Profile switching disabled - using Convex Auth");
+  };
+
+  const logout = async () => {
+    await signOut();
   };
 
   // Wishlist Actions
@@ -392,9 +455,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const newGem: HiddenGem = {
       ...gem,
       id: `gem-${Math.random().toString()}`,
-      submittedBy: currentUser.name,
-      submitterTier: currentUser.tier,
-      submitterVerified: currentUser.isVerified,
+      submittedBy: currentUser?.name || "Guest",
+      submitterTier: currentUser?.tier || "Bronze",
+      submitterVerified: currentUser?.isVerified || false,
       pointsAwarded: POINTS.SUBMIT_GEM,
       createdAt: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
       status: "pending",
@@ -441,18 +504,19 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const addReview = (
     review: Omit<Review, "id" | "author" | "authorTier" | "authorVerified" | "date">
   ) => {
+    const authorName = currentUser?.name || "Guest";
     const newReview: Review = {
       ...review,
       id: `rev-${Math.random().toString()}`,
-      author: currentUser.name,
-      authorTier: currentUser.tier,
-      authorVerified: currentUser.isVerified,
+      author: authorName,
+      authorTier: currentUser?.tier || "Bronze",
+      authorVerified: currentUser?.isVerified || false,
       date: "Just now",
     };
 
     setReviews((prev) => [newReview, ...prev]);
     updateProfilePointsAndTier(
-      currentUser.name,
+      authorName,
       POINTS.WRITE_REVIEW,
       `Written Review: ${review.title}`
     );
@@ -462,12 +526,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const addBlog = (
     blog: Omit<Blog, "id" | "author" | "authorTier" | "authorVerified" | "date">
   ) => {
+    const authorName = currentUser?.name || "Guest";
     const newBlog: Blog = {
       ...blog,
       id: `blog-${Math.random().toString()}`,
-      author: currentUser.name,
-      authorTier: currentUser.tier,
-      authorVerified: currentUser.isVerified,
+      author: authorName,
+      authorTier: currentUser?.tier || "Bronze",
+      authorVerified: currentUser?.isVerified || false,
       date: new Date().toLocaleDateString("en-US", {
         month: "short",
         day: "2-digit",
@@ -477,7 +542,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
     setBlogs((prev) => [newBlog, ...prev]);
     updateProfilePointsAndTier(
-      currentUser.name,
+      authorName,
       POINTS.WRITE_BLOG,
       `Published Story: ${blog.title}`
     );
@@ -485,11 +550,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   // Complete a Trip
   const completeTrip = (journeyId: string) => {
+    const authorName = currentUser?.name || "Guest";
     setJourneys((prev) =>
       prev.map((journey) => {
         if (journey.id === journeyId && !journey.completed) {
           updateProfilePointsAndTier(
-            currentUser.name,
+            authorName,
             POINTS.COMPLETE_TRIP,
             `Completed Trip: ${journey.title}`
           );
@@ -505,7 +571,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     const newTrip: Journey = {
       ...trip,
       id: `journey-${Math.random().toString()}`,
-      author: currentUser.name,
+      author: currentUser?.name || "Guest",
       completed: false,
     };
     setJourneys((prev) => [newTrip, ...prev]);
@@ -513,9 +579,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   // Toggle Verification status for the logged in user
   const toggleUserVerification = () => {
-    setProfiles((prev) =>
-      prev.map((p) => (p.name === currentUser.name ? { ...p, isVerified: !p.isVerified } : p))
-    );
+    toggleVerificationMutation().catch(console.error);
   };
 
   // Moderation functions
@@ -569,6 +633,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         deleteReview,
         flagBlog,
         deleteBlog,
+        isAuthenticated,
+        isLoading,
+        logout,
       }}
     >
       {children}
