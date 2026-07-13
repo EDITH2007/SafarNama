@@ -227,13 +227,8 @@ export default function Dashboard() {
 
   const isValidImageUrl = (url: string) => {
     const trimmed = url.trim();
-    const lower = trimmed.toLowerCase();
-    if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
-      return false;
-    }
-    const cleanUrl = trimmed.split("?")[0].split("#")[0].toLowerCase();
-    const commonExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg"];
-    return commonExtensions.some(ext => cleanUrl.endsWith(ext));
+    if (!trimmed) return false;
+    return /^https?:\/\/.+/i.test(trimmed) || /^data:image\/.+/i.test(trimmed);
   };
 
   if (!currentUser) {
@@ -1058,7 +1053,7 @@ export default function Dashboard() {
                       {/* Live Validation Warning */}
                       {uploadedImageUrl && !isValidImageUrl(uploadedImageUrl) && (
                         <p className="text-red-650 text-[10px] font-semibold animate-pulse">
-                          ⚠️ Please enter a valid image URL starting with http:// or https:// and ending in a common extension (.jpg, .jpeg, .png, .webp, .gif, .svg, .bmp).
+                          ⚠️ Please enter a valid image URL starting with http:// or https://.
                         </p>
                       )}
 

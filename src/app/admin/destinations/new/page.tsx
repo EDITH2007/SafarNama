@@ -35,6 +35,12 @@ export default function NewDestinationPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
+  const isValidImageUrl = (url: string) => {
+    const trimmed = url.trim();
+    if (!trimmed) return false;
+    return /^https?:\/\/.+/i.test(trimmed) || /^data:image\/.+/i.test(trimmed);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !desc || !location || !state || !photoUrl || !lat || !lng) {
@@ -433,6 +439,23 @@ export default function NewDestinationPage() {
                       placeholder="e.g. https://images.unsplash.com/photo-..."
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
+
+                    {/* Live Image Preview */}
+                    {photoUrl && isValidImageUrl(photoUrl) && (
+                      <div className="mt-2 space-y-1 animate-in fade-in duration-200">
+                        <span className="text-[9px] font-bold text-earth-forest uppercase tracking-wider block">Image Preview</span>
+                        <div className="h-24 w-36 overflow-hidden border border-earth-clay/15 bg-white shadow-sm relative">
+                          <img
+                            src={photoUrl}
+                            alt="Main preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
