@@ -18,6 +18,7 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
 });
 
 export const config = {
-  // The following matcher runs middleware on all paths except static assets
-  matcher: ["/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
+  // Exclude /api/auth so the dedicated Node.js Route Handler handles auth proxying.
+  // Middleware still runs on all other routes for token refresh and OAuth code exchange.
+  matcher: ["/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)"],
 };
