@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   if (envPublicUrl) {
     try {
       const client = new ConvexHttpClient(envPublicUrl);
-      const res = await client.action("auth:signIn", {
+      const res = await client.action("auth:signIn" as any, {
         provider: "password",
         params: {
           email: "test@gmail.com",
