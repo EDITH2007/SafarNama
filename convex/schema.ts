@@ -64,7 +64,8 @@ export default defineSchema({
       lat: v.number(),
       lng: v.number(),
     }),
-    photo: v.string(),
+    photo: v.optional(v.string()),
+    photos: v.optional(v.array(v.string())),
     category: v.string(), // e.g. "Waterfall", "Trek", "Secret Beach", "Local Eatery"
     submittedBy: v.id("users"), // User who submitted this gem
     status: v.string(), // "pending" | "approved" | "rejected"
