@@ -15,7 +15,7 @@ export default convexAuthNextjsMiddleware(async (request, { convexAuth }) => {
   if (isAuthRoute(request) && isAuthenticated) {
     return nextjsMiddlewareRedirect(request, "/dashboard");
   }
-}, { verbose: true });
+});
 
 export const config = {
   // The following matcher runs middleware on all paths except static assets
