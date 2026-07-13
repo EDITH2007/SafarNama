@@ -2,8 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Star, MapPin, Compass, ShieldCheck, Gift, X, Heart } from "lucide-react";
-import { CATEGORIES, mockDestinations } from "../app/data/mockData";
+import { CATEGORIES } from "../app/data/mockData";
 import { useUser } from "./UserContext";
 
 interface AcquisitionZoneProps {
@@ -13,7 +14,7 @@ interface AcquisitionZoneProps {
 export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("All");
-  const { hiddenGems, submitGem, toggleWishlist, isWishlisted, isAuthenticated } = useUser();
+  const { hiddenGems, destinations, submitGem, toggleWishlist, isWishlisted, isAuthenticated } = useUser();
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -22,13 +23,22 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
   const [location, setLocation] = useState("");
   const [state, setState] = useState("");
   const [category, setCategory] = useState("Offbeat");
-  const [photoUrl, setPhotoUrl] = useState(
-    "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=800&q=80"
-  );
+  const [photoUrl, setPhotoUrl] = useState("");
+
+  const isValidImageUrl = (url: string) => {
+    const trimmed = url.trim();
+    const lower = trimmed.toLowerCase();
+    if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+      return false;
+    }
+    const cleanUrl = trimmed.split("?")[0].split("#")[0].toLowerCase();
+    const commonExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg"];
+    return commonExtensions.some(ext => cleanUrl.endsWith(ext));
+  };
   const [showSuccessMsg, setShowSuccessMsg] = useState(false);
 
   // Filter curated destinations
-  const filteredDestinations = mockDestinations.filter((dest) => {
+  const filteredDestinations = destinations.filter((dest) => {
     const matchesCategory =
       activeCategory === "All" || dest.category === activeCategory;
     const matchesSearch =
@@ -38,6 +48,10 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
       dest.category.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCategory && matchesSearch;
   });
+
+  // Sort curated destinations by rating descending
+  const sortedDestinations = [...filteredDestinations].sort((a, b) => b.rating - a.rating);
+  const landingDestinations = sortedDestinations.slice(0, 3);
 
   // Filter and sort hidden gems
   // 1. Only show approved ones in the public feed
@@ -63,9 +77,14 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
     return prioB - prioA; // Higher tier first
   });
 
+  const landingGems = prioritizedGems.slice(0, 3);
+
+  const spotlightGem = approvedGems[0];
+
   const handleSubmitSpot = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !description || !location || !state) return;
+    if (!title || !description || !location || !state || !photoUrl) return;
+    if (!isValidImageUrl(photoUrl)) return;
 
     submitGem({
       title,
@@ -73,7 +92,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
       location,
       state,
       category,
-      photos: [photoUrl || "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=800&q=80"],
+      photo: photoUrl,
     });
 
     setShowSuccessMsg(true);
@@ -84,6 +103,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
       setDescription("");
       setLocation("");
       setState("");
+      setPhotoUrl("");
       setCategory("Offbeat");
     }, 4000);
   };
@@ -134,19 +154,21 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
         {/* Destinations Grid */}
         {filteredDestinations.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {filteredDestinations.map((dest) => (
+            {landingDestinations.map((dest) => (
               <article
                 key={dest.id}
                 className="group flex flex-col bg-white border border-earth-clay/5 hover:shadow-xl hover:border-earth-clay/10 transition-all duration-300 relative"
               >
                 {/* Photo */}
                 <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
-                  <img
-                    src={dest.photos[0]}
-                    alt={dest.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
+                  <Link href={`/destinations/${dest.id}`} className="block w-full h-full">
+                    <img
+                      src={dest.photos[0]}
+                      alt={dest.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      loading="lazy"
+                    />
+                  </Link>
                   <span className="absolute top-4 left-4 bg-earth-sand text-earth-forest px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border border-earth-clay/15 z-10">
                     {dest.category}
                   </span>
@@ -184,9 +206,11 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                       </span>
                     </div>
 
-                    <h3 className="font-serif text-xl font-bold text-earth-charcoal group-hover:text-earth-terracotta transition-colors">
-                      {dest.title}
-                    </h3>
+                    <Link href={`/destinations/${dest.id}`} className="block">
+                      <h3 className="font-serif text-xl font-bold text-earth-charcoal group-hover:text-earth-terracotta transition-colors">
+                        {dest.title}
+                      </h3>
+                    </Link>
                     <p className="font-sans text-sm text-earth-charcoal/70 line-clamp-3 leading-relaxed font-light">
                       {dest.description}
                     </p>
@@ -196,10 +220,10 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                     <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-earth-clay/60">
                       Verified Guide
                     </span>
-                    <button className="font-sans text-xs font-semibold text-earth-terracotta group-hover:translate-x-1 transition-transform duration-200 uppercase tracking-widest flex items-center space-x-1">
+                    <Link href={`/destinations/${dest.id}`} className="font-sans text-xs font-semibold text-earth-terracotta group-hover:translate-x-1 transition-transform duration-200 uppercase tracking-widest flex items-center space-x-1">
                       <span>Read Route</span>
                       <span>→</span>
-                    </button>
+                    </Link>
                   </div>
                 </div>
               </article>
@@ -212,6 +236,15 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
             </p>
           </div>
         )}
+
+        <div className="flex justify-center pt-12">
+          <Link
+            href="/destinations"
+            className="px-8 py-3.5 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-none shadow-md"
+          >
+            View All Destinations
+          </Link>
+        </div>
       </section>
 
       {/* 2. Hidden Gems Section (Visually Distinct) */}
@@ -248,7 +281,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
           {/* Gems Grid */}
           {prioritizedGems.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {prioritizedGems.map((gem) => (
+              {landingGems.map((gem) => (
                 <article
                   key={gem.id}
                   className="group flex flex-col bg-[#142B1B] border border-white/5 hover:border-earth-saffron/30 hover:shadow-[0_0_30px_rgba(214,158,46,0.05)] transition-all duration-300 relative"
@@ -256,7 +289,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                   {/* Photo */}
                   <div className="relative aspect-[4/3] overflow-hidden bg-stone-850">
                     <img
-                      src={gem.photos[0]}
+                      src={gem.photo}
                       alt={gem.title}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                       loading="lazy"
@@ -342,6 +375,15 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
               </p>
             </div>
           )}
+
+          <div className="flex justify-center pt-12">
+            <Link
+              href="/hidden-gems"
+              className="px-8 py-3.5 bg-earth-terracotta hover:bg-earth-saffron hover:text-earth-forest text-earth-sand font-sans text-xs font-bold uppercase tracking-widest transition-all duration-300 rounded-none shadow-md"
+            >
+              View All Hidden Gems
+            </Link>
+          </div>
         </div>
       </section>
 
@@ -351,8 +393,8 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
           {/* Spotlight Image */}
           <div className="w-full md:w-1/2 aspect-[16/10] overflow-hidden bg-stone-100 shrink-0">
             <img
-              src="https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=1200&q=80"
-              alt="Phugtal Monastery"
+              src={spotlightGem ? spotlightGem.photo : "https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=1200&q=80"}
+              alt={spotlightGem ? spotlightGem.title : "Phugtal Monastery"}
               className="w-full h-full object-cover"
               loading="lazy"
             />
@@ -366,37 +408,39 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
             </div>
 
             <h3 className="font-serif text-3xl font-bold text-earth-forest leading-tight">
-              Phugtal Cave Monastery: A Cliffside Sanctuary in Ladakh
+              {spotlightGem ? spotlightGem.title : "Phugtal Cave Monastery: A Cliffside Sanctuary in Ladakh"}
             </h3>
 
             <p className="font-sans text-sm text-earth-charcoal/80 leading-relaxed font-light">
-              "We had to trek 2 days through the rugged Lunak valley to reach this 12th-century cave. It hangs over the gorge like a honeycomb of mud bricks. SafarNama's verification gave us the trust to embark on this journey safely."
+              "{spotlightGem ? spotlightGem.description : "We had to trek 2 days through the rugged Lunak valley to reach this 12th-century cave. It hangs over the gorge like a honeycomb of mud bricks. SafarNama's verification gave us the trust to embark on this journey safely."}"
             </p>
 
             {/* Quote block author */}
             <div className="flex items-center space-x-3 pt-2">
               <div className="h-10 w-10 bg-earth-terracotta/5 border border-earth-terracotta/20 flex items-center justify-center font-bold text-earth-terracotta font-sans">
-                TN
+                {spotlightGem ? spotlightGem.submittedBy.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "TN"}
               </div>
               <div>
                 <div className="flex items-center space-x-1">
                   <h4 className="font-sans text-sm font-semibold text-earth-charcoal">
-                    Tenzing Norgay
+                    {spotlightGem ? spotlightGem.submittedBy : "Tenzing Norgay"}
                   </h4>
-                  <ShieldCheck className="h-4 w-4 text-blue-500 fill-blue-50" />
+                  {(spotlightGem ? spotlightGem.submitterVerified : true) && (
+                    <ShieldCheck className="h-4 w-4 text-blue-500 fill-blue-50" />
+                  )}
                 </div>
                 <p className="font-sans text-xs text-earth-clay">
-                  SafarNama Gold Explorer • Verified June 2026
+                  SafarNama {spotlightGem ? spotlightGem.submitterTier : "Gold"} Explorer • Verified {spotlightGem ? spotlightGem.createdAt : "June 2026"}
                 </p>
               </div>
             </div>
 
             <div className="pt-4 border-t border-earth-clay/10 flex flex-wrap gap-6 text-xs font-sans text-earth-clay">
               <div>
-                <span className="font-bold text-earth-charcoal">Points Earned:</span> 100 PTS
+                <span className="font-bold text-earth-charcoal">Points Earned:</span> {spotlightGem ? (spotlightGem.pointsAwarded || 100) : 100} PTS
               </div>
               <div>
-                <span className="font-bold text-earth-charcoal">Difficulty:</span> Strenuous (Acclimatization Req.)
+                <span className="font-bold text-earth-charcoal">Category:</span> {spotlightGem ? spotlightGem.category : "Offbeat"}
               </div>
               <div>
                 <span className="font-bold text-earth-charcoal">Verified By:</span> Admin Review Queue
@@ -505,14 +549,40 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
 
                   <div className="space-y-1">
                     <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
-                      Photo URL (Unsplash)
+                      Photo URL
                     </label>
                     <input
                       type="text"
+                      required
                       value={photoUrl}
                       onChange={(e) => setPhotoUrl(e.target.value)}
-                      className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none text-earth-charcoal/70"
+                      placeholder="e.g., https://images.unsplash.com/photo-1626590212990-2e40026e6cb5?auto=format&fit=crop&w=800&q=80"
+                      className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none text-earth-charcoal"
                     />
+                    
+                    {/* Live Validation Warning */}
+                    {photoUrl && !isValidImageUrl(photoUrl) && (
+                      <p className="text-red-655 text-[10px] font-semibold animate-pulse mt-1">
+                        ⚠️ Please enter a valid image URL starting with http:// or https:// and ending in a common extension (.jpg, .jpeg, .png, .webp, .gif, .svg, .bmp).
+                      </p>
+                    )}
+
+                    {/* Live Image Preview */}
+                    {photoUrl && isValidImageUrl(photoUrl) && (
+                      <div className="mt-2 space-y-1 animate-in fade-in duration-200">
+                        <span className="text-[9px] font-bold text-earth-forest uppercase tracking-wider block">✓ Image URL Validated</span>
+                        <div className="h-20 w-32 overflow-hidden border border-earth-clay/15 bg-white shadow-sm relative">
+                          <img
+                            src={photoUrl}
+                            alt="Live spot preview"
+                            className="w-full h-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.style.display = "none";
+                            }}
+                          />
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
 
@@ -541,7 +611,8 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                   </button>
                   <button
                     type="submit"
-                    className="px-6 py-2.5 bg-earth-terracotta hover:bg-earth-forest text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none cursor-pointer transition-all duration-200"
+                    disabled={!title || !description || !location || !state || !photoUrl || !isValidImageUrl(photoUrl)}
+                    className="px-6 py-2.5 bg-earth-terracotta hover:bg-earth-forest disabled:bg-earth-clay/35 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none cursor-pointer transition-all duration-200"
                   >
                     Submit Discovery
                   </button>

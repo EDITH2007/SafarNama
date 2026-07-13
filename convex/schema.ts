@@ -45,6 +45,11 @@ export default defineSchema({
     category: v.string(), // e.g. "Hills", "Beaches", "Heritage", "Spiritual", "Wildlife"
     addedBy: v.id("users"), // Reference to the admin who added it
     createdAt: v.number(), // Timestamp
+    bestTimeToVisit: v.optional(v.string()),
+    howToReach: v.optional(v.string()),
+    nearbyAttractions: v.optional(v.array(v.string())),
+    tips: v.optional(v.array(v.string())),
+    photoGallery: v.optional(v.array(v.string())),
   })
     .index("by_category", ["category"])
     .index("by_state", ["state"]),
@@ -59,13 +64,14 @@ export default defineSchema({
       lat: v.number(),
       lng: v.number(),
     }),
-    photos: v.array(v.string()),
+    photo: v.string(),
     category: v.string(), // e.g. "Waterfall", "Trek", "Secret Beach", "Local Eatery"
     submittedBy: v.id("users"), // User who submitted this gem
     status: v.string(), // "pending" | "approved" | "rejected"
     approvedBy: v.optional(v.id("users")), // Admin who reviewed it
     pointsAwarded: v.optional(v.number()), // Points given for approval
     rejectionReason: v.optional(v.string()), // If status is "rejected"
+    approvedAt: v.optional(v.number()),
     createdAt: v.number(),
   })
     .index("by_status", ["status"])

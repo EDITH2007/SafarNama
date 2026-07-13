@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { ensureUsersSeeded } from "./users";
+import { getAuthUserId } from "@convex-dev/auth/server";
 
 // Helper to determine tier from points
 function calculateTier(points: number): "Bronze" | "Silver" | "Gold" {
@@ -13,9 +14,13 @@ export async function ensureGemsSeeded(db: any) {
   await ensureUsersSeeded(db);
   const anyGem = await db.query("hiddenGems").first();
   if (!anyGem) {
-    const aarav = await db.query("users").filter((q: any) => q.eq(q.field("name"), "Aarav Sharma")).first();
-    const tenzing = await db.query("users").filter((q: any) => q.eq(q.field("name"), "Tenzing Norgay")).first();
-    const priya = await db.query("users").filter((q: any) => q.eq(q.field("name"), "Priya Patel")).first();
+    const admin = await db.query("users").filter((q: any) => q.eq(q.field("role"), "admin")).first();
+    const adminId = admin?._id;
+
+    if (!adminId) {
+      console.log("No admin found to assign initial gems");
+      return;
+    }
 
     const initialGems = [
       {
@@ -24,11 +29,12 @@ export async function ensureGemsSeeded(db: any) {
         location: "Kadapa, Andhra Pradesh",
         state: "Andhra Pradesh",
         geo: { lat: 14.8011, lng: 78.2664 },
-        photos: ["https://images.unsplash.com/photo-1626590212990-2e40026e6cb5?auto=format&fit=crop&w=800&q=80"],
+        photo: "https://images.unsplash.com/photo-1626590212990-2e40026e6cb5?auto=format&fit=crop&w=800&q=80",
         category: "Offbeat",
-        submittedBy: aarav?._id,
+        submittedBy: adminId,
         status: "approved",
         createdAt: Date.now() - 1000 * 60 * 60 * 24 * 30, // 30 days ago
+        approvedAt: Date.now() - 1000 * 60 * 60 * 24 * 30,
       },
       {
         title: "Phugtal Cave Monastery",
@@ -36,11 +42,12 @@ export async function ensureGemsSeeded(db: any) {
         location: "Zanskar, Ladakh",
         state: "Ladakh",
         geo: { lat: 33.1711, lng: 77.2356 },
-        photos: ["https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80"],
+        photo: "https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80",
         category: "Offbeat",
-        submittedBy: tenzing?._id,
+        submittedBy: adminId,
         status: "approved",
         createdAt: Date.now() - 1000 * 60 * 60 * 24 * 15, // 15 days ago
+        approvedAt: Date.now() - 1000 * 60 * 60 * 24 * 15,
       },
       {
         title: "Lonar Crater Lake",
@@ -48,30 +55,18 @@ export async function ensureGemsSeeded(db: any) {
         location: "Buldhana, Maharashtra",
         state: "Maharashtra",
         geo: { lat: 19.9763, lng: 76.5096 },
-        photos: ["https://images.unsplash.com/photo-1583143874828-de3d288be51a?auto=format&fit=crop&w=800&q=80"],
+        photo: "https://images.unsplash.com/photo-1583143874828-de3d288be51a?auto=format&fit=crop&w=800&q=80",
         category: "Offbeat",
-        submittedBy: priya?._id,
+        submittedBy: adminId,
         status: "approved",
         createdAt: Date.now() - 1000 * 60 * 60 * 24 * 10, // 10 days ago
+        approvedAt: Date.now() - 1000 * 60 * 60 * 24 * 10,
       }
     ];
 
     for (const gem of initialGems) {
-      if (gem.submittedBy) {
-        await db.insert("hiddenGems", gem);
-      }
+      await db.insert("hiddenGems", gem);
     }
-  }
-}
-
-// Helper to check if a user is an admin by name
-async function checkAdmin(db: any, name: string) {
-  const user = await db
-    .query("users")
-    .filter((q: any) => q.eq(q.field("name"), name))
-    .first();
-  if (!user || user.role !== "admin") {
-    throw new Error("Unauthorized: Admin privileges required");
   }
 }
 
@@ -83,31 +78,21 @@ export const submitGem = mutation({
     location: v.string(),
     state: v.string(),
     category: v.string(),
-    photos: v.array(v.string()),
+    photo: v.string(),
     geo: v.object({
       lat: v.number(),
       lng: v.number(),
     }),
-    submittedByUserName: v.string(),
   },
   handler: async (ctx, args) => {
-    const user = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("name"), args.submittedByUserName))
-      .first();
-    if (!user) {
-      throw new Error("User not found");
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Unauthorized: Not authenticated");
     }
 
     const gemId = await ctx.db.insert("hiddenGems", {
-      title: args.title,
-      description: args.description,
-      location: args.location,
-      state: args.state,
-      category: args.category,
-      photos: args.photos,
-      geo: args.geo,
-      submittedBy: user._id,
+      ...args,
+      submittedBy: userId,
       status: "pending",
       createdAt: Date.now(),
     });
@@ -117,28 +102,87 @@ export const submitGem = mutation({
 
 // Query pending gems (admin only)
 export const getPendingGems = query({
-  args: { adminUserName: v.string() },
-  handler: async (ctx, args) => {
-    await checkAdmin(ctx.db, args.adminUserName);
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+    const user = await ctx.db.get(userId);
+    if (!user || user.role !== "admin") {
+      return [];
+    }
     
-    return await ctx.db
+    const gems = await ctx.db
       .query("hiddenGems")
       .withIndex("by_status", (q) => q.eq("status", "pending"))
       .collect();
+
+    const results = [];
+    for (const gem of gems) {
+      const submitter = await ctx.db.get(gem.submittedBy);
+      results.push({
+        id: gem._id,
+        ...gem,
+        submittedBy: submitter?.name || submitter?.email?.split("@")[0] || "Anonymous",
+        submitterTier: submitter?.tier || "Bronze",
+        submitterVerified: submitter?.isVerified || false,
+        createdAt: new Date(gem.createdAt).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        }),
+      });
+    }
+    return results;
+  },
+});
+
+// Query all approved gems (public)
+export const getApprovedGems = query({
+  args: {},
+  handler: async (ctx) => {
+    const gems = await ctx.db
+      .query("hiddenGems")
+      .withIndex("by_status", (q) => q.eq("status", "approved"))
+      .collect();
+
+    // Sort by approval date (most recent first) with fallback to creation date
+    gems.sort((a, b) => {
+      const timeA = a.approvedAt ?? a.createdAt;
+      const timeB = b.approvedAt ?? b.createdAt;
+      return timeB - timeA;
+    });
+
+    const results = [];
+    for (const gem of gems) {
+      const submitter = await ctx.db.get(gem.submittedBy);
+      results.push({
+        id: gem._id,
+        ...gem,
+        submittedBy: submitter?.name || submitter?.email?.split("@")[0] || "Anonymous",
+        submitterTier: submitter?.tier || "Bronze",
+        submitterVerified: submitter?.isVerified || false,
+        createdAt: new Date(gem.createdAt).toLocaleDateString("en-US", {
+          month: "long",
+          year: "numeric",
+        }),
+      });
+    }
+    return results;
   },
 });
 
 // Approve a gem (admin only)
 export const approveGem = mutation({
   args: {
-    adminUserName: v.string(),
     gemId: v.id("hiddenGems"),
   },
   handler: async (ctx, args) => {
-    const admin = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("name"), args.adminUserName))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Unauthorized: Not authenticated");
+    }
+    const admin = await ctx.db.get(userId);
     if (!admin || admin.role !== "admin") {
       throw new Error("Unauthorized: Admin privileges required");
     }
@@ -158,6 +202,7 @@ export const approveGem = mutation({
       status: "approved",
       approvedBy: admin._id,
       pointsAwarded: pointsToAward,
+      approvedAt: Date.now(),
     });
 
     // Award points to the submitter
@@ -188,15 +233,15 @@ export const approveGem = mutation({
 // Reject a gem (admin only)
 export const rejectGem = mutation({
   args: {
-    adminUserName: v.string(),
     gemId: v.id("hiddenGems"),
     rejectionReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const admin = await ctx.db
-      .query("users")
-      .filter((q) => q.eq(q.field("name"), args.adminUserName))
-      .first();
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Unauthorized: Not authenticated");
+    }
+    const admin = await ctx.db.get(userId);
     if (!admin || admin.role !== "admin") {
       throw new Error("Unauthorized: Admin privileges required");
     }

@@ -8,6 +8,11 @@ export interface Destination {
   category: string;
   addedBy: string;
   rating: number;
+  bestTimeToVisit?: string;
+  howToReach?: string;
+  nearbyAttractions?: string[];
+  tips?: string[];
+  photoGallery?: string[];
 }
 
 export interface HiddenGem {
@@ -16,7 +21,7 @@ export interface HiddenGem {
   description: string;
   location: string;
   state: string;
-  photos: string[];
+  photo: string;
   category: string;
   submittedBy: string;
   submitterTier: "Bronze" | "Silver" | "Gold";
@@ -159,7 +164,7 @@ export const mockHiddenGems: HiddenGem[] = [
     description: "A stunning gorge carved by the Pennar River through red granite rocks, resembling the American Grand Canyon.",
     location: "Kadapa, Andhra Pradesh",
     state: "Andhra Pradesh",
-    photos: ["https://images.unsplash.com/photo-1626590212990-2e40026e6cb5?auto=format&fit=crop&w=800&q=80"],
+    photo: "https://images.unsplash.com/photo-1626590212990-2e40026e6cb5?auto=format&fit=crop&w=800&q=80",
     category: "Offbeat",
     submittedBy: "Aarav Sharma",
     submitterTier: "Silver",
@@ -174,7 +179,7 @@ export const mockHiddenGems: HiddenGem[] = [
     description: "A 12th-century Buddhist monastery built directly into the cliffside of a remote gorge in southeastern Zanskar.",
     location: "Zanskar, Ladakh",
     state: "Ladakh",
-    photos: ["https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80"],
+    photo: "https://images.unsplash.com/photo-1605649487212-47bdab064df7?auto=format&fit=crop&w=800&q=80",
     category: "Offbeat",
     submittedBy: "Tenzing Norgay",
     submitterTier: "Gold",
@@ -189,7 +194,7 @@ export const mockHiddenGems: HiddenGem[] = [
     description: "A hyper-saline alkaline lake created by a meteorite impact during the Pleistocene Epoch, surrounded by temples.",
     location: "Buldhana, Maharashtra",
     state: "Maharashtra",
-    photos: ["https://images.unsplash.com/photo-1583143874828-de3d288be51a?auto=format&fit=crop&w=800&q=80"],
+    photo: "https://images.unsplash.com/photo-1583143874828-de3d288be51a?auto=format&fit=crop&w=800&q=80",
     category: "Offbeat",
     submittedBy: "Priya Patel",
     submitterTier: "Silver",

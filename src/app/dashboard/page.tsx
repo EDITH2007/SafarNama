@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
+import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Leaderboard from "@/components/Leaderboard";
 import MapPicker from "@/components/MapPicker";
 import { CategoryDonutChart, TripExpensesBarChart } from "@/components/ExpenseCharts";
 import { useUser, PlanDay } from "@/components/UserContext";
-import { mockDestinations } from "../data/mockData";
 import {
   Compass,
   Gift,
@@ -41,6 +41,7 @@ export default function Dashboard() {
     currentUser,
     profiles,
     switchProfile,
+    destinations,
     hiddenGems,
     blogs,
     reviews,
@@ -54,6 +55,7 @@ export default function Dashboard() {
     submitGem,
     approveGem,
     rejectGem,
+    addDestination,
     addReview,
     addBlog,
     completeTrip,
@@ -63,15 +65,66 @@ export default function Dashboard() {
     deleteReview,
     flagBlog,
     deleteBlog,
+    logout,
   } = useUser();
 
   const [activeTab, setActiveTab] = useState<"profile" | "wishlist" | "expenses" | "planner" | "addgem" | "admin">("profile");
 
   // Admin section sub-navigation states
-  const [adminSubTab, setAdminSubTab] = useState<"spots" | "reviews" | "blogs">("spots");
+  const [adminSubTab, setAdminSubTab] = useState<"spots" | "reviews" | "blogs" | "add_destination">("spots");
   const [activeRejectionGemId, setActiveRejectionGemId] = useState<string | null>(null);
   const [rejectionReasonText, setRejectionReasonText] = useState<{ [gemId: string]: string }>({});
   const [isAdminOverride, setIsAdminOverride] = useState(false);
+  
+  // Add Destination Form State
+  const [destTitle, setDestTitle] = useState("");
+  const [destDesc, setDestDesc] = useState("");
+  const [destLocation, setDestLocation] = useState("");
+  const [destState, setDestState] = useState("");
+  const [destCategory, setDestCategory] = useState("Hills");
+  const [destPhotoUrl, setDestPhotoUrl] = useState("");
+  const [destLat, setDestLat] = useState("");
+  const [destLng, setDestLng] = useState("");
+  const [destSuccess, setDestSuccess] = useState(false);
+  const [destError, setDestError] = useState("");
+  const [destLoading, setDestLoading] = useState(false);
+
+  const handleAddDestinationSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!destTitle || !destDesc || !destLocation || !destState || !destPhotoUrl) {
+      setDestError("Please fill in all fields.");
+      return;
+    }
+    setDestLoading(true);
+    setDestError("");
+    setDestSuccess(false);
+    try {
+      await addDestination({
+        title: destTitle,
+        description: destDesc,
+        location: destLocation,
+        state: destState,
+        category: destCategory,
+        photos: [destPhotoUrl],
+        geo: {
+          lat: Number(destLat) || 0,
+          lng: Number(destLng) || 0,
+        },
+      });
+      setDestSuccess(true);
+      setDestTitle("");
+      setDestDesc("");
+      setDestLocation("");
+      setDestState("");
+      setDestPhotoUrl("");
+      setDestLat("");
+      setDestLng("");
+    } catch (err: any) {
+      setDestError(err.message || "Failed to add destination.");
+    } finally {
+      setDestLoading(false);
+    }
+  };
 
   // Profile selector dropdown toggle
   const [showProfileDropdown, setShowProfileDropdown] = useState(false);
@@ -79,7 +132,7 @@ export default function Dashboard() {
   // Wishlist resolution helper
   // Load curations and gems matching saved wishlist IDs
   const resolvedWishlistItems = [
-    ...mockDestinations.map(d => ({ ...d, type: "official" as const })),
+    ...destinations.map(d => ({ ...d, type: "official" as const })),
     ...hiddenGems.map(g => ({ ...g, type: "gem" as const }))
   ].filter(item => wishlist.includes(item.id));
 
@@ -105,16 +158,56 @@ export default function Dashboard() {
 
   // AI Trip Planner Form State
   const [planRegion, setPlanRegion] = useState("Kerala");
-  const [planCategory, setPlanCategory] = useState("Hills");
+  const [planCategories, setPlanCategories] = useState<string[]>([]);
   const [planDays, setPlanDays] = useState(3);
   const [generatedItinerary, setGeneratedItinerary] = useState<PlanDay[]>([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Memoized unique region/state suggestions from destinations and approved gems
+  const allRegionSuggestions = useMemo(() => {
+    const list = new Set<string>();
+    destinations.forEach((d) => {
+      if (d.location) list.add(d.location.trim());
+      if (d.state) list.add(d.state.trim());
+    });
+    hiddenGems.forEach((g) => {
+      if (g.status === "approved") {
+        if (g.location) list.add(g.location.trim());
+        if (g.state) list.add(g.state.trim());
+      }
+    });
+    return Array.from(list).filter(Boolean);
+  }, [destinations, hiddenGems]);
+
+  const filteredSuggestions = useMemo(() => {
+    if (!planRegion.trim()) return [];
+    const searchVal = planRegion.toLowerCase();
+    return allRegionSuggestions
+      .filter(
+        (item) =>
+          item.toLowerCase().includes(searchVal) &&
+          item.toLowerCase() !== searchVal
+      )
+      .slice(0, 6);
+  }, [planRegion, allRegionSuggestions]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (suggestionsRef.current && !suggestionsRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   const handleGeneratePlan = (e: React.FormEvent) => {
     e.preventDefault();
     setIsGenerating(true);
     setTimeout(() => {
-      const plan = generateAILocalPlan(planRegion, planCategory, planDays);
+      const plan = generateAILocalPlan(planRegion, planCategories, planDays);
       setGeneratedItinerary(plan);
       setIsGenerating(false);
     }, 1500);
@@ -129,9 +222,19 @@ export default function Dashboard() {
   const [gemLat, setGemLat] = useState<number>(0);
   const [gemLng, setGemLng] = useState<number>(0);
   
-  // Image upload simulator state
-  const [uploadProgress, setUploadProgress] = useState<number>(-1);
+  // Image URL state and validation helper
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
+
+  const isValidImageUrl = (url: string) => {
+    const trimmed = url.trim();
+    const lower = trimmed.toLowerCase();
+    if (!lower.startsWith("http://") && !lower.startsWith("https://")) {
+      return false;
+    }
+    const cleanUrl = trimmed.split("?")[0].split("#")[0].toLowerCase();
+    const commonExtensions = [".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".svg"];
+    return commonExtensions.some(ext => cleanUrl.endsWith(ext));
+  };
 
   if (!currentUser) {
     return (
@@ -141,32 +244,10 @@ export default function Dashboard() {
     );
   }
 
-  const handleImageUploadSimulation = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Start progress simulation
-    setUploadProgress(0);
-    const interval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          // Convert file to Base64 to simulate Convex Storage
-          const reader = new FileReader();
-          reader.onloadend = () => {
-            setUploadedImageUrl(reader.result as string);
-          };
-          reader.readAsDataURL(file);
-          return 100;
-        }
-        return prev + 15;
-      });
-    }, 150);
-  };
-
   const handleAddGemSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!gemTitle || !gemLocName || !gemState || !gemDesc) return;
+    if (!gemTitle || !gemLocName || !gemState || !gemDesc || !uploadedImageUrl) return;
+    if (!isValidImageUrl(uploadedImageUrl)) return;
 
     submitGem({
       title: gemTitle,
@@ -174,7 +255,7 @@ export default function Dashboard() {
       location: gemLocName,
       state: gemState,
       category: gemCategory,
-      photos: [uploadedImageUrl || "https://images.unsplash.com/photo-1476514525535-07fb3b4ae5f1?auto=format&fit=crop&w=800&q=80"],
+      photo: uploadedImageUrl,
       geo: { lat: gemLat, lng: gemLng },
     });
 
@@ -186,11 +267,14 @@ export default function Dashboard() {
     setGemDesc("");
     setGemLat(0);
     setGemLng(0);
-    setUploadProgress(-1);
     setUploadedImageUrl("");
     
-    // Switch to Admin Queue tab to approve
-    setActiveTab("admin");
+    // Switch to appropriate tab
+    if (currentUser?.email === "230107anu@gmail.com") {
+      setActiveTab("admin");
+    } else {
+      setActiveTab("profile");
+    }
   };
 
   // Helper to color tier label
@@ -236,40 +320,7 @@ export default function Dashboard() {
         <div className="bg-[#1c3d27] text-white p-8 md:p-12 mb-10 border border-earth-clay/10 shadow-lg relative overflow-hidden">
           <div className="absolute inset-0 bg-[linear-gradient(to_right,rgba(255,255,255,0.02)_1px,transparent_1px),linear-gradient(to_bottom,rgba(255,255,255,0.02)_1px,transparent_1px)] bg-[size:24px_24px] pointer-events-none" />
 
-          {/* Profile Switcher dropdown */}
-          <div className="absolute top-4 right-4 z-30">
-            <div className="relative">
-              <button
-                onClick={() => setShowProfileDropdown(!showProfileDropdown)}
-                className="flex items-center space-x-2 bg-white/10 hover:bg-white/20 px-3 py-1.5 border border-white/20 text-xs font-bold uppercase tracking-widest cursor-pointer transition-all"
-              >
-                <UserCheck className="h-4 w-4 text-earth-saffron" />
-                <span>Simulate Convex Auth</span>
-              </button>
-              {showProfileDropdown && (
-                <div className="absolute right-0 mt-2 w-48 bg-white text-earth-charcoal border border-earth-clay/15 shadow-xl animate-in fade-in duration-200 z-50">
-                  <div className="p-2 border-b border-earth-clay/5 text-[9px] uppercase tracking-wider text-earth-clay font-bold font-sans">
-                    Log In As Profile:
-                  </div>
-                  {profiles.map((p) => (
-                    <button
-                      key={p.name}
-                      onClick={() => {
-                        switchProfile(p.name);
-                        setShowProfileDropdown(false);
-                      }}
-                      className={`w-full text-left px-4 py-2.5 text-xs font-semibold hover:bg-earth-sand flex items-center justify-between cursor-pointer ${
-                        currentUser.name === p.name ? "bg-earth-sand text-earth-terracotta" : ""
-                      }`}
-                    >
-                      <span>{p.name}</span>
-                      <span className="text-[9px] font-bold text-earth-clay/60 uppercase">{p.tier}</span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+
 
           <div className="flex flex-col md:flex-row items-center justify-between gap-8 pt-4 md:pt-0">
             <div className="flex flex-col md:flex-row items-center gap-6">
@@ -279,7 +330,7 @@ export default function Dashboard() {
               </div>
 
               <div className="space-y-2 text-center md:text-left">
-                <div className="flex flex-wrap items-center justify-center md:justify-start gap-2">
+                <div className="flex flex-wrap items-center justify-center md:justify-start gap-3">
                   <h1 className="font-serif text-3xl font-bold tracking-tight">
                     {currentUser.name}
                   </h1>
@@ -288,6 +339,12 @@ export default function Dashboard() {
                       <ShieldCheck className="h-6 w-6 text-blue-400 fill-[#1c3d27] shrink-0" />
                     </span>
                   )}
+                  <button
+                    onClick={() => logout()}
+                    className="ml-2 px-3 py-1 border border-white/20 bg-white/5 hover:bg-red-650 hover:border-red-650 text-white font-sans text-[10px] font-bold uppercase tracking-widest transition-all duration-200 rounded-none cursor-pointer"
+                  >
+                    Sign Out
+                  </button>
                 </div>
                 <p className="text-xs text-earth-sand/70 font-light max-w-md">
                   From {currentUser.homeTown} • {currentUser.bio}
@@ -330,7 +387,9 @@ export default function Dashboard() {
                 { id: "expenses", name: "Expense Visualizer", icon: Activity },
                 { id: "planner", name: "AI Local Planner", icon: Route },
                 { id: "addgem", name: "Add a Spot Discovery", icon: Plus },
-                { id: "admin", name: "Admin Mod sandbox", icon: Sparkles },
+                ...(currentUser?.email === "230107anu@gmail.com"
+                  ? [{ id: "admin", name: "Admin Mod sandbox", icon: Sparkles }]
+                  : []),
               ].map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -455,7 +514,7 @@ export default function Dashboard() {
                           className="bg-earth-sand/20 border border-earth-clay/10 flex flex-col justify-between hover:border-earth-terracotta/30 transition-all duration-300"
                         >
                           <div className="relative aspect-[16/10] overflow-hidden">
-                            <img src={item.photos[0]} alt={item.title} className="w-full h-full object-cover" />
+                            <img src={item.type === "official" ? item.photos?.[0] : item.photo} alt={item.title} className="w-full h-full object-cover" />
                             <span className="absolute top-4 left-4 bg-earth-sand text-earth-forest border border-earth-clay/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">
                               {item.category}
                             </span>
@@ -695,66 +754,114 @@ export default function Dashboard() {
                   </div>
 
                   {/* Settings planner form */}
-                  <form onSubmit={handleGeneratePlan} className="bg-earth-sand/15 border border-earth-clay/10 p-6 flex flex-col md:flex-row gap-4 items-end font-sans">
-                    <div className="flex-1 w-full space-y-1">
-                      <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
-                        Region / State
-                      </label>
-                      <select
-                        value={planRegion}
-                        onChange={(e) => setPlanRegion(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
-                      >
-                        <option value="Kerala">Kerala</option>
-                        <option value="Ladakh">Ladakh</option>
-                        <option value="Karnataka">Karnataka</option>
-                        <option value="Andhra Pradesh">Andhra Pradesh</option>
-                        <option value="Maharashtra">Maharashtra</option>
-                        <option value="Assam">Assam</option>
-                      </select>
+                  <form onSubmit={handleGeneratePlan} className="bg-earth-sand/15 border border-earth-clay/10 p-6 space-y-6 font-sans">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
+                      {/* Region/State/Place free-text input with Autocomplete */}
+                      <div ref={suggestionsRef} className="relative md:col-span-2 space-y-1">
+                        <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                          Region / State / Place
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={planRegion}
+                          onChange={(e) => {
+                            setPlanRegion(e.target.value);
+                            setShowSuggestions(true);
+                          }}
+                          onFocus={() => setShowSuggestions(true)}
+                          placeholder="e.g. Kerala, Ladakh, Jaipur, Paris..."
+                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none placeholder-earth-charcoal/40"
+                        />
+                        
+                        {/* Autocomplete Suggestions */}
+                        {showSuggestions && filteredSuggestions.length > 0 && (
+                          <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-earth-clay/20 shadow-lg max-h-48 overflow-y-auto">
+                            {filteredSuggestions.map((suggestion) => (
+                              <button
+                                key={suggestion}
+                                type="button"
+                                onClick={() => {
+                                  setPlanRegion(suggestion);
+                                  setShowSuggestions(false);
+                                }}
+                                className="w-full text-left px-3.5 py-2.5 text-xs hover:bg-earth-sand/30 text-earth-charcoal hover:text-earth-terracotta transition-colors border-b border-earth-clay/5 last:border-0 font-sans"
+                              >
+                                🗺️ {suggestion}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Flexible Duration Days input */}
+                      <div className="space-y-1">
+                        <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                          Duration (Days)
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          min={1}
+                          max={30}
+                          value={planDays}
+                          onChange={(e) => {
+                            const val = Number(e.target.value);
+                            setPlanDays(val > 0 ? val : 1);
+                          }}
+                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                        />
+                      </div>
                     </div>
 
-                    <div className="flex-1 w-full space-y-1">
+                    {/* Multi-select Category Tags */}
+                    <div className="space-y-2">
                       <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
-                        Category Vibe
+                        Category Vibes (Optional - select multiple)
                       </label>
-                      <select
-                        value={planCategory}
-                        onChange={(e) => setPlanCategory(e.target.value)}
-                        className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
-                      >
-                        <option value="Hills">Hills & Valleys</option>
-                        <option value="Beaches">Beaches & Coastlines</option>
-                        <option value="Heritage">Heritage & Temples</option>
-                        <option value="Wildlife">Wildlife & Jungles</option>
-                        <option value="Offbeat">Offbeat & Cliffs</option>
-                      </select>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { value: "Hills", label: "⛰️ Hills & Valleys" },
+                          { value: "Beaches", label: "🏖️ Beaches & Coasts" },
+                          { value: "Heritage", label: "🏰 Heritage & Forts" },
+                          { value: "Wildlife", label: "🦁 Wildlife & Jungles" },
+                          { value: "Offbeat", label: "💎 Community Gems" }
+                        ].map((cat) => {
+                          const isSelected = planCategories.includes(cat.value);
+                          return (
+                            <button
+                              key={cat.value}
+                              type="button"
+                              onClick={() => {
+                                if (isSelected) {
+                                  setPlanCategories(planCategories.filter((c) => c !== cat.value));
+                                } else {
+                                  setPlanCategories([...planCategories, cat.value]);
+                                }
+                              }}
+                              className={`px-3 py-2 text-xs transition-all border border-earth-clay/20 rounded-none cursor-pointer flex items-center gap-1.5 font-medium ${
+                                isSelected
+                                  ? "bg-earth-forest border-earth-forest text-white shadow-sm"
+                                  : "bg-white border-earth-clay/20 text-earth-charcoal/80 hover:border-earth-terracotta hover:text-earth-terracotta"
+                              }`}
+                            >
+                              {cat.label}
+                            </button>
+                          );
+                        })}
+                      </div>
                     </div>
 
-                    <div className="w-full md:w-28 space-y-1">
-                      <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
-                        Duration
-                      </label>
-                      <select
-                        value={planDays}
-                        onChange={(e) => setPlanDays(Number(e.target.value))}
-                        className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                    {/* Submit Button */}
+                    <div className="flex justify-end pt-2">
+                      <button
+                        type="submit"
+                        disabled={isGenerating}
+                        className="w-full md:w-auto px-8 py-3.5 bg-earth-terracotta hover:bg-earth-forest disabled:bg-earth-clay/40 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer shrink-0"
                       >
-                        {[1, 2, 3, 4, 5].map((d) => (
-                          <option key={d} value={d}>
-                            {d} {d === 1 ? "Day" : "Days"}
-                          </option>
-                        ))}
-                      </select>
+                        {isGenerating ? "Mapping Trails..." : "Generate AI Plan"}
+                      </button>
                     </div>
-
-                    <button
-                      type="submit"
-                      disabled={isGenerating}
-                      className="w-full md:w-auto px-6 py-3.5 bg-earth-terracotta hover:bg-earth-forest disabled:bg-earth-clay/40 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer shrink-0"
-                    >
-                      {isGenerating ? "Mapping Trails..." : "Generate AI Plan"}
-                    </button>
                   </form>
 
                   {/* Generated result */}
@@ -932,59 +1039,45 @@ export default function Dashboard() {
                       </div>
                     </div>
 
-                    {/* Image uploads to convex storage simulation */}
-                    <div className="space-y-2 border border-earth-clay/10 p-5 bg-earth-sand/5">
-                      <label className="block font-bold uppercase tracking-wider text-earth-charcoal text-[10px]">
-                        Upload Spot Photos (Simulates Convex Storage Upload)
-                      </label>
-                      <div className="flex items-center space-x-6">
-                        <label className="flex flex-col items-center justify-center h-20 w-24 border border-dashed border-earth-clay/30 bg-white hover:bg-earth-sand/20 cursor-pointer">
-                          <Upload className="h-6 w-6 text-earth-clay/60 mb-1" />
-                          <span className="text-[9px] font-semibold text-earth-clay">Choose Photo</span>
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUploadSimulation}
-                            className="hidden"
-                          />
+                    {/* Photo URL Input & Validation Preview */}
+                    <div className="space-y-3 border border-earth-clay/10 p-5 bg-earth-sand/5">
+                      <div className="space-y-1">
+                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal text-[10px]">
+                          Photo URL
                         </label>
-
-                        {/* Progress Bar & Image thumbnail previews */}
-                        <div className="flex-1 space-y-2">
-                          {uploadProgress >= 0 && (
-                            <div className="space-y-1">
-                              <div className="flex items-center justify-between text-[9px] font-semibold text-earth-clay">
-                                <span>Convex Storage Uploading...</span>
-                                <span>{uploadProgress}%</span>
-                              </div>
-                              <div className="w-full bg-earth-sand border border-earth-clay/10 h-2 overflow-hidden">
-                                <div
-                                  className="bg-earth-forest h-full transition-all duration-300"
-                                  style={{ width: `${uploadProgress}%` }}
-                                />
-                              </div>
-                            </div>
-                          )}
-
-                          {uploadedImageUrl && (
-                            <div className="flex items-center space-x-3 text-xs">
-                              <div className="h-12 w-16 overflow-hidden border border-earth-clay/10 shadow-sm shrink-0">
-                                <img
-                                  src={uploadedImageUrl}
-                                  alt="Preview upload"
-                                  className="w-full h-full object-cover"
-                                />
-                              </div>
-                              <div className="space-y-0.5">
-                                <span className="text-earth-forest font-bold block">✓ Convex Upload Successful</span>
-                                <span className="text-[8px] text-earth-clay/70 font-mono block truncate max-w-[200px]">
-                                  storage://{gemTitle.toLowerCase().replace(/\s+/g, "_") || "gem"}.png
-                                </span>
-                              </div>
-                            </div>
-                          )}
-                        </div>
+                        <input
+                          type="text"
+                          required
+                          value={uploadedImageUrl}
+                          onChange={(e) => setUploadedImageUrl(e.target.value)}
+                          placeholder="e.g., https://images.unsplash.com/photo-1626590212990-2e40026e6cb5?auto=format&fit=crop&w=800&q=80"
+                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none animate-none"
+                        />
                       </div>
+
+                      {/* Live Validation Warning */}
+                      {uploadedImageUrl && !isValidImageUrl(uploadedImageUrl) && (
+                        <p className="text-red-650 text-[10px] font-semibold animate-pulse">
+                          ⚠️ Please enter a valid image URL starting with http:// or https:// and ending in a common extension (.jpg, .jpeg, .png, .webp, .gif, .svg, .bmp).
+                        </p>
+                      )}
+
+                      {/* Live Image Preview */}
+                      {uploadedImageUrl && isValidImageUrl(uploadedImageUrl) && (
+                        <div className="space-y-1.5 animate-in fade-in duration-200">
+                          <span className="text-[10px] font-bold text-earth-forest uppercase tracking-wider block">✓ Image URL Validated</span>
+                          <div className="h-32 w-48 overflow-hidden border border-earth-clay/15 bg-white shadow-md relative">
+                            <img
+                              src={uploadedImageUrl}
+                              alt="Live spot preview"
+                              className="w-full h-full object-cover"
+                              onError={(e) => {
+                                e.currentTarget.style.display = "none";
+                              }}
+                            />
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     {/* Description */}
@@ -998,13 +1091,14 @@ export default function Dashboard() {
                         value={gemDesc}
                         onChange={(e) => setGemDesc(e.target.value)}
                         placeholder="Write details of how you stumbled upon this trail, points of entry, warnings, or seasonal instructions..."
-                        className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none resize-none"
+                        className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none resize-none animate-none"
                       />
                     </div>
 
                     <button
                       type="submit"
-                      className="w-full py-3 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer shadow-md"
+                      disabled={!gemTitle || !gemLocName || !gemState || !gemDesc || !uploadedImageUrl || !isValidImageUrl(uploadedImageUrl)}
+                      className="w-full py-3 bg-earth-forest hover:bg-earth-terracotta disabled:bg-earth-clay/30 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer shadow-md"
                     >
                       Submit Discovery Guide
                     </button>
@@ -1014,7 +1108,7 @@ export default function Dashboard() {
 
               {/* Admin Sandbox queue tab */}
               {activeTab === "admin" && (() => {
-                const isUserAdmin = currentUser.role === "admin" || isAdminOverride;
+                const isUserAdmin = currentUser?.email === "230107anu@gmail.com";
 
                 if (!isUserAdmin) {
                   return (
@@ -1025,25 +1119,11 @@ export default function Dashboard() {
                           Admin Authorization Required
                         </h3>
                         <p className="font-sans text-xs text-earth-charcoal/70 max-w-md mx-auto leading-relaxed">
-                          Moderation controls and database overrides are role-gated in Convex. You are currently logged in as <span className="font-bold">{currentUser.name}</span> (role: <span className="font-semibold text-earth-terracotta">user</span>).
+                          Moderation controls are restricted. You are currently logged in as <span className="font-bold">{currentUser.name}</span>.
                         </p>
-                      </div>
-                      
-                      <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-4">
-                        <button
-                          onClick={() => {
-                            switchProfile("Tenzing Norgay");
-                          }}
-                          className="px-5 py-2.5 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm rounded-none"
-                        >
-                          Switch to Admin Profile (Tenzing)
-                        </button>
-                        <button
-                          onClick={() => setIsAdminOverride(true)}
-                          className="px-5 py-2.5 border border-earth-clay/35 text-earth-charcoal hover:bg-earth-sand/30 font-sans text-xs font-bold uppercase tracking-wider transition-all cursor-pointer rounded-none"
-                        >
-                          Bypass Gate (Simulate Admin)
-                        </button>
+                        <p className="font-sans text-[11px] text-earth-charcoal/50 max-w-md mx-auto">
+                          Please sign in using the administrator email (230107anu@gmail.com).
+                        </p>
                       </div>
                     </div>
                   );
@@ -1087,6 +1167,7 @@ export default function Dashboard() {
                         { id: "spots", name: `Spot Discoveries (${pendingGems.length})` },
                         { id: "reviews", name: `Reviews (${reviews.length})` },
                         { id: "blogs", name: `Traveler Stories (${blogs.length})` },
+                        { id: "add_destination", name: "Add Official Destination" },
                       ].map((subTab) => {
                         const isActive = adminSubTab === subTab.id;
                         return (
@@ -1127,7 +1208,7 @@ export default function Dashboard() {
                                     <div className="flex flex-col md:flex-row gap-4 items-start">
                                       {/* Thumbnail */}
                                       <div className="h-20 w-32 overflow-hidden border border-earth-clay/10 bg-white shrink-0 shadow-sm">
-                                        <img src={g.photos[0]} alt={g.title} className="w-full h-full object-cover" />
+                                        <img src={g.photo} alt={g.title} className="w-full h-full object-cover" />
                                       </div>
 
                                       {/* Core Info */}
@@ -1389,6 +1470,41 @@ export default function Dashboard() {
                               No stories (blogs) found in the database.
                             </div>
                           )}
+                        </div>
+                      )}
+
+                      {/* Sub-tab: Add Official Destination */}
+                      {adminSubTab === "add_destination" && (
+                        <div className="space-y-6 bg-earth-sand/5 p-6 border border-earth-clay/10 animate-in fade-in duration-300">
+                          <div className="text-center py-12 space-y-6 max-w-lg mx-auto">
+                            <div className="p-3 bg-earth-terracotta/5 border border-earth-terracotta/10 text-earth-terracotta inline-block rounded-full">
+                              <Sparkles className="h-8 w-8 text-earth-terracotta" />
+                            </div>
+                            <h4 className="font-serif text-lg font-bold text-earth-forest">
+                              Official Chronicles Portal
+                            </h4>
+                            <p className="text-xs text-earth-charcoal/60 leading-relaxed font-light">
+                              The official travel guide curation tools support full photo galleries, interactive visual coordinates mapping, seasonal best times, how to reach guidelines, and local tips.
+                            </p>
+                            <p className="text-xs font-semibold text-earth-clay/80">
+                              Choose an administrative task below:
+                            </p>
+                            <div className="flex flex-col sm:flex-row gap-4 justify-center pt-2">
+                              <Link
+                                href="/admin/destinations/new"
+                                className="flex-1 inline-flex items-center justify-center space-x-2 px-5 py-3 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest transition-all shadow-sm rounded-none cursor-pointer"
+                              >
+                                <span>Publish New Chronicle</span>
+                              </Link>
+                              
+                              <Link
+                                href="/admin/destinations"
+                                className="flex-1 inline-flex items-center justify-center space-x-2 px-5 py-3 border border-earth-clay/20 hover:border-earth-charcoal bg-white text-earth-charcoal/80 hover:text-earth-charcoal font-sans text-xs font-bold uppercase tracking-widest transition-all shadow-sm rounded-none cursor-pointer"
+                              >
+                                <span>Manage & Edit Chronicles</span>
+                              </Link>
+                            </div>
+                          </div>
                         </div>
                       )}
                     </div>

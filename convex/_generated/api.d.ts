@@ -10,7 +10,9 @@
 
 import type * as auth from "../auth.js";
 import type * as blogs from "../blogs.js";
+import type * as destinations from "../destinations.js";
 import type * as gems from "../gems.js";
+import type * as http from "../http.js";
 import type * as reviews from "../reviews.js";
 import type * as seed from "../seed.js";
 import type * as users from "../users.js";
@@ -24,7 +26,9 @@ import type {
 declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   blogs: typeof blogs;
+  destinations: typeof destinations;
   gems: typeof gems;
+  http: typeof http;
   reviews: typeof reviews;
   seed: typeof seed;
   users: typeof users;

@@ -9,15 +9,20 @@ import { useUser } from "./UserContext";
 export default function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
-  const { currentUser, isAuthenticated, isLoading, logout } = useUser();
+  const { currentUser, isAuthenticated, isLoading, logout, leaderboard } = useUser();
 
-  const isDashboard = pathname === "/dashboard";
+  const userInLeaderboard = leaderboard?.find(
+    (u) => u.isCurrentUser || u.name === currentUser?.name
+  );
+  const currentUserRank = userInLeaderboard?.rank || "-";
+
+  const isHome = pathname === "/";
 
   const navItems = [
-    { name: "Destinations", href: isDashboard ? "/#destinations" : "#destinations" },
-    { name: "Hidden Gems", href: isDashboard ? "/#hidden-gems" : "#hidden-gems" },
-    { name: "Traveler Stories", href: isDashboard ? "/#stories" : "#stories" },
-    { name: "Leaderboard", href: isDashboard ? "/#leaderboard" : "#leaderboard" },
+    { name: "Destinations", href: isHome ? "#destinations" : "/destinations" },
+    { name: "Hidden Gems", href: isHome ? "#hidden-gems" : "/hidden-gems" },
+    { name: "Traveler Stories", href: isHome ? "#stories" : "/#stories" },
+    { name: "Leaderboard", href: isHome ? "#leaderboard" : "/#leaderboard" },
   ];
 
   // Helper to render mini tier badge
@@ -76,49 +81,43 @@ export default function Navbar() {
               <div className="h-8 w-24 bg-earth-clay/10 animate-pulse rounded-none" />
             ) : isAuthenticated && currentUser ? (
               <>
-                {/* User status card / Toggle Dashboard */}
-                <Link
-                  href={isDashboard ? "/" : "/dashboard"}
-                  className="flex items-center space-x-3 p-1.5 px-3 border border-earth-clay/25 bg-white hover:border-earth-terracotta/40 hover:bg-earth-sand/20 transition-all duration-200 group"
+                {/* User status card */}
+                <div
+                  className="flex items-center space-x-3 p-1.5 px-3 border border-earth-clay/20 bg-white shadow-sm"
                 >
                   {/* Avatar Circle */}
-                  <div className="h-7 w-7 rounded-full bg-earth-terracotta/15 flex items-center justify-center font-bold text-[10px] text-earth-terracotta font-sans border border-earth-terracotta/25 group-hover:bg-earth-terracotta group-hover:text-white transition-all duration-200">
+                  <div className="h-8 w-8 rounded-full bg-earth-terracotta/10 flex items-center justify-center font-bold text-xs text-earth-terracotta font-sans border border-earth-terracotta/20 shrink-0">
                     {currentUser.avatar}
                   </div>
                   
                   <div className="flex flex-col">
                     <div className="flex items-center space-x-1">
-                      <span className="font-sans text-[11px] font-bold text-earth-charcoal group-hover:text-earth-terracotta transition-colors">
+                      <span className="font-sans text-xs font-bold text-earth-charcoal">
                         {currentUser.name}
                       </span>
                       {currentUser.isVerified && (
                         <ShieldCheck className="h-3 w-3 text-blue-500 fill-blue-50 shrink-0" />
                       )}
                     </div>
-                    <div className="flex items-center space-x-1.5 leading-none">
+                    <div className="flex items-center space-x-2 leading-none mt-0.5">
                       {renderMiniTierBadge(currentUser.tier)}
-                      <span className="text-[10px] text-earth-terracotta font-bold">
+                      <span className="text-[10px] text-earth-terracotta font-bold shrink-0">
                         {currentUser.points} PTS
+                      </span>
+                      <span className="text-[10px] text-earth-forest font-bold shrink-0">
+                        Rank #{currentUserRank}
                       </span>
                     </div>
                   </div>
-                </Link>
+                </div>
 
-                {/* Dashboard Navigation Action */}
+                {/* Dashboard Button */}
                 <Link
-                  href={isDashboard ? "/" : "/dashboard"}
-                  className="px-4 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest transition-all duration-200 rounded-none"
+                  href="/dashboard"
+                  className="px-4 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest transition-all duration-200 rounded-none text-center"
                 >
-                  {isDashboard ? "View Site" : "Dashboard"}
+                  Dashboard
                 </Link>
-
-                {/* Sign Out Button */}
-                <button
-                  onClick={() => logout()}
-                  className="px-4 py-2 border border-earth-clay/35 hover:border-red-500 hover:text-red-500 text-earth-charcoal font-sans text-xs font-bold uppercase tracking-widest transition-all duration-200 rounded-none cursor-pointer"
-                >
-                  Sign Out
-                </button>
               </>
             ) : (
               <>
@@ -182,28 +181,20 @@ export default function Navbar() {
                           <ShieldCheck className="h-3 w-3 text-blue-500 fill-blue-50 shrink-0" />
                         )}
                       </div>
-                      <div className="flex items-center space-x-1.5">
+                      <div className="flex items-center space-x-2">
                         {renderMiniTierBadge(currentUser.tier)}
                         <span className="text-[10px] text-earth-terracotta font-bold">{currentUser.points} PTS</span>
+                        <span className="text-[10px] text-earth-forest font-bold">Rank #{currentUserRank}</span>
                       </div>
                     </div>
                   </div>
                   <Link
-                    href={isDashboard ? "/" : "/dashboard"}
+                    href="/dashboard"
                     onClick={() => setIsOpen(false)}
                     className="flex items-center justify-center w-full px-5 py-3 rounded-none bg-earth-forest text-white font-sans text-xs font-semibold uppercase tracking-widest hover:bg-earth-terracotta transition-all duration-200"
                   >
-                    {isDashboard ? "Return to Site" : "Go to Dashboard"}
+                    Dashboard
                   </Link>
-                  <button
-                    onClick={() => {
-                      setIsOpen(false);
-                      logout();
-                    }}
-                    className="flex items-center justify-center w-full px-5 py-3 border border-red-200 text-red-650 hover:bg-red-50 font-sans text-xs font-semibold uppercase tracking-widest transition-all duration-250 cursor-pointer"
-                  >
-                    Sign Out
-                  </button>
                 </>
               ) : (
                 <>

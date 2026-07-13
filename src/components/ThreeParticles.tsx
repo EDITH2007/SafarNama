@@ -83,7 +83,10 @@ export default function ThreeParticles() {
         ctx.fillRect(0, 0, size, size);
       }
 
-      return new THREE.CanvasTexture(textureCanvas);
+      const texture = new THREE.CanvasTexture(textureCanvas);
+      texture.flipY = false;
+      texture.premultiplyAlpha = false;
+      return texture;
     };
 
     const texture = createCircleTexture();

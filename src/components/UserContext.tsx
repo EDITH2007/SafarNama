@@ -1,6 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect, useMemo } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { useAuthActions, useConvexAuth } from "@convex-dev/auth/react";
 import { api } from "../../convex/_generated/api";
@@ -11,12 +11,9 @@ import {
   Journey,
   LeaderboardUser,
   POINTS,
-  getTier,
-  mockHiddenGems,
   mockBlogs,
   mockReviews,
   mockJourneys,
-  mockDestinations,
   Destination,
 } from "../app/data/mockData";
 
@@ -30,6 +27,7 @@ export interface PointsLedgerEntry {
 export interface UserProfile {
   id?: string;
   name: string;
+  email?: string;
   points: number;
   tier: "Bronze" | "Silver" | "Gold";
   isVerified: boolean;
@@ -61,6 +59,7 @@ interface UserContextType {
   currentUser: UserProfile | null;
   profiles: UserProfile[];
   switchProfile: (name: string) => void;
+  destinations: Destination[];
   hiddenGems: HiddenGem[];
   blogs: Blog[];
   reviews: Review[];
@@ -72,10 +71,24 @@ interface UserContextType {
   isWishlisted: (id: string) => boolean;
   expenses: Expense[];
   addExpense: (tripId: string, amount: number, category: Expense["category"], description: string) => void;
-  generateAILocalPlan: (location: string, category: string, days: number) => PlanDay[];
-  submitGem: (gem: Omit<HiddenGem, "id" | "submittedBy" | "submitterTier" | "submitterVerified" | "pointsAwarded" | "createdAt" | "status">) => void;
-  approveGem: (gemId: string) => void;
-  rejectGem: (gemId: string, reason?: string) => void;
+  generateAILocalPlan: (location: string, categories: string[], days: number) => PlanDay[];
+  submitGem: (gem: Omit<HiddenGem, "id" | "submittedBy" | "submitterTier" | "submitterVerified" | "pointsAwarded" | "createdAt" | "status">) => Promise<void>;
+  approveGem: (gemId: string) => Promise<void>;
+  rejectGem: (gemId: string, reason?: string) => Promise<void>;
+  addDestination: (dest: {
+    title: string;
+    description: string;
+    location: string;
+    state: string;
+    geo: { lat: number; lng: number };
+    photos: string[];
+    category: string;
+    bestTimeToVisit?: string;
+    howToReach?: string;
+    nearbyAttractions?: string[];
+    tips?: string[];
+    photoGallery?: string[];
+  }) => Promise<void>;
   addReview: (review: Omit<Review, "id" | "author" | "authorTier" | "authorVerified" | "date">) => void;
   addBlog: (blog: Omit<Blog, "id" | "author" | "authorTier" | "authorVerified" | "date">) => void;
   completeTrip: (journeyId: string) => void;
@@ -90,64 +103,63 @@ interface UserContextType {
   logout: () => Promise<void>;
 }
 
-const UserContext = createContext<UserContextType | undefined>(undefined);
+const PLACEHOLDER_USER: UserProfile = {
+  id: "loading",
+  name: "Loading...",
+  points: 0,
+  tier: "Bronze",
+  isVerified: false,
+  avatar: "L",
+  bio: "Loading user profile...",
+  homeTown: "SafarNama",
+  role: "user",
+};
 
-const AVAILABLE_PROFILES: UserProfile[] = [
-  {
-    name: "Sneha Gupta",
-    points: 180,
-    tier: "Bronze",
-    isVerified: false,
-    avatar: "SG",
-    bio: "Passionate wanderer exploring the offbeat trails of Southern India. Always searching for the next secret beach.",
-    homeTown: "Bengaluru, Karnataka",
-    role: "user",
-  },
-  {
-    name: "Priya Patel",
-    points: 1050,
-    tier: "Silver",
-    isVerified: true,
-    avatar: "PP",
-    bio: "Climbing high mountain passes and capturing hidden trails across Ladakh and Himachal. Local legend in high-altitude planning.",
-    homeTown: "Manali, Himachal Pradesh",
-    role: "user",
-  },
-  {
-    name: "Tenzing Norgay",
-    points: 2600,
-    tier: "Gold",
-    isVerified: true,
-    avatar: "TN",
-    bio: "Pioneering high-altitude routes and cave monasteries in the Zanskar range. Certified safety guide and local elder.",
-    homeTown: "Leh, Ladakh",
-    role: "admin",
-  },
-  {
-    name: "Aarav Sharma",
-    points: 1200,
-    tier: "Silver",
-    isVerified: false,
-    avatar: "AS",
-    bio: "Exploring heritage sites, ancient ruins, and local street eats in Karnataka and Andhra Pradesh.",
-    homeTown: "Hampi, Karnataka",
-    role: "user",
-  }
+const EMPTY_ARRAY: never[] = [];
+
+const MOCK_POINTS_LEDGER: PointsLedgerEntry[] = [
+  { id: "1", action: "SafarNama Welcoming Gift", points: 50, date: "June 15, 2026" },
+  { id: "2", action: "Written Review: Munnar Tea Hills", points: 30, date: "June 25, 2026" },
+  { id: "3", action: "Completed Journey: Coastal Gokarna Trek", points: 50, date: "July 02, 2026" },
+  { id: "4", action: "Logged trip expenses to Munnar", points: 50, date: "July 08, 2026" },
 ];
+
+const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const { signOut } = useAuthActions();
+  
+  // Queries
   const viewer = useQuery(api.users.viewer);
-
-  const awardPointsMutation = useMutation(api.users.awardPoints);
-  const toggleVerificationMutation = useMutation(api.users.toggleVerification);
   const dbPointsLedger = useQuery(api.users.getPointsLedger);
   const rawLeaderboard = useQuery(api.users.getLeaderboard);
-  const dbLeaderboard = rawLeaderboard || [];
+  const dbLeaderboard = rawLeaderboard || EMPTY_ARRAY;
   
-  const seedDatabase = useMutation(api.seed.seedDatabase);
+  const dbDestinations = useQuery(api.destinations.getDestinations);
+  const destinations = dbDestinations || EMPTY_ARRAY;
 
+  const dbApprovedGems = useQuery(api.gems.getApprovedGems);
+  const approvedGems = dbApprovedGems || EMPTY_ARRAY;
+
+  const isLocalAdmin = viewer?.role === "admin";
+  const dbPendingGems = useQuery(api.gems.getPendingGems, isLocalAdmin ? {} : "skip");
+  const pendingGems = dbPendingGems || EMPTY_ARRAY;
+
+  // Mutations
+  const awardPointsMutation = useMutation(api.users.awardPoints);
+  const toggleVerificationMutation = useMutation(api.users.toggleVerification);
+  const seedDatabase = useMutation(api.seed.seedDatabase);
+  
+  const submitGemMutation = useMutation(api.gems.submitGem);
+  const approveGemMutation = useMutation(api.gems.approveGem);
+  const rejectGemMutation = useMutation(api.gems.rejectGem);
+  const addDestinationMutation = useMutation(api.destinations.addDestination);
+  
+  const ensureAdminStatusMutation = useMutation(api.users.ensureAdminStatus);
+  const removeFakeUsersMutation = useMutation(api.users.removeFakeUsers);
+
+  // Auto-seed if database is empty
   useEffect(() => {
     if (rawLeaderboard !== undefined && rawLeaderboard.length === 0) {
       seedDatabase().catch((err) => {
@@ -156,52 +168,57 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, [rawLeaderboard, seedDatabase]);
 
-  const placeholderUser: UserProfile = {
-    id: "loading",
-    name: "Loading...",
-    points: 0,
-    tier: "Bronze",
-    isVerified: false,
-    avatar: "L",
-    bio: "Loading user profile...",
-    homeTown: "SafarNama",
-    role: "user",
-  };
+  // Run admin promotion and fake user cleanup on login
+  useEffect(() => {
+    if (isAuthenticated && viewer) {
+      ensureAdminStatusMutation().catch(console.error);
+      removeFakeUsersMutation().catch(console.error);
+    }
+  }, [isAuthenticated, viewer, ensureAdminStatusMutation, removeFakeUsersMutation]);
 
-  const currentUser: UserProfile | null = viewer
-    ? {
-        id: viewer._id,
-        name: viewer.name || viewer.email?.split("@")[0] || "Traveler",
-        points: viewer.totalPoints ?? 0,
-        tier: (viewer.tier || "Bronze") as "Bronze" | "Silver" | "Gold",
-        isVerified: viewer.isVerified ?? false,
-        avatar: (viewer.name || viewer.email || "TR")
-          .split(" ")
-          .map((n) => n[0])
-          .join("")
-          .substring(0, 2)
-          .toUpperCase(),
-        bio: viewer.bio || "Wanderer",
-        homeTown: viewer.homeTown || "Unknown",
-        role: (viewer.role || "user") as "user" | "admin",
-      }
-    : isLoading
-    ? placeholderUser
-    : null;
+  const currentUser: UserProfile | null = useMemo(() => {
+    return viewer
+      ? {
+          id: viewer._id,
+          name: viewer.name || viewer.email?.split("@")[0] || "Traveler",
+          email: viewer.email,
+          points: viewer.totalPoints ?? 0,
+          tier: (viewer.tier || "Bronze") as "Bronze" | "Silver" | "Gold",
+          isVerified: viewer.isVerified ?? false,
+          avatar: (viewer.name || viewer.email || "TR")
+            .split(" ")
+            .map((n) => n[0])
+            .join("")
+            .substring(0, 2)
+            .toUpperCase(),
+          bio: viewer.bio || "Wanderer",
+          homeTown: viewer.homeTown || "Unknown",
+          role: (viewer.role || "user") as "user" | "admin",
+        }
+      : isLoading
+      ? PLACEHOLDER_USER
+      : null;
+  }, [viewer, isLoading]);
 
-  const profiles: UserProfile[] = dbLeaderboard.map((u) => ({
-    id: u.id,
-    name: u.name,
-    points: u.points,
-    tier: u.tier,
-    isVerified: u.isVerified,
-    avatar: u.name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase(),
-    bio: "Explorer profile on SafarNama",
-    homeTown: "India",
-    role: "user",
-  }));
+  const profiles: UserProfile[] = useMemo(() => {
+    return dbLeaderboard.map((u) => ({
+      id: u.id,
+      name: u.name,
+      points: u.points,
+      tier: u.tier,
+      isVerified: u.isVerified,
+      avatar: u.name.split(" ").map((n) => n[0]).join("").substring(0, 2).toUpperCase(),
+      bio: "Explorer profile on SafarNama",
+      homeTown: "India",
+      role: "user",
+    }));
+  }, [dbLeaderboard]);
 
-  const [hiddenGems, setHiddenGems] = useState<HiddenGem[]>(mockHiddenGems);
+  // Combine approved gems with pending ones if admin
+  const hiddenGems: HiddenGem[] = (currentUser?.role === "admin" 
+    ? [...approvedGems, ...pendingGems] 
+    : approvedGems) as HiddenGem[];
+
   const [blogs, setBlogs] = useState<Blog[]>(mockBlogs);
   const [reviews, setReviews] = useState<Review[]>(mockReviews);
   const [journeys, setJourneys] = useState<Journey[]>(mockJourneys);
@@ -251,42 +268,35 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   ]);
 
-  const pointsLedger: PointsLedgerEntry[] = dbPointsLedger
-    ? dbPointsLedger.map((entry) => ({
-        id: entry._id,
-        action: entry.actionType === "submit_gem" ? "Submit Gem" :
-                entry.actionType === "gem_approved" ? `Approved Hidden Gem: ${entry.referenceId || ""}` :
-                entry.actionType === "review" ? "Written Review" :
-                entry.actionType === "blog" ? "Published Story" : entry.actionType,
-        points: entry.pointsEarned,
-        date: new Date(entry.timestamp).toLocaleDateString("en-US", {
-          month: "short",
-          day: "numeric",
-          year: "numeric",
-        }),
-      }))
-    : [
-        { id: "1", action: "SafarNama Welcoming Gift", points: 50, date: "June 15, 2026" },
-        { id: "2", action: "Written Review: Munnar Tea Hills", points: 30, date: "June 25, 2026" },
-        { id: "3", action: "Completed Journey: Coastal Gokarna Trek", points: 50, date: "July 02, 2026" },
-        { id: "4", action: "Logged trip expenses to Munnar", points: 50, date: "July 08, 2026" },
-      ];
+  const pointsLedger: PointsLedgerEntry[] = useMemo(() => {
+    return dbPointsLedger
+      ? dbPointsLedger.map((entry) => ({
+          id: entry._id,
+          action: entry.actionType === "submit_gem" ? "Submit Gem" :
+                  entry.actionType === "gem_approved" ? `Approved Hidden Gem: ${entry.referenceId || ""}` :
+                  entry.actionType === "review" ? "Written Review" :
+                  entry.actionType === "blog" ? "Published Story" : entry.actionType,
+          points: entry.pointsEarned,
+          date: new Date(entry.timestamp).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          }),
+        }))
+      : MOCK_POINTS_LEDGER;
+  }, [dbPointsLedger]);
 
   // Recalculate leaderboard dynamically
-  const [leaderboard, setLeaderboard] = useState<LeaderboardUser[]>([]);
-
-  useEffect(() => {
-    if (dbLeaderboard && dbLeaderboard.length > 0) {
-      const ranked = dbLeaderboard.map((user, index) => ({
-        rank: index + 1,
-        name: user.name,
-        tier: user.tier,
-        points: user.points,
-        isVerified: user.isVerified,
-        isCurrentUser: currentUser ? user.name === currentUser.name : false,
-      }));
-      setLeaderboard(ranked);
-    }
+  const leaderboard = useMemo<LeaderboardUser[]>(() => {
+    if (!dbLeaderboard || dbLeaderboard.length === 0) return [];
+    return dbLeaderboard.map((user, index) => ({
+      rank: index + 1,
+      name: user.name,
+      tier: user.tier,
+      points: user.points,
+      isVerified: user.isVerified,
+      isCurrentUser: currentUser ? user.name === currentUser.name : false,
+    }));
   }, [dbLeaderboard, currentUser]);
 
   // Sync profile tiers when points change
@@ -314,6 +324,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     await signOut();
+    window.location.href = "/";
   };
 
   // Wishlist Actions
@@ -344,37 +355,140 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   // AI Planner (Local Recommendation First)
-  const generateAILocalPlan = (location: string, category: string, days: number): PlanDay[] => {
-    // 1. Scan our Destinations and Hidden Gems matching location or category
-    const locLower = location.toLowerCase();
-    const catLower = category.toLowerCase();
+  const generateAILocalPlan = (location: string, categories: string[], days: number): PlanDay[] => {
+    // 1. Scan our Destinations and Hidden Gems matching location
+    const locLower = location.toLowerCase().trim();
 
-    // Filter local destinations
-    const matchedDestinations = mockDestinations.filter(
+    // Filter destinations by location or state
+    const matchedDestinations = destinations.filter(
       (d) =>
         d.location.toLowerCase().includes(locLower) ||
-        d.state.toLowerCase().includes(locLower) ||
-        d.category.toLowerCase().includes(catLower)
+        d.state.toLowerCase().includes(locLower)
     );
 
-    // Filter local hidden gems (approved only)
+    // Filter hidden gems by location or state (approved only)
     const matchedGems = hiddenGems.filter(
       (g) =>
         g.status === "approved" &&
         (g.location.toLowerCase().includes(locLower) ||
-          g.state.toLowerCase().includes(locLower) ||
-          g.category.toLowerCase().includes(catLower))
+          g.state.toLowerCase().includes(locLower))
     );
+
+    // Prioritize destinations and gems that match the selected categories
+    let prioritizedDestinations = matchedDestinations;
+    let prioritizedGems = matchedGems;
+
+    if (categories && categories.length > 0) {
+      const catLowers = categories.map((c) => c.toLowerCase());
+      
+      const categoryDests = matchedDestinations.filter((d) =>
+        catLowers.includes(d.category.toLowerCase())
+      );
+      const otherDests = matchedDestinations.filter((d) =>
+        !catLowers.includes(d.category.toLowerCase())
+      );
+      prioritizedDestinations = [...categoryDests, ...otherDests];
+
+      const categoryGems = matchedGems.filter((g) =>
+        catLowers.includes(g.category.toLowerCase())
+      );
+      const otherGems = matchedGems.filter((g) =>
+        !catLowers.includes(g.category.toLowerCase())
+      );
+      prioritizedGems = [...categoryGems, ...otherGems];
+    }
 
     const plan: PlanDay[] = [];
     let destIndex = 0;
     let gemIndex = 0;
 
+    // Define fallback AI generation templates
+    const fallbackTemplates: Record<string, { titles: string[]; descs: string[] }> = {
+      hills: {
+        titles: ["Mist-Covered Ridge Hike", "Scenic Valley Lookout", "Lush Mountain Estate Walk", "High-Altitude Peak Panorama"],
+        descs: [
+          "Embark on a refreshing morning hike to a local ridge in {location} to witness a breathtaking sunrise above the valley gorges.",
+          "Take a scenic drive through the high passes of {location}, stopping by panoramic viewpoints of rolling hills and valleys.",
+          "Stroll through regional coffee or tea plantations, learning about the local hill agriculture and enjoying a fresh brew.",
+          "Hike to a quiet mountain summit in the outskirts of {location}, enjoying a bird's-eye view of the surrounding peaks."
+        ]
+      },
+      beaches: {
+        titles: ["Golden Sand Coastline Walk", "Secret Cove Exploration", "Oceanfront Cliff Viewpoint", "Coastal Seafood Trail"],
+        descs: [
+          "Spend a relaxing morning walking along the warm sandy shores of {location}, watching local wooden fishing boats navigate the waves.",
+          "Discover a quiet, sheltered beach cove hidden from the main tracks in {location}, perfect for sunbathing and swimming.",
+          "Climb up the coastal headland paths of {location} to view the infinite ocean expanse as waves crash against the rocks below.",
+          "Explore the coastal shacks and local markets of {location}, sampling fresh traditional seafood catches and coconut water."
+        ]
+      },
+      heritage: {
+        titles: ["Ancient Stone Temple Ruins", "Historical Fort & Monument Trail", "Old Town Heritage Architecture Walk", "Cultural Museum & Craft Bazaar"],
+        descs: [
+          "Explore the beautifully carved stone temples and ruins in {location}, learning about the ancient history and local legends.",
+          "Wander through a massive historical fortress of {location}, exploring its old barracks, grand gates, and watchtowers.",
+          "Walk down the historical lanes of {location}, observing preserved heritage houses and traditional regional architecture.",
+          "Visit a local folk museum or artisan center in {location} to see standard handloom textiles, woodcrafts, and classical arts."
+        ]
+      },
+      wildlife: {
+        titles: ["Eco-Reserve Jungle Safari", "Morning Wetland Bird-Watching", "River Estuary Eco-Cruise", "Canopy Walk Nature Trail"],
+        descs: [
+          "Take a guided open-jeep tour through the nature reserve in {location} to spot endemic regional wildlife and bird species.",
+          "Wake up early for a guided bird-watching walk along the scenic marshes and forest edges of {location}, identifying rare species.",
+          "Take a boat cruise down a tranquil river delta or lake in {location} to see migratory birds and riverside fauna.",
+          "Hike a lush forest trail in the outskirts of {location}, learning about local plant species and environmental protection efforts."
+        ]
+      },
+      offbeat: {
+        titles: ["Secret Waterfall Forest Trek", "Ancient Hidden Caves Discovery", "Remote Outpost Homestay Walk", "Lesser-Known Village Trail"],
+        descs: [
+          "Follow a hidden trail through dense forest to a secret waterfall in {location}, enjoying a dip in pristine natural waters.",
+          "Discover ancient limestone or rock-cut caves tucked away in the countryside of {location}, guided by local folklore.",
+          "Visit a remote, traditional settlement in the outskirts of {location} to experience authentic hospitality and a local home-cooked meal.",
+          "Explore a serene offbeat trail near {location} that remains completely untouched by modern commercial tourism."
+        ]
+      }
+    };
+
+    const defaultTemplates = {
+      titles: ["Local Town Center Orientation", "Scenic Regional Vantage Point", "Traditional Heritage Discovery", "Hidden Countryside Trail", "Artisan Market & Spice Walk", "Forest Nature Hike", "Sunset Ridge Farewell"],
+      descs: [
+        "Orient yourself with a relaxed walk through the town center of {location}, checking out local street food and shops.",
+        "Travel to the highest scenic viewpoint around {location} to capture stunning panoramic photos of the landscape.",
+        "Explore local monuments and heritage landmarks of {location}, uncovering the cultural history of the area.",
+        "Take a peaceful stroll along a lesser-known path in the outskirts of {location}, visiting quiet streams and meadows.",
+        "Visit the bustling local market of {location} to see traditional handloom works, spices, and regional crafts.",
+        "Take a guided walk through local woods or botanical paths in {location}, appreciating the regional plants and birds.",
+        "End the trip with an early evening trek to a scenic ridge in {location} to witness the sunset before departure."
+      ]
+    };
+
+    // Build template pool based on selected categories
+    let activeTitles: string[] = [];
+    let activeDescs: string[] = [];
+
+    if (categories && categories.length > 0) {
+      categories
+        .map((c) => c.toLowerCase())
+        .forEach((cat) => {
+          if (fallbackTemplates[cat]) {
+            activeTitles = [...activeTitles, ...fallbackTemplates[cat].titles];
+            activeDescs = [...activeDescs, ...fallbackTemplates[cat].descs];
+          }
+        });
+    }
+
+    if (activeTitles.length === 0) {
+      activeTitles = defaultTemplates.titles;
+      activeDescs = defaultTemplates.descs;
+    }
+
     // Day-by-day routing
     for (let day = 1; day <= days; day++) {
       // Prioritize putting official destinations on odd days, hidden gems on even days
-      if (day % 2 !== 0 && destIndex < matchedDestinations.length) {
-        const dest = matchedDestinations[destIndex++];
+      if (day % 2 !== 0 && destIndex < prioritizedDestinations.length) {
+        const dest = prioritizedDestinations[destIndex++];
         plan.push({
           day,
           title: `Explore ${dest.title}`,
@@ -383,8 +497,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           sourceName: dest.title,
           sourceType: "official",
         });
-      } else if (gemIndex < matchedGems.length) {
-        const gem = matchedGems[gemIndex++];
+      } else if (gemIndex < prioritizedGems.length) {
+        const gem = prioritizedGems[gemIndex++];
         plan.push({
           day,
           title: `Discover ${gem.title} (Local Discovery)`,
@@ -393,8 +507,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           sourceName: gem.title,
           sourceType: "gem",
         });
-      } else if (destIndex < matchedDestinations.length) {
-        const dest = matchedDestinations[destIndex++];
+      } else if (destIndex < prioritizedDestinations.length) {
+        const dest = prioritizedDestinations[destIndex++];
         plan.push({
           day,
           title: `Visit ${dest.title}`,
@@ -404,32 +518,18 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           sourceType: "official",
         });
       } else {
-        // Fallback to generic AI generation if database runs dry
-        const fallbackOptions = [
-          {
-            title: "Scenic Vantage Trek",
-            desc: "Embark on an early morning hike to the local ridge to see sunrise over the valley gorges, popular among local villagers.",
-            loc: `${location} Outskirts`,
-          },
-          {
-            title: "Traditional Craft & Spice Market Walk",
-            desc: "Wander the old local markets, interacting with native handloom artisans and exploring traditional regional kitchens.",
-            loc: `${location} Town Center`,
-          },
-          {
-            title: "Local Secret Meadow Rest",
-            desc: "Relax by the crystal clear stream running through the pine valleys, ideal for a quiet afternoon picnic.",
-            loc: `Rural ${location}`,
-          }
-        ];
-        
-        const fallback = fallbackOptions[(day - 1) % fallbackOptions.length];
-        
+        // Fallback to dynamic AI generation if database runs dry / has no matches
+        const templateIndex = (day - 1) % activeTitles.length;
+        const rawTitle = activeTitles[templateIndex];
+        const rawDesc = activeDescs[templateIndex];
+
+        const displayLocation = location.trim() ? location : "Destination";
+
         plan.push({
           day,
-          title: fallback.title,
-          description: `${fallback.desc} (Constructed via SafarNama regional search)`,
-          location: fallback.loc,
+          title: rawTitle.replace(/{location}/g, displayLocation),
+          description: `${rawDesc.replace(/{location}/g, displayLocation)} (Constructed via SafarNama regional AI knowledge)`,
+          location: displayLocation,
           sourceName: "SafarNama Regional AI",
           sourceType: "generic",
         });
@@ -439,8 +539,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     return plan;
   };
 
-  // Submit a spot (Starts as pending)
-  const submitGem = (
+  // Submit a spot (Convex mutation backed)
+  const submitGem = async (
     gem: Omit<
       HiddenGem,
       | "id"
@@ -452,52 +552,43 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       | "status"
     >
   ) => {
-    const newGem: HiddenGem = {
-      ...gem,
-      id: `gem-${Math.random().toString()}`,
-      submittedBy: currentUser?.name || "Guest",
-      submitterTier: currentUser?.tier || "Bronze",
-      submitterVerified: currentUser?.isVerified || false,
-      pointsAwarded: POINTS.SUBMIT_GEM,
-      createdAt: new Date().toLocaleDateString("en-US", { month: "long", year: "numeric" }),
-      status: "pending",
-    };
-
-    setHiddenGems((prev) => [newGem, ...prev]);
+    await submitGemMutation({
+      title: gem.title,
+      description: gem.description,
+      location: gem.location,
+      state: gem.state,
+      category: gem.category,
+      photo: gem.photo,
+      geo: gem.geo || { lat: 0, lng: 0 },
+    });
   };
 
-  // Approve a spot
-  const approveGem = (gemId: string) => {
-    setHiddenGems((prev) =>
-      prev.map((gem) => {
-        if (gem.id === gemId && gem.status === "pending") {
-          // Award points to the submitter (whichever user profile submitted it)
-          updateProfilePointsAndTier(
-            gem.submittedBy,
-            POINTS.SUBMIT_GEM,
-            `Approved Hidden Gem: ${gem.title}`
-          );
-          return { ...gem, status: "approved" };
-        }
-        return gem;
-      })
-    );
+  // Approve a spot (Convex mutation backed)
+  const approveGem = async (gemId: string) => {
+    await approveGemMutation({ gemId: gemId as any });
   };
 
-  // Reject a spot
-  const rejectGem = (gemId: string, reason?: string) => {
-    setHiddenGems((prev) =>
-      prev.map((gem) => {
-        if (gem.id === gemId && gem.status === "pending") {
-          return {
-            ...gem,
-            status: "rejected",
-            rejectionReason: reason || "Did not meet submission guidelines",
-          };
-        }
-        return gem;
-      })
-    );
+  // Reject a spot (Convex mutation backed)
+  const rejectGem = async (gemId: string, reason?: string) => {
+    await rejectGemMutation({ gemId: gemId as any, rejectionReason: reason });
+  };
+
+  // Add an official destination (Convex mutation backed)
+  const addDestination = async (dest: {
+    title: string;
+    description: string;
+    location: string;
+    state: string;
+    geo: { lat: number; lng: number };
+    photos: string[];
+    category: string;
+    bestTimeToVisit?: string;
+    howToReach?: string;
+    nearbyAttractions?: string[];
+    tips?: string[];
+    photoGallery?: string[];
+  }) => {
+    await addDestinationMutation(dest);
   };
 
   // Add a Review
@@ -609,6 +700,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         currentUser,
         profiles,
         switchProfile,
+        destinations,
         hiddenGems,
         blogs,
         reviews,
@@ -624,6 +716,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         submitGem,
         approveGem,
         rejectGem,
+        addDestination,
         addReview,
         addBlog,
         completeTrip,

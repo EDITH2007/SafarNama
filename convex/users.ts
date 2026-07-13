@@ -4,44 +4,15 @@ import { getAuthUserId } from "@convex-dev/auth/server";
 
 export const INITIAL_PROFILES = [
   {
-    name: "Sneha Gupta",
-    totalPoints: 180,
+    name: "System Admin",
+    email: "230107anu@gmail.com",
+    totalPoints: 0,
     tier: "Bronze",
-    isVerified: false,
-    image: "SG",
-    bio: "Passionate wanderer exploring the offbeat trails of Southern India. Always searching for the next secret beach.",
-    homeTown: "Bengaluru, Karnataka",
-    role: "user",
-  },
-  {
-    name: "Priya Patel",
-    totalPoints: 1050,
-    tier: "Silver",
     isVerified: true,
-    image: "PP",
-    bio: "Climbing high mountain passes and capturing hidden trails across Ladakh and Himachal. Local legend in high-altitude planning.",
-    homeTown: "Manali, Himachal Pradesh",
-    role: "user",
-  },
-  {
-    name: "Tenzing Norgay",
-    totalPoints: 2600,
-    tier: "Gold",
-    isVerified: true,
-    image: "TN",
-    bio: "Pioneering high-altitude routes and cave monasteries in the Zanskar range. Certified safety guide and local elder.",
-    homeTown: "Leh, Ladakh",
+    image: "SA",
+    bio: "SafarNama System Administrator",
+    homeTown: "SafarNama HQ",
     role: "admin",
-  },
-  {
-    name: "Aarav Sharma",
-    totalPoints: 1200,
-    tier: "Silver",
-    isVerified: false,
-    image: "AS",
-    bio: "Exploring heritage sites, ancient ruins, and local street eats in Karnataka and Andhra Pradesh.",
-    homeTown: "Hampi, Karnataka",
-    role: "user",
   }
 ];
 
@@ -83,15 +54,60 @@ export const viewer = query({
     const user = await ctx.db.get(userId);
     if (!user) return null;
     
+    // Automatically determine admin role if email is specific admin email
+    const isAdminEmail = user.email?.toLowerCase() === "230107anu@gmail.com";
+    const finalRole = isAdminEmail ? "admin" : (user.role || "user");
+
     return {
       ...user,
       name: user.name || user.email?.split("@")[0] || "Traveler",
       tier: (user.tier || "Bronze") as "Bronze" | "Silver" | "Gold",
       totalPoints: user.totalPoints ?? 0,
       isVerified: user.isVerified ?? false,
-      role: user.role || "user",
+      role: finalRole,
     };
   },
+});
+
+// Ensure admin role for specific admin email, and demote unauthorized admins
+export const ensureAdminStatus = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) return null;
+    const user = await ctx.db.get(userId);
+    if (!user) return null;
+
+    if (user.email && user.email.toLowerCase() === "230107anu@gmail.com") {
+      if (user.role !== "admin") {
+        await ctx.db.patch(userId, { role: "admin" });
+        return true;
+      }
+    } else {
+      if (user.role === "admin") {
+        await ctx.db.patch(userId, { role: "user" });
+        return true;
+      }
+    }
+    return false;
+  }
+});
+
+// Clean up fake/seeded users from database
+export const removeFakeUsers = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const fakeNames = ["Sneha Gupta", "Priya Patel", "Tenzing Norgay", "Aarav Sharma"];
+    const users = await ctx.db.query("users").collect();
+    let count = 0;
+    for (const user of users) {
+      if (user.name && fakeNames.includes(user.name) && !user.email) {
+        await ctx.db.delete(user._id);
+        count++;
+      }
+    }
+    return count;
+  }
 });
 
 // Update a user's role (Admin gated)
@@ -216,8 +232,10 @@ export const getLeaderboard = query({
       .query("users")
       .collect();
 
-    // Sort by points descending
-    const sorted = users.sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0));
+    // Exclude admins and sort by points descending
+    const sorted = users
+      .filter((u) => u.role !== "admin")
+      .sort((a, b) => (b.totalPoints ?? 0) - (a.totalPoints ?? 0));
 
     return sorted.map((u, index) => ({
       rank: index + 1,
@@ -229,3 +247,5 @@ export const getLeaderboard = query({
     }));
   },
 });
+
+

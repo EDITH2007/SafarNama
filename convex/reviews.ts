@@ -72,3 +72,31 @@ export const deleteReview = mutation({
     return { success: true };
   },
 });
+
+// Get enriched reviews for a specific destination
+export const getReviewsForDestination = query({
+  args: { destinationId: v.id("destinations") },
+  handler: async (ctx, args) => {
+    const reviews = await ctx.db
+      .query("reviews")
+      .withIndex("by_destination", (q) => q.eq("destinationId", args.destinationId))
+      .collect();
+
+    const results = [];
+    for (const review of reviews) {
+      const author = await ctx.db.get(review.author);
+      results.push({
+        id: review._id,
+        ...review,
+        authorName: author?.name || author?.email?.split("@")[0] || "Anonymous",
+        authorAvatar: author?.image || "",
+        authorTier: author?.tier || "Bronze",
+        authorVerified: author?.isVerified || false,
+      });
+    }
+
+    // Sort by newest first
+    return results.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+
