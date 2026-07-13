@@ -32,7 +32,7 @@ export default function SignInPage() {
       setOauthLoading(true);
       await withTimeout(
         signIn("google", { redirectTo: "/dashboard" }),
-        10,
+        15000,
         "Google Sign-In is taking longer than expected. Please verify your connection or try again."
       );
     } catch (err: any) {
