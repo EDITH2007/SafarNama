@@ -55,7 +55,7 @@ export const viewer = query({
     if (!user) return null;
     
     // Automatically determine admin role if email is specific admin email
-    const isAdminEmail = user.email?.toLowerCase() === "230107anu@gmail.com";
+    const isAdminEmail = user.email?.trim().toLowerCase() === "230107anu@gmail.com";
     const finalRole = isAdminEmail ? "admin" : (user.role || "user");
 
     return {
@@ -78,7 +78,7 @@ export const ensureAdminStatus = mutation({
     const user = await ctx.db.get(userId);
     if (!user) return null;
 
-    if (user.email && user.email.toLowerCase() === "230107anu@gmail.com") {
+    if (user.email && user.email.trim().toLowerCase() === "230107anu@gmail.com") {
       if (user.role !== "admin") {
         await ctx.db.patch(userId, { role: "admin" });
         return true;
@@ -246,6 +246,28 @@ export const getLeaderboard = query({
       isVerified: u.isVerified ?? false,
     }));
   },
+});
+
+export const resetAdminAccount = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const accounts = await ctx.db.query("accounts" as any).collect();
+    for (const acc of accounts) {
+      const accountFields = acc as any;
+      if (accountFields.email?.trim().toLowerCase() === "230107anu@gmail.com" || accountFields.providerAccountId?.trim().toLowerCase() === "230107anu@gmail.com") {
+        await ctx.db.delete(acc._id);
+        console.log("Deleted account:", acc._id);
+      }
+    }
+    const users = await ctx.db.query("users").collect();
+    for (const u of users) {
+      if (u.email?.trim().toLowerCase() === "230107anu@gmail.com") {
+        await ctx.db.delete(u._id);
+        console.log("Deleted user:", u._id);
+      }
+    }
+    return { success: true };
+  }
 });
 
 

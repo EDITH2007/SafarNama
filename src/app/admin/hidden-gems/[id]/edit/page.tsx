@@ -1,8 +1,20 @@
 "use client";
 
-import React, { useState, useTransition } from "react";
+import React, { useState, useEffect, useTransition, use } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, CheckCircle, XCircle, Sparkles, HelpCircle, MapPin, Compass } from "lucide-react";
+import { useQuery, useMutation } from "convex/react";
+import { api } from "../../../../../../convex/_generated/api";
+import { Id } from "../../../../../../convex/_generated/dataModel";
+import {
+  ArrowLeft,
+  CheckCircle,
+  XCircle,
+  Save,
+  Compass,
+  MapPin,
+  Trash2,
+  AlertTriangle,
+} from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -10,22 +22,33 @@ import MapPicker from "@/components/MapPicker";
 import { useUser } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
 
-export default function NewDestinationPage() {
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function EditHiddenGemPage({ params }: PageProps) {
+  const { id: rawId } = use(params);
+  const gemId = rawId as Id<"hiddenGems">;
+  
   const router = useRouter();
-  const { currentUser, isLoading, addDestination } = useUser();
+  const { currentUser, isLoading } = useUser();
   const [isPending, startTransition] = useTransition();
 
-  // Basic Form Fields
+  // Queries & Mutations
+  const gem = useQuery(api.gems.getGemById, { id: gemId });
+  const editGemMutation = useMutation(api.gems.editGem);
+  const deleteGemMutation = useMutation(api.gems.deleteGem);
+
+  // Form State
   const [title, setTitle] = useState("");
   const [desc, setDesc] = useState("");
   const [location, setLocation] = useState("");
   const [state, setState] = useState("");
-  const [category, setCategory] = useState("Hills");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(["Offbeat"]);
   const [photoUrl, setPhotoUrl] = useState("");
   const [lat, setLat] = useState("");
   const [lng, setLng] = useState("");
 
-  // Detailed Fields
   const [bestTimeToVisit, setBestTimeToVisit] = useState("");
   const [howToReach, setHowToReach] = useState("");
   const [nearbyAttractionsRaw, setNearbyAttractionsRaw] = useState("");
@@ -36,16 +59,33 @@ export default function NewDestinationPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
 
-  const isValidImageUrl = (url: string) => {
-    const trimmed = url.trim();
-    if (!trimmed) return false;
-    return /^https?:\/\/.+/i.test(trimmed) || /^data:image\/.+/i.test(trimmed);
-  };
+  // Delete State
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  // Sync state once data loads
+  useEffect(() => {
+    if (gem) {
+      setTitle(gem.title || "");
+      setDesc(gem.description || "");
+      setLocation(gem.location || "");
+      setState(gem.state || "");
+      setSelectedCategories(gem.category ? gem.category.split(",").map(s => s.trim()) : ["Offbeat"]);
+      setPhotoUrl(gem.photo || "");
+      setLat(String(gem.geo?.lat || ""));
+      setLng(String(gem.geo?.lng || ""));
+      setBestTimeToVisit(gem.bestTimeToVisit || "");
+      setHowToReach(gem.howToReach || "");
+      setNearbyAttractionsRaw(gem.nearbyAttractions?.join("\n") || "");
+      setTipsRaw(gem.tips?.join("\n") || "");
+      setGalleryRaw(gem.photoGallery?.join("\n") || "");
+    }
+  }, [gem]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !desc || !location || !state || !photoUrl || !lat || !lng) {
-      setError("Please fill in all required fields (including coordinate pins).");
+      setError("Please fill in all required fields.");
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -71,13 +111,14 @@ export default function NewDestinationPage() {
 
     startTransition(async () => {
       try {
-        await addDestination({
+        await editGemMutation({
+          id: gemId,
           title,
           description: desc,
           location,
           state,
-          category,
-          photos: [photoUrl],
+          category: selectedCategories.join(", "),
+          photo: photoUrl,
           geo: {
             lat: Number(lat),
             lng: Number(lng),
@@ -90,25 +131,14 @@ export default function NewDestinationPage() {
         });
 
         setSuccess(true);
-        setTitle("");
-        setDesc("");
-        setLocation("");
-        setState("");
-        setPhotoUrl("");
-        setLat("");
-        setLng("");
-        setBestTimeToVisit("");
-        setHowToReach("");
-        setNearbyAttractionsRaw("");
-        setTipsRaw("");
-        setGalleryRaw("");
-
-        // Toast redirect delay
+        window.scrollTo({ top: 0, behavior: "smooth" });
+        
+        // Wait and redirect back to manager
         setTimeout(() => {
-          router.push("/destinations");
+          router.push("/admin/hidden-gems");
         }, 1500);
       } catch (err: any) {
-        setError(err.message || "Something went wrong. Please check your credentials and try again.");
+        setError(err.message || "Failed to update hidden gem.");
         window.scrollTo({ top: 0, behavior: "smooth" });
       }
     });
@@ -118,7 +148,7 @@ export default function NewDestinationPage() {
     setLat(String(selectedLat));
     setLng(String(selectedLng));
     
-    // Auto-fill location/state details if the coordinate belongs to a known hotspot
+    // Auto-fill details if snap snapped
     if (regionName && regionName.includes(",")) {
       const parts = regionName.split(",");
       const locPart = parts[0].replace("Explore ", "").replace("Discover ", "").trim();
@@ -129,8 +159,26 @@ export default function NewDestinationPage() {
     }
   };
 
+  const handleDeleteConfirm = () => {
+    setIsDeleting(true);
+    setError("");
+
+    startTransition(async () => {
+      try {
+        await deleteGemMutation({ id: gemId });
+        setIsDeleteConfirmOpen(false);
+        router.push("/admin/hidden-gems");
+      } catch (err: any) {
+        setError(err.message || "Failed to delete hidden gem.");
+        setIsDeleting(false);
+        setIsDeleteConfirmOpen(false);
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
+    });
+  };
+
   // 1. Loading state
-  if (isLoading) {
+  if (isLoading || gem === undefined) {
     return (
       <div className="flex flex-col min-h-screen bg-earth-sand text-earth-charcoal font-sans">
         <Navbar />
@@ -138,7 +186,7 @@ export default function NewDestinationPage() {
           <div className="text-center space-y-4">
             <Compass className="h-10 w-10 text-earth-terracotta animate-spin mx-auto" />
             <p className="text-sm font-semibold tracking-wider uppercase text-earth-clay/60">
-              Verifying Authorization...
+              Loading Chronicle Editor...
             </p>
           </div>
         </main>
@@ -158,7 +206,7 @@ export default function NewDestinationPage() {
             <XCircle className="h-16 w-16 text-red-500 mx-auto" />
             <h1 className="font-serif text-2xl font-bold text-earth-forest">Admin Access Required</h1>
             <p className="font-sans text-sm text-earth-charcoal/70 leading-relaxed font-light">
-              You must be logged in as an Administrator to curate new official chronicles. Please sign in with an admin credential.
+              You must be logged in as an Administrator to modify curated guides. Please sign in using admin credentials.
             </p>
             <div className="pt-4 flex flex-col sm:flex-row gap-4 justify-center">
               <Link
@@ -181,42 +229,70 @@ export default function NewDestinationPage() {
     );
   }
 
+  // 3. Document 404 Check
+  if (gem === null) {
+    return (
+      <div className="flex flex-col min-h-screen bg-earth-sand text-earth-charcoal font-sans">
+        <Navbar />
+        <main className="flex-grow flex items-center justify-center py-24">
+          <div className="max-w-md w-full bg-white border border-earth-clay/10 p-8 text-center space-y-6 shadow-xl">
+            <XCircle className="h-16 w-16 text-red-500 mx-auto" />
+            <h1 className="font-serif text-2xl font-bold text-earth-forest">Hidden Gem Not Found</h1>
+            <p className="font-sans text-sm text-earth-charcoal/70 leading-relaxed font-light">
+              We could not find the hidden gem record you want to edit. It may have been deleted.
+            </p>
+            <div className="pt-4">
+              <Link
+                href="/admin/hidden-gems"
+                className="px-6 py-2.5 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest transition-all rounded-none"
+              >
+                Go to Manager
+              </Link>
+            </div>
+          </div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col min-h-screen bg-earth-sand text-earth-charcoal font-sans">
-      <title>Add Official Chronicle | SafarNama Admin</title>
-      <meta name="description" content="Add a new official curated destination guide with full photos, route directions, guidelines and hotspots." />
+      <title>Edit {gem.title} | SafarNama Admin</title>
       <Navbar />
 
       <main className="flex-grow py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          {/* Back button */}
+          
+          {/* Back link */}
           <Link
-            href="/dashboard"
+            href="/admin/hidden-gems"
             className="inline-flex items-center space-x-2 text-xs font-semibold text-earth-clay hover:text-earth-terracotta uppercase tracking-wider mb-8"
           >
             <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Dashboard</span>
+            <span>Back to Manager</span>
           </Link>
 
-          {/* Heading */}
+          {/* Title */}
           <div className="space-y-4 pb-8 border-b border-earth-clay/10 mb-8">
             <span className="font-sans text-xs font-semibold uppercase tracking-widest text-earth-terracotta bg-earth-terracotta/5 px-4 py-1.5 border border-earth-terracotta/10 inline-block">
               Admin Portal
             </span>
             <h1 className="font-serif text-3xl md:text-4xl font-bold tracking-tight text-earth-forest">
-              Create Curated Destination Guide
+              Edit "{gem.title}" Discovery
             </h1>
             <p className="font-sans text-sm text-earth-charcoal/70 leading-relaxed font-light">
-              Add verified official region chronicles to SafarNama. Curations feature detailed travel guidelines, maps, galleries, and support user review threads.
+              Modify the community-submitted description, vibe tags, coordinates, and recommendations. Submission history and submitter points rewards remain locked.
             </p>
           </div>
 
-          {/* Form */}
+          {/* Form container */}
           <div className="bg-white border border-earth-clay/10 p-6 md:p-10 shadow-lg">
+            
             {success && (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-3">
                 <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
-                <span>Destination guide successfully added! Redirecting to chronicles...</span>
+                <span>Hidden gem successfully updated! Redirecting to manager...</span>
               </div>
             )}
 
@@ -228,55 +304,69 @@ export default function NewDestinationPage() {
             )}
 
             <form onSubmit={handleSubmit} className="space-y-8 text-xs font-sans">
-              
-              {/* SECTION 1: BASIC INFORMATION */}
+
+              {/* 1. BASIC INFO */}
               <div className="space-y-4">
                 <h3 className="font-serif text-sm font-bold text-earth-forest uppercase tracking-wider pb-2 border-b border-earth-clay/5">
                   1. Basic Information
                 </h3>
-                
+
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
                     <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
-                      Destination Title *
+                      Spot Title *
                     </label>
                     <input
                       type="text"
                       required
                       value={title}
                       onChange={(e) => setTitle(e.target.value)}
-                      placeholder="e.g. Munnar Tea Hills"
+                      placeholder="e.g. Gandikota Grand Canyon"
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
-                      Category *
+                      Vibe Categories * (Select all that apply)
                     </label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
-                    >
-                      {CATEGORIES.filter((c) => c !== "All").map((cat) => (
-                        <option key={cat} value={cat}>
-                          {cat}
-                        </option>
-                      ))}
-                    </select>
+                    <div className="flex flex-wrap gap-1.5 p-3 bg-white border border-earth-clay/20 max-h-[120px] overflow-y-auto">
+                      {CATEGORIES.filter((c) => c !== "All").map((cat) => {
+                        const isSelected = selectedCategories.includes(cat);
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedCategories(selectedCategories.filter((c) => c !== cat));
+                              } else {
+                                setSelectedCategories([...selectedCategories, cat]);
+                              }
+                            }}
+                            className={`px-2 py-1 text-[9px] font-sans font-semibold uppercase tracking-wider transition-all border rounded-none cursor-pointer ${
+                              isSelected
+                                ? "bg-earth-terracotta border-earth-terracotta text-white shadow-sm"
+                                : "bg-white border-earth-clay/10 text-earth-charcoal/80 hover:border-earth-terracotta hover:text-earth-terracotta"
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
-                      Location / District *
+                      Location / District / City *
                     </label>
                     <input
                       type="text"
                       required
                       value={location}
                       onChange={(e) => setLocation(e.target.value)}
-                      placeholder="e.g. Munnar, Kerala"
+                      placeholder="e.g. Kadapa, Andhra Pradesh"
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
                   </div>
@@ -290,7 +380,7 @@ export default function NewDestinationPage() {
                       required
                       value={state}
                       onChange={(e) => setState(e.target.value)}
-                      placeholder="e.g. Kerala"
+                      placeholder="e.g. Andhra Pradesh"
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
                   </div>
@@ -305,13 +395,13 @@ export default function NewDestinationPage() {
                     required
                     value={desc}
                     onChange={(e) => setDesc(e.target.value)}
-                    placeholder="Provide a comprehensive introduction of this curated destination, highlighting its landscape, history, and why it is special..."
-                    className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal resize-none"
+                    placeholder="Provide a detailed description of this offbeat secret destination..."
+                    className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal resize-none animate-in"
                   />
                 </div>
               </div>
 
-              {/* SECTION 2: MAP & LOCATION PINS */}
+              {/* 2. GEOGRAPHY */}
               <div className="space-y-4">
                 <h3 className="font-serif text-sm font-bold text-earth-forest uppercase tracking-wider pb-2 border-b border-earth-clay/5">
                   2. Geography & Coordinates
@@ -320,7 +410,7 @@ export default function NewDestinationPage() {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
                     <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
-                      Latitude Coordinate (Decimal) *
+                      Latitude Coordinate *
                     </label>
                     <input
                       type="number"
@@ -328,14 +418,14 @@ export default function NewDestinationPage() {
                       required
                       value={lat}
                       onChange={(e) => setLat(e.target.value)}
-                      placeholder="e.g. 10.0889"
+                      placeholder="e.g. 14.8011"
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
-                      Longitude Coordinate (Decimal) *
+                      Longitude Coordinate *
                     </label>
                     <input
                       type="number"
@@ -343,7 +433,7 @@ export default function NewDestinationPage() {
                       required
                       value={lng}
                       onChange={(e) => setLng(e.target.value)}
-                      placeholder="e.g. 77.0595"
+                      placeholder="e.g. 78.2664"
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
                   </div>
@@ -354,7 +444,7 @@ export default function NewDestinationPage() {
                 </div>
               </div>
 
-              {/* SECTION 3: DETAILED GUIDE INFO */}
+              {/* 3. LOGISTICS */}
               <div className="space-y-4">
                 <h3 className="font-serif text-sm font-bold text-earth-forest uppercase tracking-wider pb-2 border-b border-earth-clay/5">
                   3. Travel Details & Guidelines
@@ -370,7 +460,7 @@ export default function NewDestinationPage() {
                       type="text"
                       value={bestTimeToVisit}
                       onChange={(e) => setBestTimeToVisit(e.target.value)}
-                      placeholder="e.g. September to May"
+                      placeholder="e.g. October to February"
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
                   </div>
@@ -384,7 +474,7 @@ export default function NewDestinationPage() {
                       type="text"
                       value={howToReach}
                       onChange={(e) => setHowToReach(e.target.value)}
-                      placeholder="e.g. Flight to Cochin (COK), then drive 3 hours (110 km)"
+                      placeholder="e.g. Take train to Kadapa, hire private jeep"
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
                   </div>
@@ -394,111 +484,149 @@ export default function NewDestinationPage() {
                   <div className="space-y-1.5">
                     <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Nearby Attractions</span>
-                      <span className="text-earth-clay/60 italic lowercase font-normal">(optional, one per line)</span>
+                      <span className="text-earth-clay/60 italic lowercase font-normal">(one per line)</span>
                     </label>
                     <textarea
                       rows={3}
                       value={nearbyAttractionsRaw}
                       onChange={(e) => setNearbyAttractionsRaw(e.target.value)}
-                      placeholder="e.g.&#10;Eravikulam National Park&#10;Mattupetty Dam&#10;Attukad Waterfalls"
-                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal resize-none"
+                      placeholder="e.g.&#10;Belum Caves&#10;Gandikota Fort temples"
+                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal resize-none font-sans"
                     />
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
-                      <span>Admin Travel Tips</span>
-                      <span className="text-earth-clay/60 italic lowercase font-normal">(optional, one per line)</span>
+                      <span>Travel Advice & Tips</span>
+                      <span className="text-earth-clay/60 italic lowercase font-normal">(one per line)</span>
                     </label>
                     <textarea
                       rows={3}
                       value={tipsRaw}
                       onChange={(e) => setTipsRaw(e.target.value)}
-                      placeholder="e.g.&#10;Carry a light jacket for cool misty evenings.&#10;Hire local jeeps to access steep viewpoint roads.&#10;Buy spices only from government outlets."
-                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal resize-none"
+                      placeholder="e.g.&#10;Carry plenty of drinking water&#10;Visit early in the morning"
+                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal resize-none font-sans"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* SECTION 4: PHOTOS & MEDIA GALLERY */}
+              {/* 4. MEDIA GALLERY */}
               <div className="space-y-4">
                 <h3 className="font-serif text-sm font-bold text-earth-forest uppercase tracking-wider pb-2 border-b border-earth-clay/5">
-                  4. Media & Imagery
+                  4. Photograph Showcase & Galleries
                 </h3>
 
                 <div className="space-y-4">
                   <div className="space-y-1.5">
                     <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
-                      Main Preview Photo URL *
+                      Main Photo URL *
                     </label>
                     <input
                       type="url"
                       required
                       value={photoUrl}
                       onChange={(e) => setPhotoUrl(e.target.value)}
-                      placeholder="e.g. https://images.unsplash.com/photo-..."
+                      placeholder="https://images.unsplash.com/photo-..."
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
-
-                    {/* Live Image Preview */}
-                    {photoUrl && isValidImageUrl(photoUrl) && (
-                      <div className="mt-2 space-y-1 animate-in fade-in duration-200">
-                        <span className="text-[9px] font-bold text-earth-forest uppercase tracking-wider block">Image Preview</span>
-                        <div className="h-24 w-36 overflow-hidden border border-earth-clay/15 bg-white shadow-sm relative">
-                          <img
-                            src={photoUrl}
-                            alt="Main preview"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
                   </div>
 
                   <div className="space-y-1.5">
                     <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
-                      <span>Additional Photo Gallery URLs</span>
-                      <span className="text-earth-clay/60 italic lowercase font-normal">(optional, one URL per line)</span>
+                      <span>Additional Gallery Images</span>
+                      <span className="text-earth-clay/60 italic lowercase font-normal">(one per line)</span>
                     </label>
                     <textarea
                       rows={4}
                       value={galleryRaw}
                       onChange={(e) => setGalleryRaw(e.target.value)}
-                      placeholder="e.g.&#10;https://images.unsplash.com/photo-1&#10;https://images.unsplash.com/photo-2"
-                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal resize-none"
+                      placeholder="e.g.&#10;https://images.unsplash.com/photo-gallery1&#10;https://images.unsplash.com/photo-gallery2"
+                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal resize-none font-sans"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* SUBMIT BUTTON */}
-              <div className="flex justify-end pt-4 border-t border-earth-clay/10">
+              {/* Actions row */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-4 border-t border-earth-clay/15">
                 <button
-                  type="submit"
-                  disabled={isPending}
-                  className="px-8 py-3.5 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-md rounded-none disabled:opacity-50 flex items-center space-x-2"
+                  type="button"
+                  onClick={() => setIsDeleteConfirmOpen(true)}
+                  className="px-5 py-3 border border-red-200 bg-red-50 text-red-700 hover:bg-red-100 hover:border-red-300 font-sans text-xs font-bold uppercase tracking-widest transition-all rounded-none flex items-center justify-center space-x-2 cursor-pointer shadow-sm"
                 >
-                  {isPending ? (
-                    <>
-                      <span>Adding Chronicle...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Sparkles className="h-4 w-4" />
-                      <span>Publish Chronicle</span>
-                    </>
-                  )}
+                  <Trash2 className="h-4 w-4" />
+                  <span>Unpublish Discovery</span>
                 </button>
+
+                <div className="flex gap-4">
+                  <Link
+                    href="/admin/hidden-gems"
+                    className="px-5 py-3 border border-earth-clay/20 text-earth-charcoal/70 hover:border-earth-charcoal hover:text-earth-charcoal font-sans text-xs font-bold uppercase tracking-widest transition-all rounded-none flex items-center justify-center shadow-sm"
+                  >
+                    Cancel
+                  </Link>
+
+                  <button
+                    type="submit"
+                    disabled={isPending}
+                    className="px-6 py-3 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest transition-all rounded-none flex items-center justify-center space-x-2 cursor-pointer shadow-md disabled:opacity-50"
+                  >
+                    <Save className="h-4 w-4" />
+                    <span>{isPending ? "Saving..." : "Save Updates"}</span>
+                  </button>
+                </div>
               </div>
 
             </form>
           </div>
         </div>
       </main>
+
+      {/* Delete Confirmation Modal */}
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 bg-earth-charcoal/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
+          
+          <div className="max-w-md w-full bg-white border border-earth-clay/10 p-6 md:p-8 space-y-6 shadow-2xl text-center relative animate-in scale-in duration-200">
+            
+            <div className="p-3 bg-red-50 border border-red-100 text-red-600 inline-block rounded-full">
+              <AlertTriangle className="h-8 w-8 text-red-500" />
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="font-serif text-lg font-bold text-earth-forest">
+                Unpublish / Delete Hidden Gem?
+              </h3>
+              <p className="font-sans text-xs text-earth-charcoal/70 leading-relaxed font-light">
+                Are you sure you want to permanently remove the hidden gem <span className="font-bold text-earth-charcoal">"{gem.title}"</span>? 
+              </p>
+              <div className="p-3 bg-amber-50 border border-amber-200 text-[10px] text-amber-800 text-left font-light leading-relaxed flex items-start space-x-2">
+                <span>⚠️</span>
+                <span>This action cannot be undone. The gem will be immediately deleted from Convex, although points already granted to the original submitter are retained.</span>
+              </div>
+            </div>
+
+            <div className="flex gap-4 justify-center pt-2">
+              <button
+                disabled={isDeleting}
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                className="flex-1 px-4 py-2.5 border border-earth-clay/20 text-earth-charcoal/75 hover:border-earth-charcoal font-sans text-xs font-bold uppercase tracking-widest transition-all rounded-none cursor-pointer disabled:opacity-50"
+              >
+                Cancel
+              </button>
+              
+              <button
+                disabled={isDeleting}
+                onClick={handleDeleteConfirm}
+                className="flex-1 px-4 py-2.5 bg-red-650 hover:bg-red-700 text-white font-sans text-xs font-bold uppercase tracking-widest transition-all rounded-none cursor-pointer disabled:opacity-50"
+              >
+                {isDeleting ? "Unpublishing..." : "Confirm Delete"}
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

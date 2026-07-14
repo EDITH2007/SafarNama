@@ -24,6 +24,7 @@ import {
   Edit2,
   Check,
   ShieldAlert,
+  Trash2,
 } from "lucide-react";
 import Link from "next/link";
 import Navbar from "@/components/Navbar";
@@ -50,6 +51,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
   // Mutations
   const editGemMutation = useMutation(api.gems.editGem);
+  const deleteGemMutation = useMutation(api.gems.deleteGem);
   const addReviewMutation = useMutation(api.reviews.addReview);
 
   // States
@@ -82,6 +84,10 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
   const [isRejectionOpen, setIsRejectionOpen] = useState(false);
   const [rejectionReasonText, setRejectionReasonText] = useState("");
   const [moderationMessage, setModerationMessage] = useState("");
+
+  // Admin Delete States
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeletingGem, setIsDeletingGem] = useState(false);
 
 
 
@@ -130,7 +136,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
   // Combine main photo and gallery photos
   const allPhotos = [gem.photo, ...(gem.photoGallery || [])].filter(Boolean);
-  const isUserAdmin = currentUser?.email === "230107anu@gmail.com";
+  const isUserAdmin = currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com";
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,6 +195,20 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
     } catch (err: unknown) {
       const error = err as Error;
       setModerationMessage(`Error: ${error.message}`);
+    }
+  };
+
+  const handleAdminDelete = async () => {
+    if (!isUserAdmin) return;
+    setIsDeletingGem(true);
+    try {
+      await deleteGemMutation({ id: gemId });
+      router.push("/hidden-gems");
+    } catch (err: unknown) {
+      const error = err as Error;
+      setEditError(error.message || "Failed to delete hidden gem.");
+      setIsDeletingGem(false);
+      setIsDeleteConfirmOpen(false);
     }
   };
 
@@ -632,22 +652,33 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                 </div>
 
                 {/* Actions */}
-                <div className="flex justify-end space-x-2 pt-4 border-t border-earth-clay/10">
+                <div className="flex justify-between items-center pt-4 border-t border-earth-clay/10">
                   <button
                     type="button"
-                    onClick={() => setIsEditing(false)}
-                    className="px-5 py-2 border border-earth-clay/20 font-sans text-xs font-semibold uppercase tracking-wider hover:bg-earth-sand rounded-none cursor-pointer"
+                    onClick={() => setIsDeleteConfirmOpen(true)}
+                    className="px-4 py-2 border border-red-250 text-red-650 hover:bg-red-50 font-sans text-xs font-bold uppercase tracking-wider transition-all cursor-pointer rounded-none flex items-center space-x-1.5"
                   >
-                    Cancel
+                    <Trash2 className="h-4 w-4" />
+                    <span>Delete Discovery</span>
                   </button>
-                  <button
-                    type="submit"
-                    disabled={isPending}
-                    className="px-6 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm rounded-none flex items-center space-x-1.5"
-                  >
-                    <Check className="h-4 w-4" />
-                    <span>{isPending ? "Saving..." : "Save Changes"}</span>
-                  </button>
+
+                  <div className="flex space-x-2">
+                    <button
+                      type="button"
+                      onClick={() => setIsEditing(false)}
+                      className="px-5 py-2 border border-earth-clay/20 font-sans text-xs font-semibold uppercase tracking-wider hover:bg-earth-sand rounded-none cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isPending}
+                      className="px-6 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-wider transition-all cursor-pointer shadow-sm rounded-none flex items-center space-x-1.5"
+                    >
+                      <Check className="h-4 w-4" />
+                      <span>{isPending ? "Saving..." : "Save Changes"}</span>
+                    </button>
+                  </div>
                 </div>
               </form>
             </div>
@@ -1087,6 +1118,39 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
         </div>
       </main>
+
+      {/* Delete Confirmation Dialog */}
+      {isDeleteConfirmOpen && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+          <div className="max-w-md w-full bg-white border border-earth-clay/10 p-6 md:p-8 space-y-6 shadow-2xl text-center animate-in zoom-in-95 duration-200">
+            <ShieldAlert className="h-14 w-14 text-red-650 mx-auto animate-bounce" />
+            <div className="space-y-2">
+              <h3 className="font-serif text-xl font-bold text-earth-forest">
+                Delete Hidden Gem?
+              </h3>
+              <p className="font-sans text-xs text-earth-charcoal/70 leading-relaxed font-light">
+                Are you sure you want to permanently delete <strong>{gem.title}</strong>? This action cannot be undone and the spot will be removed from all public map displays, lists, and itineraries.
+              </p>
+            </div>
+            <div className="flex justify-center space-x-3 pt-2">
+              <button
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                disabled={isDeletingGem}
+                className="px-5 py-2 border border-earth-clay/20 text-earth-charcoal hover:bg-earth-sand font-sans text-xs font-semibold uppercase tracking-wider cursor-pointer rounded-none"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleAdminDelete}
+                disabled={isDeletingGem}
+                className="px-6 py-2 bg-red-650 hover:bg-red-750 text-white font-sans text-xs font-bold uppercase tracking-wider cursor-pointer transition-all shadow-sm rounded-none"
+              >
+                {isDeletingGem ? "Deleting..." : "Permanently Delete"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Footer />
     </div>

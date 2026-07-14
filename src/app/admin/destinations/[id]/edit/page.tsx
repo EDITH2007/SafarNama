@@ -176,7 +176,7 @@ export default function EditDestinationPage({ params }: PageProps) {
   }
 
   // 2. Authorization check
-  const isUserAdmin = currentUser?.email === "230107anu@gmail.com";
+  const isUserAdmin = currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com";
   if (!currentUser || !isUserAdmin) {
     return (
       <div className="flex flex-col min-h-screen bg-earth-sand text-earth-charcoal font-sans">

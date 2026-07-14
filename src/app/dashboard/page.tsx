@@ -73,7 +73,8 @@ export default function Dashboard() {
   const [activeTab, setActiveTab] = useState<"profile" | "submissions" | "wishlist" | "expenses" | "planner" | "addgem" | "admin">("profile");
 
   // Admin section sub-navigation states
-  const [adminSubTab, setAdminSubTab] = useState<"spots" | "reviews" | "blogs" | "add_destination">("spots");
+  const [adminSubTab, setAdminSubTab] = useState<"spots" | "reviews" | "blogs" | "add_destination" | "approved_gems">("spots");
+  const hasRedirectedRef = useRef(false);
   const [activeRejectionGemId, setActiveRejectionGemId] = useState<string | null>(null);
   const [rejectionReasonText, setRejectionReasonText] = useState<{ [gemId: string]: string }>({});
   const [isAdminOverride, setIsAdminOverride] = useState(false);
@@ -205,6 +206,16 @@ export default function Dashboard() {
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
+  // Automatically select the admin tab when logging in as an admin (avoids race conditions)
+  useEffect(() => {
+    if (currentUser && currentUser.id !== "loading" && !hasRedirectedRef.current) {
+      if (currentUser.role === "admin" || currentUser.email?.trim().toLowerCase() === "230107anu@gmail.com") {
+        setActiveTab("admin");
+      }
+      hasRedirectedRef.current = true;
+    }
+  }, [currentUser]);
+
   const handleGeneratePlan = (e: React.FormEvent) => {
     e.preventDefault();
     setIsGenerating(true);
@@ -287,7 +298,7 @@ export default function Dashboard() {
       setTimeout(() => {
         setGemSuccess(false);
         // Switch to appropriate tab
-        if (currentUser?.email === "230107anu@gmail.com") {
+        if (currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com") {
           setActiveTab("admin");
         } else {
           setActiveTab("profile");
@@ -410,7 +421,7 @@ export default function Dashboard() {
                 { id: "expenses", name: "Expense Visualizer", icon: Activity },
                 { id: "planner", name: "AI Local Planner", icon: Route },
                 { id: "addgem", name: "Add a Spot Discovery", icon: Plus },
-                ...(currentUser?.email === "230107anu@gmail.com"
+                ...(currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com"
                   ? [{ id: "admin", name: "Admin Mod sandbox", icon: Sparkles }]
                   : []),
               ].map((tab) => {
@@ -1283,7 +1294,7 @@ export default function Dashboard() {
 
               {/* Admin Sandbox queue tab */}
               {activeTab === "admin" && (() => {
-                const isUserAdmin = currentUser?.email === "230107anu@gmail.com";
+                const isUserAdmin = currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com";
 
                 if (!isUserAdmin) {
                   return (
@@ -1343,6 +1354,7 @@ export default function Dashboard() {
                         { id: "reviews", name: `Reviews (${reviews.length})` },
                         { id: "blogs", name: `Traveler Stories (${blogs.length})` },
                         { id: "add_destination", name: "Add Official Destination" },
+                        { id: "approved_gems", name: "Manage Approved Gems" },
                       ].map((subTab) => {
                         const isActive = adminSubTab === subTab.id;
                         return (
@@ -1679,6 +1691,31 @@ export default function Dashboard() {
                                 className="flex-1 inline-flex items-center justify-center space-x-2 px-5 py-3 border border-earth-clay/20 hover:border-earth-charcoal bg-white text-earth-charcoal/80 hover:text-earth-charcoal font-sans text-xs font-bold uppercase tracking-widest transition-all shadow-sm rounded-none cursor-pointer"
                               >
                                 <span>Manage & Edit Chronicles</span>
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Sub-tab: Manage Approved Gems */}
+                      {adminSubTab === "approved_gems" && (
+                        <div className="space-y-6 bg-earth-sand/5 p-6 border border-earth-clay/10 animate-in fade-in duration-300">
+                          <div className="text-center py-12 space-y-6 max-w-lg mx-auto">
+                            <div className="p-3 bg-earth-terracotta/5 border border-earth-terracotta/10 text-earth-terracotta inline-block rounded-full">
+                              <Sparkles className="h-8 w-8 text-earth-terracotta" />
+                            </div>
+                            <h4 className="font-serif text-lg font-bold text-earth-forest">
+                              Approved Gems Portal
+                            </h4>
+                            <p className="text-xs text-earth-charcoal/60 leading-relaxed font-light">
+                              Manage and edit community-submitted hidden gems that are already live on the platform. Modify details or unpublish/delete them from the catalog.
+                            </p>
+                            <div className="flex justify-center pt-2">
+                              <Link
+                                href="/admin/hidden-gems"
+                                className="inline-flex items-center justify-center space-x-2 px-8 py-3 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest transition-all shadow-sm rounded-none cursor-pointer"
+                              >
+                                <span>Manage & Edit Approved Gems</span>
                               </Link>
                             </div>
                           </div>

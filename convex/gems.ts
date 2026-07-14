@@ -109,7 +109,7 @@ export const getPendingGems = query({
       return [];
     }
     const user = await ctx.db.get(userId);
-    if (!user || user.role !== "admin") {
+    if (!user || user.role !== "admin" || user.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
       return [];
     }
     
@@ -183,7 +183,7 @@ export const approveGem = mutation({
       throw new Error("Unauthorized: Not authenticated");
     }
     const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin") {
+    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
       throw new Error("Unauthorized: Admin privileges required");
     }
 
@@ -251,7 +251,7 @@ export const rejectGem = mutation({
       throw new Error("Unauthorized: Not authenticated");
     }
     const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin") {
+    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
       throw new Error("Unauthorized: Admin privileges required");
     }
 
@@ -312,7 +312,7 @@ export const editGem = mutation({
       throw new Error("Unauthorized: Not authenticated");
     }
     const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin") {
+    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
       throw new Error("Unauthorized: Admin privileges required");
     }
 
@@ -367,6 +367,26 @@ export const getMySubmissions = query({
       });
     }
     return results;
+  },
+});
+
+// Delete a gem (admin only)
+export const deleteGem = mutation({
+  args: {
+    id: v.id("hiddenGems"),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Unauthorized: Not authenticated");
+    }
+    const admin = await ctx.db.get(userId);
+    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
+      throw new Error("Unauthorized: Admin privileges required");
+    }
+
+    await ctx.db.delete(args.id);
+    return { success: true };
   },
 });
 
