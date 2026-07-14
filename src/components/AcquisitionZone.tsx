@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Star, MapPin, Compass, ShieldCheck, Gift, X, Heart } from "lucide-react";
+import { Star, MapPin, Compass, ShieldCheck, Gift, X, Heart, ShieldAlert } from "lucide-react";
 import { CATEGORIES } from "../app/data/mockData";
 import { useUser } from "./UserContext";
 
@@ -22,8 +22,11 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
   const [description, setDescription] = useState("");
   const [location, setLocation] = useState("");
   const [state, setState] = useState("");
-  const [category, setCategory] = useState("Offbeat");
+  const [selectedCategories, setSelectedCategories] = useState<string[]>(["Offbeat"]);
   const [photoUrl, setPhotoUrl] = useState("");
+  const [lat, setLat] = useState("");
+  const [lng, setLng] = useState("");
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const isValidImageUrl = (url: string) => {
     const trimmed = url.trim();
@@ -54,8 +57,9 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
   const approvedGems = hiddenGems.filter((gem) => gem.status === "approved");
 
   const filteredGems = approvedGems.filter((gem) => {
+    const gemCats = gem.category.split(",").map((c) => c.trim());
     const matchesCategory =
-      activeCategory === "All" || gem.category === activeCategory;
+      activeCategory === "All" || gemCats.includes(activeCategory);
     const matchesSearch =
       !searchQuery ||
       gem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -76,31 +80,58 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
 
   const spotlightGem = approvedGems[0];
 
-  const handleSubmitSpot = (e: React.FormEvent) => {
+  const handleSubmitSpot = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !description || !location || !state || !photoUrl) return;
-    if (!isValidImageUrl(photoUrl)) return;
+    if (!title || !description || !location || !state || !photoUrl || !lat || !lng) {
+      setErrorMsg("Please fill in all fields.");
+      return;
+    }
+    if (!isValidImageUrl(photoUrl)) {
+      setErrorMsg("Please enter a valid image URL.");
+      return;
+    }
+    if (selectedCategories.length === 0) {
+      setErrorMsg("Please select at least one vibe category.");
+      return;
+    }
+    const parsedLat = Number(lat);
+    const parsedLng = Number(lng);
+    if (isNaN(parsedLat) || isNaN(parsedLng)) {
+      setErrorMsg("Please enter valid numeric coordinates.");
+      return;
+    }
 
-    submitGem({
-      title,
-      description,
-      location,
-      state,
-      category,
-      photo: photoUrl,
-    });
-
-    setShowSuccessMsg(true);
-    setTimeout(() => {
-      setIsModalOpen(false);
+    try {
+      setErrorMsg(null);
       setShowSuccessMsg(false);
-      setTitle("");
-      setDescription("");
-      setLocation("");
-      setState("");
-      setPhotoUrl("");
-      setCategory("Offbeat");
-    }, 4000);
+
+      await submitGem({
+        title,
+        description,
+        location,
+        state,
+        category: selectedCategories.join(", "),
+        photo: photoUrl,
+        geo: { lat: parsedLat, lng: parsedLng },
+      });
+
+      setShowSuccessMsg(true);
+      setTimeout(() => {
+        setIsModalOpen(false);
+        setShowSuccessMsg(false);
+        setTitle("");
+        setDescription("");
+        setLocation("");
+        setState("");
+        setPhotoUrl("");
+        setSelectedCategories(["Offbeat"]);
+        setLat("");
+        setLng("");
+      }, 4000);
+    } catch (err: any) {
+      console.error("Error submitting gem:", err);
+      setErrorMsg(err.message || "Failed to submit spot discovery.");
+    }
   };
 
   // Helper to color tier label
@@ -125,25 +156,8 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
             Official Chronicles
           </h2>
           <p className="font-sans text-sm text-earth-charcoal/70 leading-relaxed font-light">
-            Curated and verified guides designed by our team to help you navigate India's most iconic regions.
+            Curated and verified guides designed by our team to help you navigate India&apos;s most iconic regions.
           </p>
-
-          {/* Category Tabs */}
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-6 border-b border-earth-clay/10 pb-4">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat}
-                onClick={() => setActiveCategory(cat)}
-                className={`px-5 py-2 font-sans text-xs font-semibold uppercase tracking-widest border transition-all duration-200 rounded-none ${
-                  activeCategory === cat
-                    ? "bg-earth-forest border-earth-forest text-earth-sand"
-                    : "border-earth-clay/20 text-earth-charcoal/70 hover:border-earth-charcoal hover:text-earth-charcoal"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-          </div>
         </div>
 
         {/* Destinations Grid */}
@@ -164,9 +178,6 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                       loading="lazy"
                     />
                   </Link>
-                  <span className="absolute top-4 left-4 bg-earth-sand text-earth-forest px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border border-earth-clay/15 z-10">
-                    {dest.category}
-                  </span>
                   
                   {/* Heart button for wishlist */}
                   <button
@@ -281,85 +292,88 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                   key={gem.id}
                   className="group flex flex-col bg-[#142B1B] border border-white/5 hover:border-earth-saffron/30 hover:shadow-[0_0_30px_rgba(214,158,46,0.05)] transition-all duration-300 relative"
                 >
-                  {/* Photo */}
-                  <div className="relative aspect-[4/3] overflow-hidden bg-stone-850">
-                    <img
-                      src={gem.photo}
-                      alt={gem.title}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      loading="lazy"
-                    />
-                    {/* Points Tag */}
-                    <span className="absolute top-4 left-4 bg-earth-terracotta text-white px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider flex items-center space-x-1 shadow-md z-10">
-                      <Gift className="h-3 w-3 shrink-0" />
-                      <span>+{gem.pointsAwarded} pts awarded</span>
-                    </span>
-                    
-                    {/* Heart button for wishlist */}
-                    <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        toggleWishlist(gem.id);
-                      }}
-                      className="absolute top-4 right-4 p-2 bg-white/90 hover:bg-white text-earth-charcoal rounded-full transition-all shadow-md z-20 cursor-pointer border border-earth-clay/10"
-                      title={isWishlisted(gem.id) ? "Remove from Wishlist" : "Save to Wishlist"}
-                    >
-                      <Heart
-                        className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${
-                          isWishlisted(gem.id)
-                            ? "fill-red-500 text-red-500"
-                            : "text-earth-clay/60 hover:text-red-500"
-                        }`}
+                  <Link href={`/hidden-gems/${gem.id}`} className="flex flex-col h-full flex-grow">
+                    {/* Photo */}
+                    <div className="relative aspect-[4/3] overflow-hidden bg-stone-850">
+                      <img
+                        src={gem.photo}
+                        alt={gem.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
                       />
-                    </button>
-
-                    {/* If Gold submitter, show a badge on the image as well */}
-                    {gem.submitterTier === "Gold" && (
-                      <span className="absolute top-14 right-4 bg-earth-saffron text-earth-forest px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-widest shadow-md z-10">
-                        Gold Priority
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
-                    <div className="space-y-3">
-                      <span className="flex items-center space-x-1 text-xs text-earth-saffron/90 font-sans font-medium">
-                        <MapPin className="h-3.5 w-3.5 shrink-0" />
-                        <span>{gem.location}</span>
+                      {/* Points Tag */}
+                      <span className="absolute top-4 left-4 bg-earth-terracotta text-white px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider flex items-center space-x-1 shadow-md z-10">
+                        <Gift className="h-3 w-3 shrink-0" />
+                        <span>+{gem.pointsAwarded} pts awarded</span>
                       </span>
 
-                      <h3 className="font-serif text-xl font-bold text-white group-hover:text-earth-saffron transition-colors">
-                        {gem.title}
-                      </h3>
-                      <p className="font-sans text-sm text-earth-sand/70 line-clamp-3 leading-relaxed font-light">
-                        {gem.description}
-                      </p>
+                      {/* If Gold submitter, show a badge on the image as well */}
+                      {gem.submitterTier === "Gold" && (
+                        <span className="absolute top-14 right-4 bg-earth-saffron text-earth-forest px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-widest shadow-md z-10">
+                          Gold Priority
+                        </span>
+                      )}
                     </div>
 
-                    <div className="pt-4 border-t border-white/5 flex items-center justify-between">
-                      {/* Submitter details */}
-                      <div className="flex items-center space-x-2">
-                        <div className="h-7 w-7 rounded-none bg-earth-saffron/10 border border-earth-saffron/20 flex items-center justify-center text-[10px] font-bold text-earth-saffron font-sans">
-                          {gem.submittedBy.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase()}
-                        </div>
-                        <div className="flex flex-col">
-                          <div className="flex items-center space-x-1">
-                            <span className="text-xs font-sans font-medium text-white">{gem.submittedBy}</span>
-                            {gem.submitterVerified && (
-                              <ShieldCheck className="h-3.5 w-3.5 text-blue-400 fill-[#142B1B] shrink-0" />
-                            )}
-                          </div>
-                          <span className={`text-[9px] font-sans tracking-widest uppercase font-bold ${getTierColorClass(gem.submitterTier)}`}>
-                            {gem.submitterTier} Explorer
-                          </span>
-                        </div>
+                    {/* Content */}
+                    <div className="p-6 flex-1 flex flex-col justify-between space-y-6">
+                      <div className="space-y-3">
+                        <span className="flex items-center space-x-1 text-xs text-earth-saffron/90 font-sans font-medium">
+                          <MapPin className="h-3.5 w-3.5 shrink-0" />
+                          <span>{gem.location}</span>
+                        </span>
+
+                        <h3 className="font-serif text-xl font-bold text-white group-hover:text-earth-saffron transition-colors">
+                          {gem.title}
+                        </h3>
+                        <p className="font-sans text-sm text-earth-sand/70 line-clamp-3 leading-relaxed font-light">
+                          {gem.description}
+                        </p>
                       </div>
-                      <span className="text-[10px] font-sans text-earth-sand/40">
-                        {gem.createdAt}
-                      </span>
+
+                      <div className="pt-4 border-t border-white/5 flex items-center justify-between">
+                        {/* Submitter details */}
+                        <div className="flex items-center space-x-2">
+                          <div className="h-7 w-7 rounded-none bg-earth-saffron/10 border border-earth-saffron/20 flex items-center justify-center text-[10px] font-bold text-earth-saffron font-sans">
+                            {gem.submittedBy.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase()}
+                          </div>
+                          <div className="flex flex-col">
+                            <div className="flex items-center space-x-1">
+                              <span className="text-xs font-sans font-medium text-white">{gem.submittedBy}</span>
+                              {gem.submitterVerified && (
+                                <ShieldCheck className="h-3.5 w-3.5 text-blue-400 fill-[#142B1B] shrink-0" />
+                              )}
+                            </div>
+                            <span className={`text-[9px] font-sans tracking-widest uppercase font-bold ${getTierColorClass(gem.submitterTier)}`}>
+                              {gem.submitterTier} Explorer
+                            </span>
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-sans text-earth-sand/40">
+                          {gem.createdAt}
+                        </span>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
+
+                  {/* Heart button for wishlist */}
+                  <button
+                    onClick={(e) => {
+                      e.preventDefault();
+                      e.stopPropagation();
+                      toggleWishlist(gem.id);
+                    }}
+                    className="absolute top-4 right-4 p-2 bg-white/90 hover:bg-white text-earth-charcoal rounded-full transition-all shadow-md z-20 cursor-pointer border border-earth-clay/10"
+                    title={isWishlisted(gem.id) ? "Remove from Wishlist" : "Save to Wishlist"}
+                  >
+                    <Heart
+                      className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${
+                        isWishlisted(gem.id)
+                          ? "fill-red-500 text-red-500"
+                          : "text-earth-clay/60 hover:text-red-500"
+                      }`}
+                    />
+                  </button>
                 </article>
               ))}
             </div>
@@ -407,7 +421,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
             </h3>
 
             <p className="font-sans text-sm text-earth-charcoal/80 leading-relaxed font-light">
-              "{spotlightGem ? spotlightGem.description : "We had to trek 2 days through the rugged Lunak valley to reach this 12th-century cave. It hangs over the gorge like a honeycomb of mud bricks. SafarNama's verification gave us the trust to embark on this journey safely."}"
+              &quot;{spotlightGem ? spotlightGem.description : "We had to trek 2 days through the rugged Lunak valley to reach this 12th-century cave. It hangs over the gorge like a honeycomb of mud bricks. SafarNama&apos;s verification gave us the trust to embark on this journey safely."}&quot;
             </p>
 
             {/* Quote block author */}
@@ -469,13 +483,20 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
             {showSuccessMsg ? (
               <div className="p-6 bg-earth-forest/10 border border-earth-forest text-earth-forest text-center space-y-4">
                 <Gift className="h-10 w-10 text-earth-saffron mx-auto animate-bounce" />
-                <h4 className="font-serif text-lg font-bold">Spot Submitted!</h4>
-                <p className="font-sans text-xs font-light">
-                  Your submission is now <span className="font-bold uppercase tracking-wider text-earth-terracotta bg-earth-terracotta/5 px-2 py-0.5 border border-earth-terracotta/10">Pending</span>. Go to your Dashboard's Admin Control Panel to approve it and instantly claim your +100 points!
+                <h4 className="font-serif text-lg font-bold">Spot Submitted Successfully!</h4>
+                <p className="font-sans text-xs font-light leading-relaxed">
+                  Your submission is now <span className="font-bold uppercase tracking-wider text-earth-terracotta bg-earth-terracotta/5 px-2 py-0.5 border border-earth-terracotta/10">Pending</span>. The destination will appear on the map and lists once the administrator reviews and approves it. You&apos;ll earn <span className="font-bold text-earth-terracotta">+100 points</span> on approval!
                 </p>
               </div>
             ) : (
               <form onSubmit={handleSubmitSpot} className="space-y-4 font-sans">
+                {errorMsg && (
+                  <div className="p-3 bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center space-x-2 rounded-none animate-in fade-in duration-300">
+                    <ShieldAlert className="h-4 w-4 text-red-650 shrink-0" />
+                    <span>{errorMsg}</span>
+                  </div>
+                )}
+
                 {/* Title */}
                 <div className="space-y-1">
                   <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
@@ -523,23 +544,69 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                   </div>
                 </div>
 
-                {/* Category & Photo */}
+                {/* Coordinates Row */}
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-1">
                     <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
-                      Category
+                      Latitude Coordinate *
                     </label>
-                    <select
-                      value={category}
-                      onChange={(e) => setCategory(e.target.value)}
-                      className="w-full p-2.5 bg-white border border-earth-clay/20 text-sm focus:outline-none focus:border-earth-terracotta rounded-none"
-                    >
-                      {CATEGORIES.filter((c) => c !== "All").map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                    </select>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      value={lat}
+                      onChange={(e) => setLat(e.target.value)}
+                      placeholder="e.g. 33.1711"
+                      className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-sm focus:outline-none focus:border-earth-terracotta rounded-none text-earth-charcoal"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
+                      Longitude Coordinate *
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      value={lng}
+                      onChange={(e) => setLng(e.target.value)}
+                      placeholder="e.g. 77.2356"
+                      className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-sm focus:outline-none focus:border-earth-terracotta rounded-none text-earth-charcoal"
+                    />
+                  </div>
+                </div>
+
+                {/* Category Vibe selector & Photo URL */}
+                <div className="space-y-4 border border-earth-clay/10 p-4 bg-earth-sand/5">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
+                      Vibe Categories (Select all that apply)
+                    </label>
+                    <div className="flex flex-wrap gap-1.5 p-3 bg-white border border-earth-clay/20 max-h-[100px] overflow-y-auto">
+                      {CATEGORIES.filter((c) => c !== "All").map((cat) => {
+                        const isSelected = selectedCategories.includes(cat);
+                        return (
+                          <button
+                            key={cat}
+                            type="button"
+                            onClick={() => {
+                              if (isSelected) {
+                                setSelectedCategories(selectedCategories.filter((c) => c !== cat));
+                              } else {
+                                setSelectedCategories([...selectedCategories, cat]);
+                              }
+                            }}
+                            className={`px-2.5 py-1 text-[10px] font-sans font-semibold uppercase tracking-wider transition-all border rounded-none cursor-pointer ${
+                              isSelected
+                                ? "bg-earth-terracotta border-earth-terracotta text-white shadow-sm"
+                                : "bg-white border-earth-clay/10 text-earth-charcoal/85 hover:border-earth-terracotta hover:text-earth-terracotta"
+                            }`}
+                          >
+                            {cat}
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   <div className="space-y-1">
@@ -552,7 +619,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                       value={photoUrl}
                       onChange={(e) => setPhotoUrl(e.target.value)}
                       placeholder="e.g., https://images.unsplash.com/photo-1626590212990-2e40026e6cb5?auto=format&fit=crop&w=800&q=80"
-                      className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none text-earth-charcoal"
+                      className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none text-earth-charcoal"
                     />
                     
                     {/* Live Validation Warning */}
@@ -606,7 +673,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                   </button>
                   <button
                     type="submit"
-                    disabled={!title || !description || !location || !state || !photoUrl || !isValidImageUrl(photoUrl)}
+                    disabled={!title || !description || !location || !state || !photoUrl || !lat || !lng || !isValidImageUrl(photoUrl) || selectedCategories.length === 0}
                     className="px-6 py-2.5 bg-earth-terracotta hover:bg-earth-forest disabled:bg-earth-clay/35 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none cursor-pointer transition-all duration-200"
                   >
                     Submit Discovery

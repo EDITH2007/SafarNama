@@ -18,6 +18,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import MapPicker from "@/components/MapPicker";
 import { useUser } from "@/components/UserContext";
+import { CATEGORIES } from "@/app/data/mockData";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -314,7 +315,7 @@ export default function EditDestinationPage({ params }: PageProps) {
                       onChange={(e) => setCategory(e.target.value)}
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     >
-                      {["Hills", "Beaches", "Heritage", "Wildlife", "Offbeat"].map((cat) => (
+                      {CATEGORIES.filter((c) => c !== "All").map((cat) => (
                         <option key={cat} value={cat}>
                           {cat}
                         </option>

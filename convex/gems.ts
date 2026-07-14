@@ -224,6 +224,15 @@ export const approveGem = mutation({
         timestamp: Date.now(),
         referenceId: gem.title,
       });
+
+      // Insert notification
+      await ctx.db.insert("notifications", {
+        userId: gem.submittedBy,
+        message: `Your submission '${gem.title}' was approved! +${pointsToAward} pts`,
+        read: false,
+        createdAt: Date.now(),
+        relatedSubmissionId: args.gemId,
+      });
     }
 
     return { success: true };
@@ -254,13 +263,110 @@ export const rejectGem = mutation({
       throw new Error("Gem is already processed");
     }
 
+    const rejectionReason = args.rejectionReason || "Did not meet submission guidelines";
+
     // Update gem status to rejected
     await ctx.db.patch(args.gemId, {
       status: "rejected",
       approvedBy: admin._id,
-      rejectionReason: args.rejectionReason || "Did not meet submission guidelines",
+      rejectionReason: rejectionReason,
+    });
+
+    // Insert notification
+    await ctx.db.insert("notifications", {
+      userId: gem.submittedBy,
+      message: `Your submission '${gem.title}' was rejected. Reason: ${rejectionReason}`,
+      read: false,
+      createdAt: Date.now(),
+      relatedSubmissionId: args.gemId,
     });
 
     return { success: true };
   },
 });
+
+// Edit a gem (admin only)
+export const editGem = mutation({
+  args: {
+    id: v.id("hiddenGems"),
+    title: v.string(),
+    description: v.string(),
+    location: v.string(),
+    state: v.string(),
+    category: v.string(),
+    photo: v.optional(v.string()),
+    photos: v.optional(v.array(v.string())),
+    geo: v.object({
+      lat: v.number(),
+      lng: v.number(),
+    }),
+    bestTimeToVisit: v.optional(v.string()),
+    howToReach: v.optional(v.string()),
+    nearbyAttractions: v.optional(v.array(v.string())),
+    tips: v.optional(v.array(v.string())),
+    photoGallery: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Unauthorized: Not authenticated");
+    }
+    const admin = await ctx.db.get(userId);
+    if (!admin || admin.role !== "admin") {
+      throw new Error("Unauthorized: Admin privileges required");
+    }
+
+    const { id, ...data } = args;
+    await ctx.db.patch(id, data);
+    return { success: true };
+  },
+});
+
+// Get a gem by ID (public)
+export const getGemById = query({
+  args: { id: v.id("hiddenGems") },
+  handler: async (ctx, args) => {
+    const gem = await ctx.db.get(args.id);
+    if (!gem) return null;
+    const submitter = await ctx.db.get(gem.submittedBy);
+    return {
+      id: gem._id,
+      ...gem,
+      submittedBy: submitter?.name || submitter?.email?.split("@")[0] || "Anonymous",
+      submitterTier: submitter?.tier || "Bronze",
+      submitterVerified: submitter?.isVerified || false,
+      createdAt: new Date(gem.createdAt).toLocaleDateString("en-US", {
+        month: "long",
+        year: "numeric",
+      }),
+    };
+  },
+});
+
+// Query gems submitted by the current authenticated user
+export const getMySubmissions = query({
+  args: {},
+  handler: async (ctx) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return [];
+    }
+    const gems = await ctx.db
+      .query("hiddenGems")
+      .withIndex("by_submittedBy", (q) => q.eq("submittedBy", userId))
+      .collect();
+
+    // Sort by createdAt descending
+    gems.sort((a, b) => b.createdAt - a.createdAt);
+
+    const results = [];
+    for (const gem of gems) {
+      results.push({
+        id: gem._id,
+        ...gem,
+      });
+    }
+    return results;
+  },
+});
+

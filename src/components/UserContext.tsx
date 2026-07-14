@@ -55,6 +55,15 @@ export interface PlanDay {
   sourceType?: "official" | "gem" | "generic";
 }
 
+export interface InAppNotification {
+  _id: string;
+  userId: string;
+  message: string;
+  read: boolean;
+  createdAt: number;
+  relatedSubmissionId?: string;
+}
+
 interface UserContextType {
   currentUser: UserProfile | null;
   profiles: UserProfile[];
@@ -72,7 +81,7 @@ interface UserContextType {
   expenses: Expense[];
   addExpense: (tripId: string, amount: number, category: Expense["category"], description: string) => void;
   generateAILocalPlan: (location: string, categories: string[], days: number) => PlanDay[];
-  submitGem: (gem: Omit<HiddenGem, "id" | "submittedBy" | "submitterTier" | "submitterVerified" | "pointsAwarded" | "createdAt" | "status">) => Promise<void>;
+  submitGem: (gem: Omit<HiddenGem, "id" | "submittedBy" | "submitterTier" | "submitterVerified" | "pointsAwarded" | "createdAt" | "status">) => Promise<string>;
   approveGem: (gemId: string) => Promise<void>;
   rejectGem: (gemId: string, reason?: string) => Promise<void>;
   addDestination: (dest: {
@@ -101,6 +110,9 @@ interface UserContextType {
   isAuthenticated: boolean;
   isLoading: boolean;
   logout: () => Promise<void>;
+  mySubmissions: any[];
+  notifications: InAppNotification[];
+  markNotificationsAsRead: () => Promise<void>;
 }
 
 const PLACEHOLDER_USER: UserProfile = {
@@ -158,6 +170,21 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   
   const ensureAdminStatusMutation = useMutation(api.users.ensureAdminStatus);
   const removeFakeUsersMutation = useMutation(api.users.removeFakeUsers);
+
+  const dbMySubmissions = useQuery(api.gems.getMySubmissions);
+  const mySubmissions = dbMySubmissions || EMPTY_ARRAY;
+
+  const dbNotifications = useQuery(api.notifications.getUserNotifications);
+  const notifications = dbNotifications || EMPTY_ARRAY;
+
+  const markNotificationsAsReadMutation = useMutation(api.notifications.markAllAsRead);
+  const markNotificationsAsRead = async () => {
+    try {
+      await markNotificationsAsReadMutation();
+    } catch (err) {
+      console.error("Failed to mark notifications as read:", err);
+    }
+  };
 
   // Auto-seed if database is empty
   useEffect(() => {
@@ -389,12 +416,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       );
       prioritizedDestinations = [...categoryDests, ...otherDests];
 
-      const categoryGems = matchedGems.filter((g) =>
-        catLowers.includes(g.category.toLowerCase())
-      );
-      const otherGems = matchedGems.filter((g) =>
-        !catLowers.includes(g.category.toLowerCase())
-      );
+      const categoryGems = matchedGems.filter((g) => {
+        const gemCats = g.category.split(",").map((c) => c.trim().toLowerCase());
+        return gemCats.some((c) => catLowers.includes(c));
+      });
+      const otherGems = matchedGems.filter((g) => {
+        const gemCats = g.category.split(",").map((c) => c.trim().toLowerCase());
+        return !gemCats.some((c) => catLowers.includes(c));
+      });
       prioritizedGems = [...categoryGems, ...otherGems];
     }
 
@@ -447,6 +476,51 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           "Discover ancient limestone or rock-cut caves tucked away in the countryside of {location}, guided by local folklore.",
           "Visit a remote, traditional settlement in the outskirts of {location} to experience authentic hospitality and a local home-cooked meal.",
           "Explore a serene offbeat trail near {location} that remains completely untouched by modern commercial tourism."
+        ]
+      },
+      spiritual: {
+        titles: ["Ancient Monastery Meditation", "Riverside Aarti Gathering", "Sacred Temple Trail Walk", "Quiet Mountain Hermitage"],
+        descs: [
+          "Visit a peaceful monastic complex in {location} to experience local spiritual chants and a silent meditation session.",
+          "Join the locals for a serene evening prayer ceremony by the holy waters or ghats in {location}.",
+          "Walk the ancient pilgrim path in {location}, observing sacred rituals and historical shrine structures.",
+          "Ascend to a secluded sanctuary nestled in the hills of {location}, enjoying pristine silence and spiritual peace."
+        ]
+      },
+      trek: {
+        titles: ["High Mountain Ridge Trek", "Alpine Meadows Crossing", "Rugged Mountain Pass Journey", "Glacial Valley Hiking"],
+        descs: [
+          "Ascend steep mountain ridges of {location} for panoramic views of surrounding peaks and beautiful valleys.",
+          "Trek through lush alpine pastures and wildflower meadows in the higher reaches of {location}.",
+          "Navigate a challenging pass or trail in {location}, guided by expert mountaineers.",
+          "Walk alongside crystal clear mountain rivers and glacial lakes in the wilderness of {location}."
+        ]
+      },
+      waterfall: {
+        titles: ["Secret Jungle Waterfall Hike", "Cascading Gorge Pool Dip", "Multi-tiered Forest Falls View", "Hidden Valley Stream Search"],
+        descs: [
+          "Follow a scenic stream trail through the jungle of {location} to stumble upon a magnificent secret waterfall.",
+          "Swim in the refreshing natural plunge pool beneath a massive cascading waterfall in {location}.",
+          "Trek to a viewpoint overlooking a spectacular multi-tiered water cascade deep in the woods of {location}.",
+          "Discover quiet streams and cascading spring pools hidden away in the wilderness of {location}."
+        ]
+      },
+      desert: {
+        titles: ["Golden Sand Dunes Safari", "Sunset Camel Caravan Trail", "Desert Oasis Heritage Walk", "Starry Night Dunes Camp"],
+        descs: [
+          "Ride through the sweeping golden sand dunes of {location} in a 4x4 vehicle, experiencing the vast desert landscape.",
+          "Embark on a traditional camel ride along the ridges of the desert at sunset in {location}.",
+          "Wander through a historical village or oasis in the arid plains of {location}, learning about desert water systems.",
+          "Spend an unforgettable evening at a desert campsite in {location}, enjoying traditional music under a star-filled sky."
+        ]
+      },
+      camping: {
+        titles: ["Lakeside Starlit Camp", "Forest Canopy Wilderness Camp", "High Peak Basecamp Night", "River Valley Camping Adventure"],
+        descs: [
+          "Set up camp by a serene freshwater lake in {location}, enjoying a campfire and stargazing under the open sky.",
+          "Pitch your tent under the dense canopy of trees in a protected forest area near {location}, listening to the night sounds.",
+          "Stay at a high-altitude basecamp in the mountains of {location}, preparing for the morning's peak exploration.",
+          "Camp in a lush green valley beside a rushing mountain river in the outskirts of {location}."
         ]
       }
     };
@@ -552,7 +626,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       | "status"
     >
   ) => {
-    await submitGemMutation({
+    return await submitGemMutation({
       title: gem.title,
       description: gem.description,
       location: gem.location,
@@ -729,6 +803,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         isAuthenticated,
         isLoading,
         logout,
+        mySubmissions,
+        notifications,
+        markNotificationsAsRead,
       }}
     >
       {children}

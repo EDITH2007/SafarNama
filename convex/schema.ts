@@ -74,6 +74,11 @@ export default defineSchema({
     rejectionReason: v.optional(v.string()), // If status is "rejected"
     approvedAt: v.optional(v.number()),
     createdAt: v.number(),
+    bestTimeToVisit: v.optional(v.string()),
+    howToReach: v.optional(v.string()),
+    nearbyAttractions: v.optional(v.array(v.string())),
+    tips: v.optional(v.array(v.string())),
+    photoGallery: v.optional(v.array(v.string())),
   })
     .index("by_status", ["status"])
     .index("by_submittedBy", ["submittedBy"])
@@ -182,4 +187,15 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_timestamp", ["timestamp"]),
+
+  // In-app notifications for users
+  notifications: defineTable({
+    userId: v.id("users"),
+    message: v.string(),
+    read: v.boolean(),
+    createdAt: v.number(),
+    relatedSubmissionId: v.optional(v.id("hiddenGems")),
+  })
+    .index("by_user_unread", ["userId", "read"])
+    .index("by_user_created", ["userId", "createdAt"]),
 });

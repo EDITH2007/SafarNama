@@ -97,7 +97,7 @@ export const getTier = (points: number): "Bronze" | "Silver" | "Gold" => {
   return "Bronze";
 };
 
-export const CATEGORIES = ["All", "Hills", "Beaches", "Heritage", "Wildlife", "Offbeat"];
+export const CATEGORIES = ["All", "Hills", "Beaches", "Heritage", "Wildlife", "Spiritual", "Trek", "Trekking", "Waterfall", "Desert", "Camping", "Offbeat", "Adventure", "Food & Local Cuisine", "Photography Spot", "Family-Friendly", "Solo Travel", "Offbeat/Remote", "Historical Ruins", "Sunset/Sunrise Point"];
 
 export const mockDestinations: Destination[] = [
   {

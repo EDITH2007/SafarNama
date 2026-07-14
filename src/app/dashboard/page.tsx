@@ -8,6 +8,7 @@ import Leaderboard from "@/components/Leaderboard";
 import MapPicker from "@/components/MapPicker";
 import { CategoryDonutChart, TripExpensesBarChart } from "@/components/ExpenseCharts";
 import { useUser, PlanDay } from "@/components/UserContext";
+import { CATEGORIES } from "@/app/data/mockData";
 import {
   Compass,
   Gift,
@@ -66,9 +67,10 @@ export default function Dashboard() {
     flagBlog,
     deleteBlog,
     logout,
+    mySubmissions,
   } = useUser();
 
-  const [activeTab, setActiveTab] = useState<"profile" | "wishlist" | "expenses" | "planner" | "addgem" | "admin">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "submissions" | "wishlist" | "expenses" | "planner" | "addgem" | "admin">("profile");
 
   // Admin section sub-navigation states
   const [adminSubTab, setAdminSubTab] = useState<"spots" | "reviews" | "blogs" | "add_destination">("spots");
@@ -217,10 +219,12 @@ export default function Dashboard() {
   const [gemTitle, setGemTitle] = useState("");
   const [gemLocName, setGemLocName] = useState("");
   const [gemState, setGemState] = useState("");
-  const [gemCategory, setGemCategory] = useState("Offbeat");
+  const [selectedGemCategories, setSelectedGemCategories] = useState<string[]>(["Offbeat"]);
   const [gemDesc, setGemDesc] = useState("");
   const [gemLat, setGemLat] = useState<number>(0);
   const [gemLng, setGemLng] = useState<number>(0);
+  const [gemSuccess, setGemSuccess] = useState(false);
+  const [gemError, setGemError] = useState<string | null>(null);
   
   // Image URL state and validation helper
   const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
@@ -239,36 +243,59 @@ export default function Dashboard() {
     );
   }
 
-  const handleAddGemSubmit = (e: React.FormEvent) => {
+  const handleAddGemSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!gemTitle || !gemLocName || !gemState || !gemDesc || !uploadedImageUrl) return;
-    if (!isValidImageUrl(uploadedImageUrl)) return;
+    if (!gemTitle || !gemLocName || !gemState || !gemDesc || !uploadedImageUrl) {
+      setGemError("Please fill in all fields.");
+      return;
+    }
+    if (!isValidImageUrl(uploadedImageUrl)) {
+      setGemError("Please enter a valid image URL.");
+      return;
+    }
+    if (selectedGemCategories.length === 0) {
+      setGemError("Please select at least one category vibe.");
+      return;
+    }
 
-    submitGem({
-      title: gemTitle,
-      description: gemDesc,
-      location: gemLocName,
-      state: gemState,
-      category: gemCategory,
-      photo: uploadedImageUrl,
-      geo: { lat: gemLat, lng: gemLng },
-    });
+    try {
+      setGemError(null);
+      setGemSuccess(false);
 
-    // Reset Form
-    setGemTitle("");
-    setGemLocName("");
-    setGemState("");
-    setGemCategory("Offbeat");
-    setGemDesc("");
-    setGemLat(0);
-    setGemLng(0);
-    setUploadedImageUrl("");
-    
-    // Switch to appropriate tab
-    if (currentUser?.email === "230107anu@gmail.com") {
-      setActiveTab("admin");
-    } else {
-      setActiveTab("profile");
+      await submitGem({
+        title: gemTitle,
+        description: gemDesc,
+        location: gemLocName,
+        state: gemState,
+        category: selectedGemCategories.join(", "),
+        photo: uploadedImageUrl,
+        geo: { lat: gemLat, lng: gemLng },
+      });
+
+      setGemSuccess(true);
+
+      // Reset Form
+      setGemTitle("");
+      setGemLocName("");
+      setGemState("");
+      setSelectedGemCategories(["Offbeat"]);
+      setGemDesc("");
+      setGemLat(0);
+      setGemLng(0);
+      setUploadedImageUrl("");
+
+      setTimeout(() => {
+        setGemSuccess(false);
+        // Switch to appropriate tab
+        if (currentUser?.email === "230107anu@gmail.com") {
+          setActiveTab("admin");
+        } else {
+          setActiveTab("profile");
+        }
+      }, 4000);
+    } catch (err: any) {
+      console.error("Error submitting gem:", err);
+      setGemError(err.message || "Failed to submit discovery guide.");
     }
   };
 
@@ -378,6 +405,7 @@ export default function Dashboard() {
             <div className="flex border-b border-earth-clay/10 pb-2 flex-wrap gap-2">
               {[
                 { id: "profile", name: "My Profile & Badges", icon: Award },
+                { id: "submissions", name: "My Submissions", icon: Compass },
                 { id: "wishlist", name: "My Wishlist", icon: Heart },
                 { id: "expenses", name: "Expense Visualizer", icon: Activity },
                 { id: "planner", name: "AI Local Planner", icon: Route },
@@ -494,6 +522,103 @@ export default function Dashboard() {
                 </div>
               )}
 
+              {/* My Submissions Tab */}
+              {activeTab === "submissions" && (
+                <div className="space-y-6">
+                  <h3 className="font-serif text-lg font-bold text-earth-forest border-b border-earth-clay/5 pb-2">
+                    My Submissions
+                  </h3>
+                  
+                  {mySubmissions && mySubmissions.length > 0 ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-300">
+                      {mySubmissions.map((gem) => (
+                        <div
+                          key={gem.id}
+                          className="bg-earth-sand/20 border border-earth-clay/10 flex flex-col justify-between hover:border-earth-terracotta/30 transition-all duration-300"
+                        >
+                          <div className="relative aspect-[16/10] overflow-hidden">
+                            {gem.photo ? (
+                              <img src={gem.photo} alt={gem.title} className="w-full h-full object-cover" />
+                            ) : (
+                              <div className="w-full h-full bg-earth-sand flex items-center justify-center text-earth-clay/50">No photo available</div>
+                            )}
+                            <div className="absolute top-4 left-4 flex flex-wrap gap-1 z-10 max-w-[80%]">
+                              {(gem.category || "").split(",").map((cat: string) => (
+                                <span key={cat} className="bg-earth-sand text-earth-forest border border-earth-clay/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                                  {cat.trim()}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="absolute top-4 right-4 z-10">
+                              {gem.status === "approved" && (
+                                <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border border-green-200 bg-green-50 text-green-800 shadow-sm">
+                                  Approved
+                                </span>
+                              )}
+                              {gem.status === "pending" && (
+                                <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border border-amber-200 bg-amber-50 text-amber-800 shadow-sm">
+                                  Pending
+                                </span>
+                              )}
+                              {gem.status === "rejected" && (
+                                <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border border-red-200 bg-red-50 text-red-800 shadow-sm">
+                                  Rejected
+                                </span>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                            <div className="space-y-2">
+                              <div className="flex items-center text-[10px] font-sans text-earth-clay">
+                                <span className="flex items-center space-x-1">
+                                  <MapPin className="h-3 w-3 shrink-0" />
+                                  <span>{gem.location}, {gem.state}</span>
+                                </span>
+                              </div>
+                              <h4 className="font-serif text-base font-bold text-earth-charcoal leading-tight">
+                                {gem.title}
+                              </h4>
+                              <p className="text-xs text-earth-charcoal/70 line-clamp-3 font-light leading-relaxed">
+                                {gem.description}
+                              </p>
+                              
+                              {gem.status === "rejected" && gem.rejectionReason && (
+                                <div className="mt-2 p-3 bg-red-50/50 border border-red-100 text-[11px] text-red-800 font-sans">
+                                  <strong>Reason for rejection:</strong> {gem.rejectionReason}
+                                </div>
+                              )}
+                              
+                              {gem.status === "approved" && gem.pointsAwarded && (
+                                <div className="mt-2 text-xs text-earth-forest font-semibold flex items-center space-x-1">
+                                  <Coins className="h-3.5 w-3.5 text-earth-saffron animate-pulse" />
+                                  <span>Awarded +{gem.pointsAwarded} points</span>
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="text-[10px] text-earth-clay/60 text-right pt-2 border-t border-earth-clay/5">
+                              Submitted on {new Date(gem.createdAt).toLocaleDateString("en-US", {
+                                month: "long",
+                                day: "numeric",
+                                year: "numeric",
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-16 border border-dashed border-earth-clay/20 bg-earth-sand/5">
+                      <Compass className="h-12 w-12 text-earth-clay/25 mx-auto mb-3" />
+                      <p className="font-sans text-xs text-earth-charcoal/60 font-light">
+                        You haven't submitted any spots yet. Click the "Add a Spot Discovery" tab to submit your first hidden gem!
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* Wishlist Tab */}
               {activeTab === "wishlist" && (
                 <div className="space-y-6">
@@ -510,9 +635,13 @@ export default function Dashboard() {
                         >
                           <div className="relative aspect-[16/10] overflow-hidden">
                             <img src={item.type === "official" ? item.photos?.[0] : item.photo} alt={item.title} className="w-full h-full object-cover" />
-                            <span className="absolute top-4 left-4 bg-earth-sand text-earth-forest border border-earth-clay/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">
-                              {item.category}
-                            </span>
+                            <div className="absolute top-4 left-4 flex flex-wrap gap-1 z-10 max-w-[80%]">
+                              {item.category.split(",").map((cat) => (
+                                <span key={cat} className="bg-earth-sand text-earth-forest border border-earth-clay/15 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+                                  {cat.trim()}
+                                </span>
+                              ))}
+                            </div>
                             <button
                               onClick={() => toggleWishlist(item.id)}
                               className="absolute top-4 right-4 p-2 bg-red-500 text-white rounded-full transition-all cursor-pointer"
@@ -940,6 +1069,13 @@ export default function Dashboard() {
                     </p>
                   </div>
 
+                  {gemSuccess && (
+                    <div className="p-4 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-2 rounded-none animate-in fade-in duration-300">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+                      <span>Your Spot Discovery has been submitted successfully! The destination will appear on the map and lists once the administrator reviews and approves it.</span>
+                    </div>
+                  )}
+
                   <form onSubmit={handleAddGemSubmit} className="space-y-6 font-sans text-xs">
                     
                     {/* India Map picker selector */}
@@ -958,9 +1094,16 @@ export default function Dashboard() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {gemError && (
+                      <div className="p-4 bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center space-x-2 rounded-none animate-in fade-in duration-300">
+                        <ShieldAlert className="h-5 w-5 text-red-650 shrink-0" />
+                        <span>{gemError}</span>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {/* Title */}
-                      <div className="space-y-1">
+                      <div className="space-y-1 md:col-span-1">
                         <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
                           Spot Name
                         </label>
@@ -974,22 +1117,36 @@ export default function Dashboard() {
                         />
                       </div>
 
-                      {/* Category */}
-                      <div className="space-y-1">
+                      {/* Vibe Category Selector (Multi-select) */}
+                      <div className="space-y-1.5 md:col-span-2">
                         <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                          Vibe Category
+                          Vibe Categories (Select all that apply)
                         </label>
-                        <select
-                          value={gemCategory}
-                          onChange={(e) => setGemCategory(e.target.value)}
-                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none animate-none"
-                        >
-                          <option value="Hills">Hills & Gorges</option>
-                          <option value="Beaches">Secret Beaches</option>
-                          <option value="Heritage">Heritage Ruins</option>
-                          <option value="Wildlife">Forest Trails</option>
-                          <option value="Offbeat">Offbeat Caves</option>
-                        </select>
+                        <div className="flex flex-wrap gap-1.5 p-3 bg-earth-sand/5 border border-earth-clay/20 max-h-[120px] overflow-y-auto">
+                          {CATEGORIES.filter((c) => c !== "All").map((cat) => {
+                            const isSelected = selectedGemCategories.includes(cat);
+                            return (
+                              <button
+                                key={cat}
+                                type="button"
+                                onClick={() => {
+                                  if (isSelected) {
+                                    setSelectedGemCategories(selectedGemCategories.filter((c) => c !== cat));
+                                  } else {
+                                    setSelectedGemCategories([...selectedGemCategories, cat]);
+                                  }
+                                }}
+                                className={`px-2.5 py-1 text-[10px] font-sans font-semibold uppercase tracking-wider transition-all border rounded-none cursor-pointer ${
+                                  isSelected
+                                    ? "bg-earth-terracotta border-earth-terracotta text-white shadow-sm"
+                                    : "bg-white border-earth-clay/10 text-earth-charcoal/80 hover:border-earth-terracotta hover:text-earth-terracotta"
+                                }`}
+                              >
+                                {cat}
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
                     </div>
 
@@ -1010,7 +1167,7 @@ export default function Dashboard() {
                       </div>
 
                       {/* State */}
-                      <div className="space-y-1">
+                      <div className="md:col-span-2 space-y-1">
                         <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
                           State Name
                         </label>
@@ -1024,13 +1181,36 @@ export default function Dashboard() {
                         />
                       </div>
 
-                      {/* Location Coordinates Lat/Lng autofill visual */}
-                      <div className="space-y-1 bg-earth-sand/30 border border-earth-clay/10 p-2 flex flex-col justify-center select-none text-[9px] font-mono leading-tight">
-                        <span className="font-sans font-bold text-earth-clay uppercase text-[8px] tracking-wider mb-1">
-                          Map Coordinates
-                        </span>
-                        <div>Lat: {gemLat || "Not Set"}</div>
-                        <div>Lng: {gemLng || "Not Set"}</div>
+                      {/* Latitude */}
+                      <div className="md:col-span-2 space-y-1">
+                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                          Latitude Coordinate *
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          required
+                          value={gemLat === 0 ? "" : gemLat}
+                          onChange={(e) => setGemLat(Number(e.target.value))}
+                          placeholder="e.g. 33.1711"
+                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                        />
+                      </div>
+
+                      {/* Longitude */}
+                      <div className="md:col-span-2 space-y-1">
+                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                          Longitude Coordinate *
+                        </label>
+                        <input
+                          type="number"
+                          step="any"
+                          required
+                          value={gemLng === 0 ? "" : gemLng}
+                          onChange={(e) => setGemLng(Number(e.target.value))}
+                          placeholder="e.g. 77.2356"
+                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                        />
                       </div>
                     </div>
 
@@ -1092,7 +1272,7 @@ export default function Dashboard() {
 
                     <button
                       type="submit"
-                      disabled={!gemTitle || !gemLocName || !gemState || !gemDesc || !uploadedImageUrl || !isValidImageUrl(uploadedImageUrl)}
+                      disabled={!gemTitle || !gemLocName || !gemState || !gemDesc || !uploadedImageUrl || !isValidImageUrl(uploadedImageUrl) || selectedGemCategories.length === 0}
                       className="w-full py-3 bg-earth-forest hover:bg-earth-terracotta disabled:bg-earth-clay/30 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer shadow-md"
                     >
                       Submit Discovery Guide
@@ -1210,9 +1390,11 @@ export default function Dashboard() {
                                       <div className="flex-1 space-y-1">
                                         <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
                                           <span className="font-serif text-sm font-bold text-earth-charcoal">{g.title}</span>
-                                          <span className="px-2 py-0.5 text-[9px] uppercase font-bold bg-earth-sand border border-earth-clay/10 text-earth-clay">
-                                            {g.category}
-                                          </span>
+                                          {g.category.split(",").map((cat) => (
+                                            <span key={cat} className="px-2 py-0.5 text-[9px] uppercase font-bold bg-earth-sand border border-earth-clay/10 text-earth-clay">
+                                              {cat.trim()}
+                                            </span>
+                                          ))}
                                         </div>
                                         <div className="text-[10px] text-earth-clay font-medium flex items-center space-x-1">
                                           <MapPin className="h-3 w-3 text-earth-terracotta" />
