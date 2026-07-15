@@ -5,7 +5,11 @@ import { Star, BookOpen, MessageSquare, Route, ChevronRight, ShieldCheck, CheckC
 import { useUser } from "./UserContext";
 import Leaderboard from "./Leaderboard";
 
-export default function RetentionZone() {
+interface RetentionZoneProps {
+  onViewPlan?: (journeyId: string) => void;
+}
+
+export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
   const [activeStoryTab, setActiveStoryTab] = useState<"Journeys" | "Reviews" | "Blogs">("Journeys");
   const { journeys, reviews, blogs } = useUser();
 
@@ -84,7 +88,10 @@ export default function RetentionZone() {
 
                 <div className="pt-4 mt-4 border-t border-earth-clay/5 flex items-center justify-between text-xs text-earth-clay">
                   <span>Curated by {j.author}</span>
-                  <button className="text-earth-terracotta font-semibold hover:underline flex items-center space-x-0.5">
+                  <button 
+                    onClick={() => onViewPlan && onViewPlan(j.id)}
+                    className="text-earth-terracotta font-semibold hover:underline flex items-center space-x-0.5 cursor-pointer bg-transparent border-0"
+                  >
                     <span>View Plan</span>
                     <span>→</span>
                   </button>

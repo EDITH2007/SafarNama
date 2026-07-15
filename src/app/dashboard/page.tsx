@@ -1,7 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+import { useMutation } from "convex/react";
+import { api } from "../../../convex/_generated/api";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Leaderboard from "@/components/Leaderboard";
@@ -37,7 +40,23 @@ import {
   XCircle,
 } from "lucide-react";
 
-export default function Dashboard() {
+export default function DashboardPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-earth-sand flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-earth-terracotta" />
+      </div>
+    }>
+      <Dashboard />
+    </Suspense>
+  );
+}
+
+function Dashboard() {
+  const searchParams = useSearchParams();
+  const queryTab = searchParams.get("tab");
+  const queryPlanId = searchParams.get("planId");
+
   const {
     currentUser,
     profiles,
@@ -163,10 +182,19 @@ export default function Dashboard() {
   const [planRegion, setPlanRegion] = useState("Kerala");
   const [planCategories, setPlanCategories] = useState<string[]>([]);
   const [planDays, setPlanDays] = useState(3);
-  const [generatedItinerary, setGeneratedItinerary] = useState<PlanDay[]>([]);
+  const [planBudget, setPlanBudget] = useState(25000);
+  const [planBudgetStyle, setPlanBudgetStyle] = useState<"Budget" | "Mid-range" | "Luxury">("Mid-range");
+  const [plannerStep, setPlannerStep] = useState(1);
+  const [streamText, setStreamText] = useState("");
+  const [richPlan, setRichPlan] = useState<any>(null);
+  const [genError, setGenError] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  
   const [isGenerating, setIsGenerating] = useState(false);
   const [showSuggestions, setShowSuggestions] = useState(false);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  const saveTripPlanMutation = useMutation(api.trips.saveTripPlan);
 
   // Memoized unique region/state suggestions from destinations and approved gems
   const allRegionSuggestions = useMemo(() => {
@@ -216,15 +244,262 @@ export default function Dashboard() {
     }
   }, [currentUser]);
 
-  const handleGeneratePlan = (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsGenerating(true);
-    setTimeout(() => {
-      const plan = generateAILocalPlan(planRegion, planCategories, planDays);
-      setGeneratedItinerary(plan);
-      setIsGenerating(false);
-    }, 1500);
+  const parseAIResponse = (text: string) => {
+    let jsonString = text.trim();
+    
+    // Try to find a JSON block in the text
+    const jsonRegex = /```json\s*([\s\S]*?)\s*```/;
+    const match = jsonString.match(jsonRegex);
+    if (match && match[1]) {
+      jsonString = match[1].trim();
+    } else {
+      // If not enclosed in code block, try to find first '{' and last '}'
+      const firstBrace = jsonString.indexOf("{");
+      const lastBrace = jsonString.lastIndexOf("}");
+      if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+        jsonString = jsonString.substring(firstBrace, lastBrace + 1);
+      }
+    }
+
+    try {
+      return JSON.parse(jsonString);
+    } catch (err) {
+      console.error("Failed to parse JSON:", err);
+      return null;
+    }
   };
+
+  const handleGeneratePlan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (typeof window === "undefined" || !(window as any).puter) {
+      setGenError("Puter.js AI library failed to load. Please check your internet connection or reload the page.");
+      return;
+    }
+
+    setIsGenerating(true);
+    setGenError(null);
+    setStreamText("");
+    setRichPlan(null);
+    setSaveSuccess(false);
+
+    const locLower = planRegion.toLowerCase().trim();
+    const matchedDestinations = destinations.filter(
+      (d) =>
+        d.location.toLowerCase().includes(locLower) ||
+        d.state.toLowerCase().includes(locLower) ||
+        d.title.toLowerCase().includes(locLower)
+    );
+    const matchedGems = hiddenGems.filter(
+      (g) =>
+        g.status === "approved" &&
+        (g.location.toLowerCase().includes(locLower) ||
+          g.state.toLowerCase().includes(locLower) ||
+          g.title.toLowerCase().includes(locLower))
+    );
+
+    let contextPrompt = "";
+    if (matchedDestinations.length > 0 || matchedGems.length > 0) {
+      contextPrompt = "Here is verified information about this place from our local database. Please prioritize incorporating these spots/destinations into the itinerary if they fit the travel style:\n";
+      matchedDestinations.slice(0, 3).forEach((d) => {
+        contextPrompt += `- Destination: "${d.title}" in ${d.location}, ${d.state}. Category: ${d.category}. Description: ${d.description}\n`;
+      });
+      matchedGems.slice(0, 3).forEach((g) => {
+        contextPrompt += `- Hidden Gem: "${g.title}" in ${g.location}, ${g.state}. Category: ${g.category}. Description: ${g.description}\n`;
+      });
+    }
+
+    const prompt = `You are a local travel assistant and expert planner for SafarNama.
+Create a detailed, day-by-day travel itinerary for:
+Destination: ${planRegion}
+Duration: ${planDays} Days
+Budget: ₹${planBudget} (INR)
+Budget Style: ${planBudgetStyle}
+Vibe/Category filters: ${planCategories.join(", ") || "Any"}
+
+${contextPrompt}
+
+You MUST structure your response as a valid JSON object. Do not include any other markdown text except optionally wrapping the JSON in a standard markdown \`\`\`json code block.
+
+The JSON schema MUST exactly match:
+{
+  "title": "Itinerary Title",
+  "description": "Short overview of the trip and vibe",
+  "bestTimeToVisit": "Best months/season to visit",
+  "practicalTips": [
+    "Practical tips (how to get around, what to book in advance, packing tips)"
+  ],
+  "days": [
+    {
+      "dayNumber": 1,
+      "title": "Theme of Day 1",
+      "activities": [
+        {
+          "time": "Morning / Afternoon / Evening",
+          "title": "Activity name",
+          "description": "Detailed description of the activity/spot",
+          "location": "Specific place name",
+          "cost": 1000
+        }
+      ],
+      "approximateCosts": {
+        "transport": 500,
+        "food": 500,
+        "stay": 1500
+      }
+    }
+  ]
+}
+
+Ensure the activities match the specified ${planDays} days. The daily costs (transport, food, stay) should align with the overall "${planBudgetStyle}" budget of ₹${planBudget} for ${planDays} days. All costs should be in Indian Rupees (INR) represented as numbers.
+`;
+
+    let response;
+    try {
+      try {
+        response = await (window as any).puter.ai.chat(prompt, {
+          model: "claude-3.5-sonnet",
+          stream: true,
+        });
+      } catch (err) {
+        console.warn("Generation with claude-3.5-sonnet failed, trying gpt-4o...", err);
+        try {
+          response = await (window as any).puter.ai.chat(prompt, {
+            model: "gpt-4o",
+            stream: true,
+          });
+        } catch (err2) {
+          console.warn("Generation with gpt-4o failed, trying default model...", err2);
+          response = await (window as any).puter.ai.chat(prompt, {
+            stream: true,
+          });
+        }
+      }
+
+      let fullText = "";
+      for await (const part of response) {
+        if (part?.text) {
+          fullText += part.text;
+          setStreamText(fullText);
+        }
+      }
+
+      const parsed = parseAIResponse(fullText);
+      if (parsed && parsed.days && Array.isArray(parsed.days)) {
+        setRichPlan(parsed);
+      } else {
+        throw new Error("The AI response did not match the expected itinerary structure. Please try again.");
+      }
+    } catch (err: any) {
+      console.error("AI Generation failed:", err);
+      const errMsg = err?.message || err?.description || String(err) || "An unexpected error occurred during AI plan generation.";
+      setGenError(errMsg);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleSavePlan = async () => {
+    if (!richPlan) return;
+    try {
+      setGenError(null);
+      setSaveSuccess(false);
+
+      const itinerary = richPlan.days.map((day: any) => ({
+        dayNumber: day.dayNumber || day.day || 1,
+        date: day.date || "",
+        activities: (day.activities || []).map((act: any) => ({
+          time: act.time || "Morning",
+          title: act.title || "Sightseeing",
+          description: act.description || "",
+          cost: act.cost ? Number(act.cost) : undefined,
+          currency: "INR",
+          location: act.location || "",
+          durationMinutes: act.durationMinutes ? Number(act.durationMinutes) : undefined,
+        })),
+      }));
+
+      await saveTripPlanMutation({
+        title: richPlan.title || `Trip to ${planRegion}`,
+        description: richPlan.description || "",
+        destination: planRegion,
+        isAI: true,
+        status: "planning",
+        summary: richPlan.description || "",
+        itinerary: itinerary,
+        travelers: 1,
+      });
+
+      setSaveSuccess(true);
+    } catch (err: any) {
+      console.error("Failed to save trip plan:", err);
+      setGenError(err.message || "Failed to save trip plan to your dashboard.");
+    }
+  };
+
+  const handleViewPlan = (journeyId: string) => {
+    const journey = journeys.find((j) => j.id === journeyId);
+    if (!journey) return;
+
+    if (journey.rawPlan) {
+      const raw = journey.rawPlan;
+      setRichPlan({
+        title: raw.title || `Trip to ${raw.destination}`,
+        description: raw.description || raw.summary || "",
+        bestTimeToVisit: raw.bestTimeToVisit || "Varies",
+        practicalTips: raw.practicalTips || [],
+        days: (raw.itinerary || []).map((day: any) => ({
+          dayNumber: day.dayNumber,
+          date: day.date,
+          activities: day.activities || [],
+        })),
+      });
+      setPlanRegion(raw.destination || "");
+      setPlanDays(raw.itinerary ? raw.itinerary.length : 3);
+      setStreamText("");
+      setGenError(null);
+      setSaveSuccess(false);
+      setActiveTab("planner");
+    } else {
+      setRichPlan({
+        title: journey.title,
+        description: journey.description,
+        bestTimeToVisit: "Varies",
+        practicalTips: ["Acclimate well", "Book local guides in advance"],
+        days: [
+          {
+            dayNumber: 1,
+            activities: journey.stops.map((stop: string, idx: number) => ({
+              time: idx === 0 ? "Morning" : idx === 1 ? "Afternoon" : "Evening",
+              title: `Explore ${stop}`,
+              description: `Visit the local attractions and details for ${stop}.`,
+              location: stop,
+              cost: 0,
+            })),
+          },
+        ],
+      });
+      setPlanRegion(journey.stops[0] || "");
+      setPlanDays(1);
+      setStreamText("");
+      setGenError(null);
+      setSaveSuccess(false);
+      setActiveTab("planner");
+    }
+  };
+
+  useEffect(() => {
+    if (queryTab === "planner" && queryPlanId && journeys.length > 0) {
+      handleViewPlan(queryPlanId);
+    }
+  }, [queryTab, queryPlanId, journeys]);
+
+  useEffect(() => {
+    if (typeof window !== "undefined" && (window as any).puter) {
+      (window as any).puter.ai.listModels()
+        .then((m: any) => console.log("PUTER AI MODELS AVAILABLE:", m))
+        .catch((e: any) => console.error("PUTER AI LIST MODELS FAILED:", e));
+    }
+  }, []);
 
   // Add Hidden Gem Form State
   const [gemTitle, setGemTitle] = useState("");
@@ -878,191 +1153,450 @@ export default function Dashboard() {
 
               {/* AI Local Planner Tab */}
               {activeTab === "planner" && (
-                <div className="space-y-8">
+                <div className="space-y-8 animate-in fade-in duration-300">
                   <div className="space-y-1 border-b border-earth-clay/10 pb-4">
                     <h3 className="font-serif text-lg font-bold text-earth-forest">
-                      AI Local-First Trip Planner
+                      AI Travel Itinerary Planner
                     </h3>
                     <p className="font-sans text-xs font-light text-earth-charcoal/70 leading-relaxed">
-                      Enter your destination and preference. Rather than spitting out generic ChatGPT content, our AI customizes your route prioritizing verified guides and community-submitted hidden gems matching our database first!
+                      Plan your next adventure with the help of Puter's client-side AI. Our planner generates a custom route based on your budget style, vibes, and matches them against SafarNama's local databases!
                     </p>
                   </div>
 
-                  {/* Settings planner form */}
-                  <form onSubmit={handleGeneratePlan} className="bg-earth-sand/15 border border-earth-clay/10 p-6 space-y-6 font-sans">
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-start">
-                      {/* Region/State/Place free-text input with Autocomplete */}
-                      <div ref={suggestionsRef} className="relative md:col-span-2 space-y-1">
-                        <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
-                          Region / State / Place
-                        </label>
-                        <input
-                          type="text"
-                          required
-                          value={planRegion}
-                          onChange={(e) => {
-                            setPlanRegion(e.target.value);
-                            setShowSuggestions(true);
-                          }}
-                          onFocus={() => setShowSuggestions(true)}
-                          placeholder="e.g. Kerala, Ladakh, Jaipur, Paris..."
-                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none placeholder-earth-charcoal/40"
-                        />
-                        
-                        {/* Autocomplete Suggestions */}
-                        {showSuggestions && filteredSuggestions.length > 0 && (
-                          <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-earth-clay/20 shadow-lg max-h-48 overflow-y-auto">
-                            {filteredSuggestions.map((suggestion) => (
-                              <button
-                                key={suggestion}
-                                type="button"
-                                onClick={() => {
-                                  setPlanRegion(suggestion);
-                                  setShowSuggestions(false);
+                  {/* Settings planner form - Multi-step */}
+                  {!isGenerating && !richPlan && (
+                    <div className="bg-earth-sand/15 border border-earth-clay/10 p-6 space-y-6 font-sans">
+                      {/* Step Indicator */}
+                      <div className="flex items-center space-x-2 text-xs border-b border-earth-clay/5 pb-3">
+                        <span className={`px-2 py-0.5 rounded-none font-bold ${
+                          plannerStep === 1 
+                            ? "bg-earth-terracotta text-white" 
+                            : "bg-earth-clay/10 text-earth-charcoal/60"
+                        }`}>
+                          Step 1: Details
+                        </span>
+                        <span className="text-earth-clay/35">→</span>
+                        <span className={`px-2 py-0.5 rounded-none font-bold ${
+                          plannerStep === 2 
+                            ? "bg-earth-terracotta text-white" 
+                            : "bg-earth-clay/10 text-earth-charcoal/60"
+                        }`}>
+                          Step 2: Vibes (Optional)
+                        </span>
+                      </div>
+
+                      {plannerStep === 1 ? (
+                        <div className="space-y-6">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Destination input */}
+                            <div ref={suggestionsRef} className="relative space-y-1">
+                              <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                                Where do you want to go?
+                              </label>
+                              <input
+                                type="text"
+                                required
+                                value={planRegion}
+                                onChange={(e) => {
+                                  setPlanRegion(e.target.value);
+                                  setShowSuggestions(true);
                                 }}
-                                className="w-full text-left px-3.5 py-2.5 text-xs hover:bg-earth-sand/30 text-earth-charcoal hover:text-earth-terracotta transition-colors border-b border-earth-clay/5 last:border-0 font-sans"
-                              >
-                                🗺️ {suggestion}
-                              </button>
-                            ))}
+                                onFocus={() => setShowSuggestions(true)}
+                                placeholder="e.g. Kerala, Ladakh, Paris, Himalayas..."
+                                className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none placeholder-earth-charcoal/40 font-sans"
+                              />
+                              
+                              {/* Autocomplete Suggestions */}
+                              {showSuggestions && filteredSuggestions.length > 0 && (
+                                <div className="absolute z-50 left-0 right-0 top-full mt-1 bg-white border border-earth-clay/20 shadow-lg max-h-48 overflow-y-auto">
+                                  {filteredSuggestions.map((suggestion) => (
+                                    <button
+                                      key={suggestion}
+                                      type="button"
+                                      onClick={() => {
+                                        setPlanRegion(suggestion);
+                                        setShowSuggestions(false);
+                                      }}
+                                      className="w-full text-left px-3.5 py-2.5 text-xs hover:bg-earth-sand/30 text-earth-charcoal hover:text-earth-terracotta transition-colors border-b border-earth-clay/5 last:border-0 font-sans cursor-pointer"
+                                    >
+                                      🗺️ {suggestion}
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Days Input */}
+                            <div className="space-y-1">
+                              <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                                How many days?
+                              </label>
+                              <input
+                                type="number"
+                                required
+                                min={1}
+                                max={30}
+                                value={planDays}
+                                onChange={(e) => {
+                                  const val = Number(e.target.value);
+                                  setPlanDays(val > 0 ? val : 1);
+                                }}
+                                className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none font-sans"
+                              />
+                            </div>
                           </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Budget Input */}
+                            <div className="space-y-1">
+                              <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                                What's your budget? (₹ INR)
+                              </label>
+                              <div className="relative flex items-center">
+                                <span className="absolute left-3 text-earth-charcoal/60 font-semibold text-xs select-none">₹</span>
+                                <input
+                                  type="number"
+                                  required
+                                  min={1000}
+                                  value={planBudget}
+                                  onChange={(e) => {
+                                    const val = Number(e.target.value);
+                                    setPlanBudget(val > 0 ? val : 0);
+                                  }}
+                                  className="w-full p-2.5 pl-7 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none font-mono font-bold"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Budget Style Select */}
+                            <div className="space-y-1">
+                              <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                                Budget Style
+                              </label>
+                              <select
+                                value={planBudgetStyle}
+                                onChange={(e) => setPlanBudgetStyle(e.target.value as any)}
+                                className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none font-semibold text-earth-charcoal/85 font-sans"
+                              >
+                                <option value="Budget">Budget (Backpacker, homestays, public transit)</option>
+                                <option value="Mid-range">Mid-range (Comfortable, cabs, nice hotels)</option>
+                                <option value="Luxury">Luxury (Premium, private villas, gourmet dining)</option>
+                              </select>
+                            </div>
+                          </div>
+
+                          <div className="flex justify-end pt-2">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (planRegion.trim()) {
+                                  setPlannerStep(2);
+                                } else {
+                                  alert("Please fill in where you want to go!");
+                                }
+                              }}
+                              className="w-full md:w-auto px-8 py-3.5 bg-earth-terracotta hover:bg-earth-forest text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                            >
+                              <span>Choose Vibes</span>
+                              <ArrowRight className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="space-y-6">
+                          {/* Vibes Selection */}
+                          <div className="space-y-2">
+                            <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                              Category Vibes (Optional - select multiple)
+                            </label>
+                            <div className="flex flex-wrap gap-2">
+                              {[
+                                { value: "Hills", label: "⛰️ Hills & Valleys" },
+                                { value: "Beaches", label: "🏖️ Beaches & Coasts" },
+                                { value: "Heritage", label: "🏰 Heritage & Forts" },
+                                { value: "Wildlife", label: "🦁 Wildlife & Jungles" },
+                                { value: "Offbeat", label: "💎 Community Gems" }
+                              ].map((cat) => {
+                                const isSelected = planCategories.includes(cat.value);
+                                return (
+                                  <button
+                                    key={cat.value}
+                                    type="button"
+                                    onClick={() => {
+                                      if (isSelected) {
+                                        setPlanCategories(planCategories.filter((c) => c !== cat.value));
+                                      } else {
+                                        setPlanCategories([...planCategories, cat.value]);
+                                      }
+                                    }}
+                                    className={`px-3 py-2 text-xs transition-all border border-earth-clay/20 rounded-none cursor-pointer flex items-center gap-1.5 font-medium ${
+                                      isSelected
+                                        ? "bg-earth-forest border-earth-forest text-white shadow-sm"
+                                        : "bg-white border-earth-clay/20 text-earth-charcoal/80 hover:border-earth-terracotta hover:text-earth-terracotta"
+                                    }`}
+                                  >
+                                    {cat.label}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between pt-4 border-t border-earth-clay/5">
+                            <button
+                              type="button"
+                              onClick={() => setPlannerStep(1)}
+                              className="px-6 py-3 border border-earth-clay/20 hover:border-earth-terracotta text-earth-charcoal hover:text-earth-terracotta font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer"
+                            >
+                              Back
+                            </button>
+                            <button
+                              onClick={handleGeneratePlan}
+                              disabled={!planRegion.trim()}
+                              className="px-8 py-3.5 bg-earth-terracotta hover:bg-earth-forest disabled:bg-earth-clay/40 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer flex items-center gap-1.5"
+                            >
+                              <Sparkles className="h-4 w-4 text-white shrink-0" />
+                              <span>Generate AI Plan</span>
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* AI Generation Stream & Loading State */}
+                  {isGenerating && (
+                    <div className="space-y-6">
+                      <div className="text-center py-8 space-y-4">
+                        <Compass className="h-12 w-12 text-earth-terracotta animate-spin mx-auto" />
+                        <p className="font-serif text-base font-bold text-earth-forest animate-pulse">
+                          SafarNama AI is drafting your customized itinerary...
+                        </p>
+                        <p className="font-sans text-xs font-light text-earth-charcoal/60">
+                          Scanning database guides, verifying hidden gems, and calibrating your budget.
+                        </p>
+                      </div>
+
+                      {streamText && (
+                        <div className="bg-[#fcfaf5] border border-earth-clay/20 p-6 rounded-none font-mono text-xs text-earth-charcoal/80 max-h-[300px] overflow-y-auto shadow-inner leading-relaxed whitespace-pre-wrap">
+                          <div className="flex items-center space-x-1.5 text-earth-terracotta border-b border-earth-clay/10 pb-2 mb-3">
+                            <span className="h-2 w-2 rounded-full bg-earth-terracotta animate-ping" />
+                            <span className="font-sans font-bold uppercase tracking-wider text-[9px]">Live Stream Output</span>
+                          </div>
+                          {streamText}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Generation Error State */}
+                  {genError && (
+                    <div className="p-4 bg-red-50 border border-red-200 text-red-800 text-xs font-medium font-sans flex items-start gap-2.5">
+                      <ShieldAlert className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
+                      <div className="space-y-1 flex-1">
+                        <span className="font-bold block">AI Generation Error</span>
+                        <p>{genError}</p>
+                        <button
+                          onClick={() => {
+                            setGenError(null);
+                            setPlannerStep(1);
+                            setRichPlan(null);
+                          }}
+                          className="mt-2 text-earth-terracotta hover:underline font-semibold text-[10px] uppercase tracking-wider block text-left bg-transparent border-0 cursor-pointer"
+                        >
+                          Reset & Try Again
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Rich Generated Plan View */}
+                  {!isGenerating && richPlan && (
+                    <div className="space-y-8 animate-in fade-in duration-500">
+                      {/* Success Alert */}
+                      <div className="p-4 bg-earth-forest/5 border border-earth-forest/20 text-earth-forest text-xs font-medium font-sans flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <Sparkles className="h-4 w-4 text-earth-saffron animate-bounce" />
+                          <span>Plan compiled successfully using Puter AI! Prioritized SafarNama guides & hidden gems.</span>
+                        </div>
+                        {saveSuccess && (
+                          <span className="text-green-700 font-bold bg-green-50 px-2 py-1 border border-green-200 font-sans">
+                            Saved to your dashboard!
+                          </span>
                         )}
                       </div>
 
-                      {/* Flexible Duration Days input */}
-                      <div className="space-y-1">
-                        <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
-                          Duration (Days)
-                        </label>
-                        <input
-                          type="number"
-                          required
-                          min={1}
-                          max={30}
-                          value={planDays}
-                          onChange={(e) => {
-                            const val = Number(e.target.value);
-                            setPlanDays(val > 0 ? val : 1);
-                          }}
-                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Multi-select Category Tags */}
-                    <div className="space-y-2">
-                      <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
-                        Category Vibes (Optional - select multiple)
-                      </label>
-                      <div className="flex flex-wrap gap-2">
-                        {[
-                          { value: "Hills", label: "⛰️ Hills & Valleys" },
-                          { value: "Beaches", label: "🏖️ Beaches & Coasts" },
-                          { value: "Heritage", label: "🏰 Heritage & Forts" },
-                          { value: "Wildlife", label: "🦁 Wildlife & Jungles" },
-                          { value: "Offbeat", label: "💎 Community Gems" }
-                        ].map((cat) => {
-                          const isSelected = planCategories.includes(cat.value);
-                          return (
-                            <button
-                              key={cat.value}
-                              type="button"
-                              onClick={() => {
-                                if (isSelected) {
-                                  setPlanCategories(planCategories.filter((c) => c !== cat.value));
-                                } else {
-                                  setPlanCategories([...planCategories, cat.value]);
-                                }
-                              }}
-                              className={`px-3 py-2 text-xs transition-all border border-earth-clay/20 rounded-none cursor-pointer flex items-center gap-1.5 font-medium ${
-                                isSelected
-                                  ? "bg-earth-forest border-earth-forest text-white shadow-sm"
-                                  : "bg-white border-earth-clay/20 text-earth-charcoal/80 hover:border-earth-terracotta hover:text-earth-terracotta"
-                              }`}
-                            >
-                              {cat.label}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-
-                    {/* Submit Button */}
-                    <div className="flex justify-end pt-2">
-                      <button
-                        type="submit"
-                        disabled={isGenerating}
-                        className="w-full md:w-auto px-8 py-3.5 bg-earth-terracotta hover:bg-earth-forest disabled:bg-earth-clay/40 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer shrink-0"
-                      >
-                        {isGenerating ? "Mapping Trails..." : "Generate AI Plan"}
-                      </button>
-                    </div>
-                  </form>
-
-                  {/* Generated result */}
-                  {isGenerating ? (
-                    <div className="text-center py-16 space-y-4">
-                      <Compass className="h-10 w-10 text-earth-terracotta animate-spin mx-auto" />
-                      <p className="font-serif text-sm font-bold text-earth-forest animate-pulse">
-                        Scanning SafarNama Chronicles & community spot ledgers...
-                      </p>
-                    </div>
-                  ) : generatedItinerary.length > 0 ? (
-                    <div className="space-y-6 animate-in fade-in duration-300">
-                      <div className="p-3 bg-earth-forest/5 border border-earth-forest/20 text-earth-forest text-xs font-medium font-sans flex items-center space-x-2">
-                        <Sparkles className="h-4 w-4 text-earth-saffron animate-bounce" />
-                        <span>Plan successfully compiled: Prioritized local database guidebooks & spot submissions!</span>
-                      </div>
-
-                      {/* Days roadmap list */}
-                      <div className="space-y-6 relative border-l-2 border-earth-clay/10 pl-6 ml-4">
-                        {generatedItinerary.map((day) => (
-                          <div key={day.day} className="relative space-y-2 font-sans">
-                            {/* Bullet Node */}
-                            <span className="absolute -left-[35px] top-1.5 h-4 w-4 rounded-full border-2 border-earth-terracotta bg-white flex items-center justify-center font-sans text-[8px] font-bold text-earth-terracotta shadow-sm">
-                              {day.day}
+                      {/* Header Overview Card */}
+                      <div className="bg-white border border-earth-clay/10 p-6 md:p-8 space-y-4 shadow-sm relative overflow-hidden">
+                        <div className="absolute top-0 right-0 h-24 w-24 bg-earth-sand/20 rounded-full translate-x-8 -translate-y-8 pointer-events-none" />
+                        <div className="space-y-2">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <span className="px-2.5 py-0.5 text-[9px] font-sans font-bold uppercase tracking-wider bg-earth-terracotta/10 text-earth-terracotta">
+                              AI-Generated Plan
                             </span>
-                            
-                            <div className="flex flex-col md:flex-row md:items-center justify-between gap-2">
-                              <h4 className="font-serif text-base font-bold text-earth-charcoal">
-                                Day {day.day}: {day.title}
-                              </h4>
-                              
-                              {/* Source Badge */}
-                              {day.sourceType === "official" && (
-                                <span className="px-2 py-0.5 text-[8px] font-bold uppercase bg-earth-forest/10 border border-earth-forest/25 text-earth-forest rounded-none self-start">
-                                  📖 SafarNama Official Guide
-                                </span>
-                              )}
-                              {day.sourceType === "gem" && (
-                                <span className="px-2 py-0.5 text-[8px] font-bold uppercase bg-earth-saffron/10 border border-[#f3d082] text-earth-clay rounded-none self-start">
-                                  💎 Community Hidden Gem
-                                </span>
-                              )}
-                              {day.sourceType === "generic" && (
-                                <span className="px-2 py-0.5 text-[8px] font-bold uppercase bg-stone-100 border border-stone-200 text-stone-500 rounded-none self-start">
-                                  🤖 Regional AI Suggestions
-                                </span>
-                              )}
-                            </div>
+                            <span className="px-2.5 py-0.5 text-[9px] font-sans font-bold uppercase tracking-wider bg-earth-forest/10 text-earth-forest">
+                              {planBudgetStyle} style
+                            </span>
+                          </div>
+                          <h4 className="font-serif text-2xl font-bold text-earth-charcoal leading-tight">
+                            {richPlan.title}
+                          </h4>
+                          <p className="font-sans text-sm font-light text-earth-charcoal/80 leading-relaxed">
+                            {richPlan.description}
+                          </p>
+                        </div>
 
-                            <p className="text-xs text-earth-charcoal/70 font-light leading-relaxed">
-                              {day.description}
-                            </p>
-                            <div className="text-[10px] text-earth-clay font-medium flex items-center space-x-1">
-                              <MapPin className="h-3.5 w-3.5 text-earth-terracotta shrink-0" />
-                              <span>{day.location}</span>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-earth-clay/5 text-xs font-sans">
+                          {richPlan.bestTimeToVisit && (
+                            <div className="flex items-start space-x-2 text-earth-charcoal/85">
+                              <Calendar className="h-4.5 w-4.5 text-earth-terracotta shrink-0 mt-0.5" />
+                              <div>
+                                <span className="font-bold text-earth-forest block uppercase text-[9px] tracking-wider">Best Time to Visit</span>
+                                <span className="font-light">{richPlan.bestTimeToVisit}</span>
+                              </div>
+                            </div>
+                          )}
+                          <div className="flex items-start space-x-2 text-earth-charcoal/85">
+                            <Coins className="h-4.5 w-4.5 text-earth-terracotta shrink-0 mt-0.5" />
+                            <div>
+                              <span className="font-bold text-earth-forest block uppercase text-[9px] tracking-wider">Estimated Total Budget</span>
+                              <span className="font-semibold text-earth-terracotta font-mono">₹{planBudget.toLocaleString("en-IN")} (INR)</span>
                             </div>
                           </div>
-                        ))}
+                        </div>
                       </div>
-                    </div>
-                  ) : (
-                    <div className="text-center py-16 border border-dashed border-earth-clay/20 bg-earth-sand/5">
-                      <Compass className="h-12 w-12 text-earth-clay/25 mx-auto mb-3" />
-                      <p className="font-sans text-xs text-earth-charcoal/60 font-light">
-                        Select a region and request an itinerary to initialize the AI trip planning visualizer.
-                      </p>
+
+                      {/* Practical Tips Card */}
+                      {richPlan.practicalTips && richPlan.practicalTips.length > 0 && (
+                        <div className="bg-earth-sand/15 border border-earth-clay/10 p-6 space-y-4">
+                          <h5 className="font-serif text-sm font-bold text-earth-forest flex items-center gap-1.5 uppercase tracking-wider">
+                            💡 Practical Tips & Booking Guide
+                          </h5>
+                          <ul className="grid grid-cols-1 md:grid-cols-2 gap-3 pl-1 font-sans">
+                            {richPlan.practicalTips.map((tip: string, idx: number) => (
+                              <li key={idx} className="text-xs text-earth-charcoal/80 font-light flex items-start gap-2">
+                                <span className="text-earth-terracotta font-bold select-none">•</span>
+                                <span>{tip}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+
+                      {/* Day by Day Cards Roadmap */}
+                      <div className="space-y-6">
+                        <h5 className="font-serif text-base font-bold text-earth-forest border-b border-earth-clay/10 pb-2">
+                          Day-by-Day Timeline
+                        </h5>
+                        <div className="space-y-6">
+                          {richPlan.days.map((day: any, dIdx: number) => {
+                            const dailyTotal = 
+                              (day.approximateCosts?.transport || 0) +
+                              (day.approximateCosts?.food || 0) +
+                              (day.approximateCosts?.stay || 0);
+
+                            return (
+                              <div key={dIdx} className="bg-white border border-earth-clay/15 shadow-sm overflow-hidden">
+                                {/* Day Header */}
+                                <div className="bg-earth-sand/30 border-b border-earth-clay/10 px-5 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                                  <h6 className="font-serif text-base font-bold text-earth-charcoal flex items-center gap-2">
+                                    <span className="bg-earth-terracotta text-white rounded-none px-2 py-0.5 text-xs font-sans font-bold">
+                                      Day {day.dayNumber || day.day || (dIdx + 1)}
+                                    </span>
+                                    <span>{day.title || `Exploring the Vibe`}</span>
+                                  </h6>
+                                  {dailyTotal > 0 && (
+                                    <div className="font-sans text-[11px] font-semibold text-earth-clay">
+                                      Estimated Cost: <span className="font-mono text-earth-terracotta font-bold">₹{dailyTotal.toLocaleString("en-IN")}</span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Day Activities List */}
+                                <div className="p-5 space-y-5 divide-y divide-earth-clay/5">
+                                  {(day.activities || []).map((activity: any, actIdx: number) => (
+                                    <div key={actIdx} className={`space-y-2 font-sans ${actIdx > 0 ? "pt-4" : ""}`}>
+                                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5">
+                                        <div className="flex items-center space-x-2">
+                                          <span className="px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider bg-earth-forest text-white">
+                                            {activity.time || "Activity"}
+                                          </span>
+                                          <span className="font-serif text-sm font-bold text-earth-charcoal">
+                                            {activity.title}
+                                          </span>
+                                        </div>
+                                        {activity.cost > 0 && (
+                                          <span className="text-[10px] font-semibold text-earth-clay bg-earth-sand px-2 py-0.5 font-mono">
+                                            Cost: ₹{activity.cost}
+                                          </span>
+                                        )}
+                                      </div>
+
+                                      <p className="text-xs text-earth-charcoal/70 font-light leading-relaxed pl-1">
+                                        {activity.description}
+                                      </p>
+
+                                      {activity.location && (
+                                        <div className="text-[10px] text-earth-clay font-medium flex items-center space-x-1 pl-1">
+                                          <MapPin className="h-3.5 w-3.5 text-earth-terracotta shrink-0" />
+                                          <span>{activity.location}</span>
+                                        </div>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+
+                                {/* Daily Cost Breakdown Badges */}
+                                {day.approximateCosts && (
+                                  <div className="bg-stone-50 border-t border-earth-clay/5 p-4 flex flex-wrap gap-4 text-[10px] text-earth-charcoal/80 font-sans">
+                                    <span className="font-bold text-earth-forest uppercase tracking-wider self-center">Daily Expenses:</span>
+                                    <span className="bg-white border border-earth-clay/10 px-2.5 py-1 flex items-center gap-1.5">
+                                      🚗 Transport: <span className="font-mono font-semibold text-earth-terracotta">₹{day.approximateCosts.transport || 0}</span>
+                                    </span>
+                                    <span className="bg-white border border-earth-clay/10 px-2.5 py-1 flex items-center gap-1.5">
+                                      🍲 Food: <span className="font-mono font-semibold text-earth-terracotta">₹{day.approximateCosts.food || 0}</span>
+                                    </span>
+                                    <span className="bg-white border border-earth-clay/10 px-2.5 py-1 flex items-center gap-1.5">
+                                      🏨 Stay: <span className="font-mono font-semibold text-earth-terracotta">₹{day.approximateCosts.stay || 0}</span>
+                                    </span>
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Planner Action Footer Buttons */}
+                      <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-earth-clay/10">
+                        <button
+                          onClick={() => {
+                            setRichPlan(null);
+                            setStreamText("");
+                            setPlannerStep(1);
+                            setSaveSuccess(false);
+                          }}
+                          className="w-full sm:w-auto px-6 py-3 border border-earth-clay/30 hover:border-earth-terracotta hover:text-earth-terracotta text-earth-charcoal font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-all cursor-pointer flex items-center justify-center gap-2 bg-transparent"
+                        >
+                          <Route className="h-4 w-4 shrink-0" />
+                          <span>Plan Another Trip</span>
+                        </button>
+                        <button
+                          onClick={handleSavePlan}
+                          disabled={saveSuccess}
+                          className="w-full sm:w-auto px-6 py-3 bg-earth-forest hover:bg-earth-terracotta disabled:bg-earth-clay/30 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <Gift className="h-4 w-4 shrink-0" />
+                          <span>{saveSuccess ? "Saved to Dashboard" : "Save this plan"}</span>
+                        </button>
+                        <button
+                          onClick={handleGeneratePlan}
+                          className="w-full sm:w-auto px-6 py-3 bg-earth-terracotta hover:bg-earth-forest text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer flex items-center justify-center gap-2"
+                        >
+                          <Sparkles className="h-4 w-4 shrink-0 animate-pulse" />
+                          <span>Regenerate Plan</span>
+                        </button>
+                      </div>
                     </div>
                   )}
                 </div>

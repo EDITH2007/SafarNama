@@ -178,6 +178,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const notifications = dbNotifications || EMPTY_ARRAY;
 
   const markNotificationsAsReadMutation = useMutation(api.notifications.markAllAsRead);
+  const dbTripPlans = useQuery(api.trips.getTripPlans);
+  const completeTripPlanMutation = useMutation(api.trips.completeTripPlan);
   const markNotificationsAsRead = async () => {
     try {
       await markNotificationsAsReadMutation();
@@ -248,8 +250,46 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const [blogs, setBlogs] = useState<Blog[]>(mockBlogs);
   const [reviews, setReviews] = useState<Review[]>(mockReviews);
-  const [journeys, setJourneys] = useState<Journey[]>(mockJourneys);
+  const [localJourneys, setLocalJourneys] = useState<Journey[]>(mockJourneys);
   const [wishlist, setWishlist] = useState<string[]>(["dest-1", "gem-2"]);
+
+  const mappedDbTripPlans = useMemo(() => {
+    if (!dbTripPlans) return [];
+    return dbTripPlans.map((tp: any) => {
+      const stopsSet = new Set<string>();
+      if (tp.itinerary) {
+        tp.itinerary.forEach((day: any) => {
+          if (day.activities) {
+            day.activities.forEach((act: any) => {
+              if (act.location) stopsSet.add(act.location.trim());
+            });
+          }
+        });
+      }
+      const stops = Array.from(stopsSet).slice(0, 5);
+      if (stops.length === 0 && tp.destination) {
+        stops.push(tp.destination);
+      }
+
+      const durationDays = tp.itinerary ? tp.itinerary.length : 1;
+
+      return {
+        id: tp._id,
+        title: tp.title || `Trip to ${tp.destination || "Unknown Destination"}`,
+        duration: `${durationDays} ${durationDays === 1 ? "Day" : "Days"}`,
+        type: (tp.isAI ? "AI-Generated" : "Manual") as "AI-Generated" | "Manual",
+        description: tp.description || tp.summary || `A travel plan for ${tp.destination}.`,
+        stops: stops,
+        author: currentUser ? (currentUser.name || "You") : "You",
+        completed: tp.status === "completed",
+        rawPlan: tp,
+      };
+    });
+  }, [dbTripPlans, currentUser]);
+
+  const journeys = useMemo(() => {
+    return [...mappedDbTripPlans, ...localJourneys];
+  }, [mappedDbTripPlans, localJourneys]);
   
   // Expenses state
   const [expenses, setExpenses] = useState<Expense[]>([
@@ -714,21 +754,35 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Complete a Trip
-  const completeTrip = (journeyId: string) => {
+  const completeTrip = async (journeyId: string) => {
     const authorName = currentUser?.name || "Guest";
-    setJourneys((prev) =>
-      prev.map((journey) => {
-        if (journey.id === journeyId && !journey.completed) {
-          updateProfilePointsAndTier(
-            authorName,
-            POINTS.COMPLETE_TRIP,
-            `Completed Trip: ${journey.title}`
-          );
-          return { ...journey, completed: true };
-        }
-        return journey;
-      })
-    );
+    
+    if (journeyId.startsWith("journey-")) {
+      setLocalJourneys((prev) =>
+        prev.map((journey) => {
+          if (journey.id === journeyId && !journey.completed) {
+            updateProfilePointsAndTier(
+              authorName,
+              POINTS.COMPLETE_TRIP,
+              `Completed Trip: ${journey.title}`
+            );
+            return { ...journey, completed: true };
+          }
+          return journey;
+        })
+      );
+    } else {
+      try {
+        await completeTripPlanMutation({ id: journeyId as any });
+        updateProfilePointsAndTier(
+          authorName,
+          POINTS.COMPLETE_TRIP,
+          `Completed Saved Trip Plan`
+        );
+      } catch (err) {
+        console.error("Failed to complete trip plan:", err);
+      }
+    }
   };
 
   // Add a Trip
@@ -739,7 +793,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       author: currentUser?.name || "Guest",
       completed: false,
     };
-    setJourneys((prev) => [newTrip, ...prev]);
+    setLocalJourneys((prev) => [newTrip, ...prev]);
   };
 
   // Toggle Verification status for the logged in user

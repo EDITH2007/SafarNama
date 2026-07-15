@@ -4,6 +4,7 @@ import "./globals.css";
 import { UserProvider } from "@/components/UserContext";
 import ConvexClientProvider from "@/components/ConvexClientProvider";
 import { ConvexAuthNextjsServerProvider } from "@convex-dev/auth/nextjs/server";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -59,6 +60,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
       >
         <body className="min-h-full flex flex-col bg-earth-sand text-earth-charcoal font-sans">
+          <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />
           <ConvexClientProvider>
             <UserProvider>
               {children}
@@ -69,3 +71,4 @@ export default function RootLayout({
     </ConvexAuthNextjsServerProvider>
   );
 }
+

@@ -71,6 +71,7 @@ export interface Journey {
   stops: string[];
   author: string;
   completed?: boolean;
+  rawPlan?: any;
 }
 
 export interface LeaderboardUser {
