@@ -18,6 +18,7 @@ import type * as reviews from "../reviews.js";
 import type * as seed from "../seed.js";
 import type * as trips from "../trips.js";
 import type * as users from "../users.js";
+import type * as wishlist from "../wishlist.js";
 
 import type {
   ApiFromModules,
@@ -36,6 +37,7 @@ declare const fullApi: ApiFromModules<{
   seed: typeof seed;
   trips: typeof trips;
   users: typeof users;
+  wishlist: typeof wishlist;
 }>;
 
 /**

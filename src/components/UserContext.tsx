@@ -180,6 +180,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const markNotificationsAsReadMutation = useMutation(api.notifications.markAllAsRead);
   const dbTripPlans = useQuery(api.trips.getTripPlans);
   const completeTripPlanMutation = useMutation(api.trips.completeTripPlan);
+
+  // Wishlist Queries and Mutations
+  const dbWishlist = useQuery(api.wishlist.getWishlist);
+  const toggleWishlistMutation = useMutation(api.wishlist.toggleWishlist);
+  const syncWishlistMutation = useMutation(api.wishlist.syncWishlist);
   const markNotificationsAsRead = async () => {
     try {
       await markNotificationsAsReadMutation();
@@ -251,7 +256,74 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const [blogs, setBlogs] = useState<Blog[]>(mockBlogs);
   const [reviews, setReviews] = useState<Review[]>(mockReviews);
   const [localJourneys, setLocalJourneys] = useState<Journey[]>(mockJourneys);
-  const [wishlist, setWishlist] = useState<string[]>(["dest-1", "gem-2"]);
+  const [wishlist, setWishlist] = useState<string[]>([]);
+
+  // 1. Load wishlist from localStorage on mount (for guest/anonymous users)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const local = localStorage.getItem("safarnama_wishlist");
+      if (local) {
+        try {
+          setWishlist(JSON.parse(local));
+        } catch (e) {
+          console.error("Failed to parse local wishlist:", e);
+        }
+      }
+    }
+  }, []);
+
+  // 2. Synchronize React state with Convex database when authenticated
+  useEffect(() => {
+    if (isAuthenticated && dbWishlist !== undefined) {
+      setWishlist(dbWishlist);
+    }
+  }, [isAuthenticated, dbWishlist]);
+
+  // 3. Clear or restore wishlist state upon logout
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading) {
+      if (typeof window !== "undefined") {
+        const local = localStorage.getItem("safarnama_wishlist");
+        if (local) {
+          try {
+            setWishlist(JSON.parse(local));
+            return;
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+      setWishlist([]);
+    }
+  }, [isAuthenticated, isLoading]);
+
+  // 4. Sync offline/anonymous wishlist items to Convex upon login
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (typeof window !== "undefined") {
+        const local = localStorage.getItem("safarnama_wishlist");
+        if (local) {
+          try {
+            const ids = JSON.parse(local) as string[];
+            // Filter out hardcoded mock IDs before syncing to prevent db noise
+            const realIds = ids.filter(id => !id.startsWith("dest-") && !id.startsWith("gem-"));
+            if (realIds.length > 0) {
+              syncWishlistMutation({ ids: realIds })
+                .then(() => {
+                  localStorage.removeItem("safarnama_wishlist");
+                })
+                .catch((err) => console.error("Failed to sync wishlist on login:", err));
+            } else {
+              localStorage.removeItem("safarnama_wishlist");
+            }
+          } catch (e) {
+            console.error("Failed to parse/sync local wishlist:", e);
+            localStorage.removeItem("safarnama_wishlist");
+          }
+        }
+      }
+    }
+  }, [isAuthenticated, syncWishlistMutation]);
 
   const mappedDbTripPlans = useMemo(() => {
     if (!dbTripPlans) return [];
@@ -395,10 +467,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Wishlist Actions
-  const toggleWishlist = (id: string) => {
-    setWishlist((prev) =>
-      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
-    );
+  const toggleWishlist = async (id: string) => {
+    if (isAuthenticated) {
+      try {
+        await toggleWishlistMutation({ id });
+      } catch (err) {
+        console.error("Failed to toggle wishlist item on Convex:", err);
+      }
+    } else {
+      // Offline fallback for guest/anonymous users
+      setWishlist((prev) => {
+        const next = prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id];
+        if (typeof window !== "undefined") {
+          localStorage.setItem("safarnama_wishlist", JSON.stringify(next));
+        }
+        return next;
+      });
+    }
   };
 
   const isWishlisted = (id: string) => wishlist.includes(id);
