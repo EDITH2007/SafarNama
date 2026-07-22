@@ -167,14 +167,16 @@ export default defineSchema({
 
   // Travel expenses tracking
   expenses: defineTable({
-    tripId: v.id("tripPlans"),
+    userId: v.optional(v.id("users")),
+    tripId: v.string(), // linked to tripPlans _id or custom/mock trip string ID
     category: v.string(), // "Food" | "Stay" | "Transport" | "Tickets" | "Shopping" | "Other"
     amount: v.number(),
-    currency: v.string(), // e.g. "INR", "USD"
+    currency: v.optional(v.string()), // e.g. "INR", "USD"
     date: v.string(), // YYYY-MM-DD
     description: v.optional(v.string()),
     createdAt: v.number(),
   })
+    .index("by_user", ["userId"])
     .index("by_trip", ["tripId"]),
 
   // Audit log of all points transactions

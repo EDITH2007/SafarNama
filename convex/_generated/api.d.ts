@@ -11,6 +11,7 @@
 import type * as auth from "../auth.js";
 import type * as blogs from "../blogs.js";
 import type * as destinations from "../destinations.js";
+import type * as expenses from "../expenses.js";
 import type * as gems from "../gems.js";
 import type * as http from "../http.js";
 import type * as notifications from "../notifications.js";
@@ -30,6 +31,7 @@ declare const fullApi: ApiFromModules<{
   auth: typeof auth;
   blogs: typeof blogs;
   destinations: typeof destinations;
+  expenses: typeof expenses;
   gems: typeof gems;
   http: typeof http;
   notifications: typeof notifications;

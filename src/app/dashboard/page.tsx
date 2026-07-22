@@ -9,7 +9,7 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import Leaderboard from "@/components/Leaderboard";
 import MapPicker from "@/components/MapPicker";
-import { CategoryDonutChart, TripExpensesBarChart } from "@/components/ExpenseCharts";
+import { CategoryDonutChart } from "@/components/ExpenseCharts";
 import { useUser, PlanDay } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
 import {
@@ -71,6 +71,8 @@ function Dashboard() {
     toggleWishlist,
     expenses,
     addExpense,
+    deleteExpense,
+    createCustomTrip,
     generateAILocalPlan,
     submitGem,
     approveGem,
@@ -158,24 +160,70 @@ function Dashboard() {
     ...hiddenGems.map(g => ({ ...g, type: "gem" as const }))
   ].filter(item => wishlist.includes(item.id));
 
-  // Expense Tracker active trip selection
-  const [selectedTripId, setSelectedTripId] = useState<string>(journeys[0]?.id || "");
-  const activeJourney = journeys.find(j => j.id === selectedTripId);
+  // Expense Tracker active trip selection ("all" or specific trip ID)
+  const [selectedTripId, setSelectedTripId] = useState<string>("all");
+  const [targetTripForForm, setTargetTripForForm] = useState<string>("");
 
-  // Expense Tracker Form State
+  // Sync target trip for form when selectedTripId or journeys change
+  useEffect(() => {
+    if (selectedTripId !== "all") {
+      setTargetTripForForm(selectedTripId);
+    } else if (journeys.length > 0 && !targetTripForForm) {
+      setTargetTripForForm(journeys[0].id);
+    }
+  }, [selectedTripId, journeys, targetTripForForm]);
+
+  const activeJourney = journeys.find((j) => j.id === selectedTripId);
+
+  // Expense Tracker Modal / Form State for Custom Trips
+  const [showAddTripModal, setShowAddTripModal] = useState(false);
+  const [newTripDest, setNewTripDest] = useState("");
+  const [newTripTitle, setNewTripTitle] = useState("");
+  const [newTripDesc, setNewTripDesc] = useState("");
+  const [isSubmittingTrip, setIsSubmittingTrip] = useState(false);
+
+  // Expense Tracker Item Form State
   const [expAmount, setExpAmount] = useState("");
   const [expCategory, setExpCategory] = useState<"Food" | "Stay" | "Transport" | "Tickets" | "Shopping" | "Other">("Food");
   const [expDesc, setExpDesc] = useState("");
 
-  const handleAddExpense = (e: React.FormEvent) => {
+  const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedTripId || !expAmount || !expDesc) return;
-    addExpense(selectedTripId, Number(expAmount), expCategory, expDesc);
+    const tripToUse = selectedTripId === "all" ? targetTripForForm : selectedTripId;
+    if (!tripToUse || !expAmount || !expDesc) return;
+    await addExpense(tripToUse, Number(expAmount), expCategory, expDesc);
     setExpAmount("");
     setExpDesc("");
   };
 
-  const selectedTripExpenses = expenses.filter(e => e.tripId === selectedTripId);
+  const handleCreateCustomTrip = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newTripDest.trim()) return;
+    setIsSubmittingTrip(true);
+    try {
+      const createdId = await createCustomTrip({
+        destination: newTripDest.trim(),
+        title: newTripTitle.trim() || `Trip to ${newTripDest.trim()}`,
+        description: newTripDesc.trim() || `Travel expenses and details for ${newTripDest.trim()}`,
+      });
+      setSelectedTripId(createdId);
+      setTargetTripForForm(createdId);
+      setNewTripDest("");
+      setNewTripTitle("");
+      setNewTripDesc("");
+      setShowAddTripModal(false);
+    } catch (err) {
+      console.error("Failed to create custom trip:", err);
+    } finally {
+      setIsSubmittingTrip(false);
+    }
+  };
+
+  const selectedTripExpenses =
+    selectedTripId === "all"
+      ? expenses
+      : expenses.filter((e) => e.tripId === selectedTripId);
+
   const tripRunningTotal = selectedTripExpenses.reduce((sum, curr) => sum + curr.amount, 0);
 
   // AI Trip Planner Form State
@@ -977,77 +1025,203 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
               {/* Expense visualizer Tab */}
               {activeTab === "expenses" && (
                 <div className="space-y-8">
-                  <div className="flex flex-col md:flex-row items-center justify-between gap-4 border-b border-earth-clay/10 pb-4">
+                  {/* Header Bar */}
+                  <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-earth-clay/10 pb-4">
                     <div className="space-y-1">
-                      <h3 className="font-serif text-lg font-bold text-earth-forest">
-                        Trip Expense Tracker
-                      </h3>
+                      <div className="flex items-center space-x-2">
+                        <h3 className="font-serif text-xl font-bold text-earth-forest">
+                          Flexible Trip Expense Tracker
+                        </h3>
+                        <span className="px-2 py-0.5 bg-earth-terracotta/10 text-earth-terracotta text-[10px] font-bold uppercase tracking-wider rounded-full">
+                          Any Location
+                        </span>
+                      </div>
                       <p className="font-sans text-xs font-light text-earth-charcoal/70">
-                        Manage your categories and track real-time budgets using custom SVG chart visualization.
+                        Track expenses for any destination worldwide. Saved automatically to your backend profile.
                       </p>
                     </div>
 
-                    <div className="flex items-center space-x-2">
-                      <label className="text-xs font-bold uppercase tracking-wider text-earth-clay">Select Trip:</label>
-                      <select
-                        value={selectedTripId}
-                        onChange={(e) => setSelectedTripId(e.target.value)}
-                        className="p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                    <div className="flex flex-wrap items-center gap-3 w-full md:w-auto justify-end">
+                      <div className="flex items-center space-x-2 w-full sm:w-auto">
+                        <label className="text-xs font-bold uppercase tracking-wider text-earth-clay shrink-0">
+                          Select View / Trip:
+                        </label>
+                        <select
+                          value={selectedTripId}
+                          onChange={(e) => setSelectedTripId(e.target.value)}
+                          className="p-2 bg-white border border-earth-clay/20 text-xs font-medium focus:outline-none focus:border-earth-terracotta rounded-none shadow-sm flex-1 sm:flex-none w-full sm:w-[220px] md:w-[260px] truncate"
+                        >
+                          <option value="all">🌐 All Trips (Combined Summary)</option>
+                          <optgroup label="Your Trips & Destinations">
+                            {journeys.map((j) => {
+                              const displayTitle = j.title.length > 25 ? j.title.substring(0, 23) + "..." : j.title;
+                              return (
+                                <option key={j.id} value={j.id}>
+                                  📍 {displayTitle}
+                                </option>
+                              );
+                            })}
+                          </optgroup>
+                        </select>
+                      </div>
+
+                      <button
+                        onClick={() => setShowAddTripModal(true)}
+                        className="px-3.5 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-wider rounded-none transition-colors flex items-center space-x-1.5 shadow-sm cursor-pointer"
                       >
-                        {journeys.map((j) => (
-                          <option key={j.id} value={j.id}>
-                            {j.title.split("Itinerary")[0].split("Trek")[0].trim()}
-                          </option>
-                        ))}
-                      </select>
+                        <Plus className="h-3.5 w-3.5" />
+                        <span>+ Track New Trip</span>
+                      </button>
                     </div>
                   </div>
 
-                  {activeJourney ? (
-                    <div className="space-y-8">
-                      {/* Stats Overview */}
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-                        <div className="bg-earth-sand/30 border border-earth-clay/15 p-4 flex flex-col justify-center">
-                          <span className="text-[9px] uppercase font-bold text-earth-clay">Journey Status</span>
-                          <span className="font-serif text-lg font-bold text-earth-forest mt-1">
-                            {activeJourney.completed ? "Completed" : "Active & In Progress"}
-                          </span>
+                  {/* Custom Trip Creation Modal */}
+                  {showAddTripModal && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                      <div className="bg-white border border-earth-clay/20 shadow-2xl max-w-md w-full p-6 space-y-5 rounded-none">
+                        <div className="flex items-center justify-between border-b border-earth-clay/10 pb-3">
+                          <div>
+                            <h4 className="font-serif text-lg font-bold text-earth-forest">
+                              Track Expenses for a New Trip
+                            </h4>
+                            <p className="text-[11px] text-earth-clay font-light">
+                              Enter any destination or location you are visiting!
+                            </p>
+                          </div>
+                          <button
+                            onClick={() => setShowAddTripModal(false)}
+                            className="text-earth-clay hover:text-earth-charcoal p-1 text-sm font-bold"
+                          >
+                            ✕
+                          </button>
                         </div>
-                        <div className="bg-earth-sand/30 border border-earth-clay/15 p-4 flex flex-col justify-center">
-                          <span className="text-[9px] uppercase font-bold text-earth-clay">Running Cost</span>
-                          <span className="font-serif text-xl font-bold text-earth-terracotta mt-1 font-mono">
-                            ₹{tripRunningTotal.toLocaleString("en-IN")}
-                          </span>
-                        </div>
-                        <div className="bg-earth-sand/30 border border-earth-clay/15 p-4 flex flex-col justify-center">
-                          <span className="text-[9px] uppercase font-bold text-earth-clay">Recorded Items</span>
-                          <span className="font-serif text-lg font-bold text-earth-charcoal mt-1">
-                            {selectedTripExpenses.length} Entries
-                          </span>
-                        </div>
+
+                        <form onSubmit={handleCreateCustomTrip} className="space-y-4 font-sans">
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal">
+                              Destination / Location Name *
+                            </label>
+                            <input
+                              type="text"
+                              required
+                              value={newTripDest}
+                              onChange={(e) => setNewTripDest(e.target.value)}
+                              placeholder="e.g. Paris, France or Goa Beach Vacation"
+                              className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal">
+                              Trip Title (Optional)
+                            </label>
+                            <input
+                              type="text"
+                              value={newTripTitle}
+                              onChange={(e) => setNewTripTitle(e.target.value)}
+                              placeholder="e.g. Summer Vacation 2026"
+                              className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal">
+                              Description / Notes (Optional)
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={newTripDesc}
+                              onChange={(e) => setNewTripDesc(e.target.value)}
+                              placeholder="e.g. Flight details, stay budget, or solo backpacking notes"
+                              className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                            />
+                          </div>
+
+                          <div className="flex items-center justify-end space-x-3 pt-2">
+                            <button
+                              type="button"
+                              onClick={() => setShowAddTripModal(false)}
+                              className="px-4 py-2 border border-earth-clay/30 text-earth-charcoal text-xs font-bold uppercase tracking-wider hover:bg-earth-sand/30"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="submit"
+                              disabled={isSubmittingTrip}
+                              className="px-5 py-2 bg-earth-forest hover:bg-earth-terracotta text-white text-xs font-bold uppercase tracking-wider disabled:opacity-50"
+                            >
+                              {isSubmittingTrip ? "Creating..." : "Save Trip & Start Tracking"}
+                            </button>
+                          </div>
+                        </form>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Main Display Section */}
+                  <div className="space-y-8">
+                    {/* Stats Overview */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+                      <div className="bg-earth-sand/30 border border-earth-clay/15 p-4 flex flex-col justify-center">
+                        <span className="text-[9px] uppercase font-bold text-earth-clay tracking-wider">
+                          {selectedTripId === "all" ? "Selected View" : "Trip Destination"}
+                        </span>
+                        <span className="font-serif text-lg font-bold text-earth-forest mt-1 truncate" title={selectedTripId === "all" ? "All Saved Trips Combined" : activeJourney?.title}>
+                          {selectedTripId === "all" ? "All Trips Combined" : (activeJourney?.title || "Custom Trip")}
+                        </span>
                       </div>
 
-                      {/* SVG Visualizations */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <CategoryDonutChart expenses={selectedTripExpenses} />
-                        <TripExpensesBarChart journeys={journeys} expenses={expenses} />
+                      <div className="bg-earth-sand/30 border border-earth-clay/15 p-4 flex flex-col justify-center">
+                        <span className="text-[9px] uppercase font-bold text-earth-clay tracking-wider">
+                          {selectedTripId === "all" ? "Total Expenditure (All Trips)" : "Running Cost"}
+                        </span>
+                        <span className="font-serif text-xl font-bold text-earth-terracotta mt-1 font-mono">
+                          ₹{tripRunningTotal.toLocaleString("en-IN")}
+                        </span>
                       </div>
 
-                      {/* Split view: Add Expense & Expenses List */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
-                        {/* List */}
-                        <div className="space-y-4">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest border-b border-earth-clay/5 pb-1">
-                            Logged Expenses
+                      <div className="bg-earth-sand/30 border border-earth-clay/15 p-4 flex flex-col justify-center">
+                        <span className="text-[9px] uppercase font-bold text-earth-clay tracking-wider">
+                          {selectedTripId === "all" ? "Total Tracked Trips" : "Recorded Expense Items"}
+                        </span>
+                        <span className="font-serif text-lg font-bold text-earth-charcoal mt-1">
+                          {selectedTripId === "all"
+                            ? `${journeys.length} Trips (${expenses.length} Entries)`
+                            : `${selectedTripExpenses.length} Entries`}
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* SVG Visualizations */}
+                    <div className="max-w-2xl mx-auto w-full">
+                      <CategoryDonutChart expenses={selectedTripExpenses} />
+                    </div>
+
+                    {/* Split view: Logged Expenses List & Log Expense Form */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                      {/* Logged Expenses List */}
+                      <div className="space-y-4 font-sans">
+                        <div className="flex items-center justify-between border-b border-earth-clay/10 pb-1">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest">
+                            {selectedTripId === "all"
+                              ? "Logged Expenses (All Trips)"
+                              : `Logged Expenses for ${activeJourney?.title || "Selected Trip"}`}
                           </h4>
-                          {selectedTripExpenses.length > 0 ? (
-                            <div className="divide-y divide-earth-clay/10 max-h-[300px] overflow-y-auto border border-earth-clay/5 p-2 bg-white">
-                              {selectedTripExpenses.map((exp) => (
-                                <div key={exp.id} className="py-2.5 flex justify-between items-center text-xs">
-                                  <div className="space-y-1">
+                          <span className="text-[10px] text-earth-clay font-mono">
+                            {selectedTripExpenses.length} items
+                          </span>
+                        </div>
+
+                        {selectedTripExpenses.length > 0 ? (
+                          <div className="divide-y divide-earth-clay/10 max-h-[360px] overflow-y-auto border border-earth-clay/10 p-2 bg-white">
+                            {selectedTripExpenses.map((exp) => {
+                              const tripForExp = journeys.find((j) => j.id === exp.tripId);
+                              return (
+                                <div key={exp.id} className="py-2.5 px-2 flex justify-between items-center text-xs hover:bg-earth-sand/10 transition-colors group">
+                                  <div className="space-y-1 flex-1 pr-2">
                                     <div className="flex items-center space-x-1.5">
                                       <span
-                                        className="h-2 w-2 rounded-full"
+                                        className="h-2.5 w-2.5 rounded-full shrink-0"
                                         style={{
                                           backgroundColor:
                                             exp.category === "Food"
@@ -1067,87 +1241,132 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
                                         {exp.description}
                                       </span>
                                     </div>
-                                    <p className="text-[9px] text-earth-clay/70 font-light">
-                                      {exp.category} • {exp.date}
-                                    </p>
+                                    <div className="flex items-center space-x-2 text-[9px] text-earth-clay/80 font-light">
+                                      <span>{exp.category}</span>
+                                      <span>•</span>
+                                      <span>{exp.date}</span>
+                                      {selectedTripId === "all" && tripForExp && (
+                                        <>
+                                          <span>•</span>
+                                          <span className="bg-earth-sand/50 text-earth-forest px-1 font-medium">
+                                            {tripForExp.title}
+                                          </span>
+                                        </>
+                                      )}
+                                    </div>
                                   </div>
-                                  <span className="font-mono font-bold text-earth-terracotta">
-                                    ₹{exp.amount}
-                                  </span>
+
+                                  <div className="flex items-center space-x-3 shrink-0">
+                                    <span className="font-mono font-bold text-earth-terracotta">
+                                      ₹{exp.amount.toLocaleString("en-IN")}
+                                    </span>
+                                    <button
+                                      onClick={() => deleteExpense(exp.id)}
+                                      title="Delete Expense"
+                                      className="opacity-0 group-hover:opacity-100 text-red-500 hover:text-red-700 text-[10px] font-bold p-1 transition-opacity cursor-pointer"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
                                 </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="text-center py-6 text-earth-clay/60 border border-dashed border-earth-clay/10 text-xs">
-                              No expenses logged yet.
-                            </div>
-                          )}
+                              );
+                            })}
+                          </div>
+                        ) : (
+                          <div className="text-center py-10 text-earth-clay/60 border border-dashed border-earth-clay/15 text-xs bg-earth-sand/5">
+                            No expenses logged for this selection yet. Use the form to record expenses!
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Log Expense Form */}
+                      <form onSubmit={handleAddExpense} className="bg-earth-sand/10 border border-earth-clay/10 p-5 space-y-4 font-sans">
+                        <div className="flex items-center justify-between border-b border-earth-clay/10 pb-1">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest">
+                            Log Categorized Expense
+                          </h4>
+                          <span className="text-[9px] text-earth-clay font-medium uppercase">
+                            Backend Saved
+                          </span>
                         </div>
 
-                        {/* Form */}
-                        <form onSubmit={handleAddExpense} className="bg-earth-sand/10 border border-earth-clay/10 p-5 space-y-4">
-                          <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest border-b border-earth-clay/5 pb-1">
-                            Add Categorized Expense
-                          </h4>
-                          <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-1">
-                              <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-charcoal">
-                                Amount (INR)
-                              </label>
-                              <input
-                                type="number"
-                                required
-                                value={expAmount}
-                                onChange={(e) => setExpAmount(e.target.value)}
-                                placeholder="₹ e.g. 1200"
-                                className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
-                              />
-                            </div>
-
-                            <div className="space-y-1">
-                              <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-charcoal">
-                                Category
-                              </label>
-                              <select
-                                value={expCategory}
-                                onChange={(e) => setExpCategory(e.target.value as any)}
-                                className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
-                              >
-                                {["Food", "Stay", "Transport", "Tickets", "Shopping", "Other"].map((cat) => (
-                                  <option key={cat} value={cat}>
-                                    {cat}
-                                  </option>
-                                ))}
-                              </select>
-                            </div>
-                          </div>
-
+                        {/* Trip Selector inside form if viewing All Trips */}
+                        {selectedTripId === "all" && (
                           <div className="space-y-1">
                             <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-charcoal">
-                              Description
+                              Destination / Trip *
+                            </label>
+                            <select
+                              value={targetTripForForm}
+                              onChange={(e) => setTargetTripForForm(e.target.value)}
+                              className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none font-medium"
+                            >
+                              {journeys.map((j) => (
+                                <option key={j.id} value={j.id}>
+                                  {j.title}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-4">
+                          <div className="space-y-1">
+                            <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-charcoal">
+                              Amount (INR ₹) *
                             </label>
                             <input
-                              type="text"
+                              type="number"
                               required
-                              value={expDesc}
-                              onChange={(e) => setExpDesc(e.target.value)}
-                              placeholder="e.g. Local guide fees or lunch"
+                              min={1}
+                              value={expAmount}
+                              onChange={(e) => setExpAmount(e.target.value)}
+                              placeholder="₹ e.g. 1200"
                               className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
                             />
                           </div>
 
-                          <button
-                            type="submit"
-                            className="w-full py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer"
-                          >
-                            Log Expense
-                          </button>
-                        </form>
-                      </div>
+                          <div className="space-y-1">
+                            <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-charcoal">
+                              Category *
+                            </label>
+                            <select
+                              value={expCategory}
+                              onChange={(e) => setExpCategory(e.target.value as any)}
+                              className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                            >
+                              {["Food", "Stay", "Transport", "Tickets", "Shopping", "Other"].map((cat) => (
+                                <option key={cat} value={cat}>
+                                  {cat}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
+                        <div className="space-y-1">
+                          <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-charcoal">
+                            Description *
+                          </label>
+                          <input
+                            type="text"
+                            required
+                            value={expDesc}
+                            onChange={(e) => setExpDesc(e.target.value)}
+                            placeholder="e.g. Local seafood dinner or hotel stay"
+                            className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                          />
+                        </div>
+
+                        <button
+                          type="submit"
+                          className="w-full py-2.5 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer shadow-sm"
+                        >
+                          Log Expense
+                        </button>
+                      </form>
                     </div>
-                  ) : (
-                    <div className="text-center py-10">No journeys loaded.</div>
-                  )}
+                  </div>
                 </div>
               )}
 

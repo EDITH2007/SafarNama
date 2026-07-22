@@ -79,7 +79,9 @@ interface UserContextType {
   toggleWishlist: (id: string) => void;
   isWishlisted: (id: string) => boolean;
   expenses: Expense[];
-  addExpense: (tripId: string, amount: number, category: Expense["category"], description: string) => void;
+  addExpense: (tripId: string, amount: number, category: Expense["category"], description: string) => Promise<void> | void;
+  deleteExpense: (expenseId: string) => Promise<void>;
+  createCustomTrip: (trip: { title?: string; destination: string; description?: string; startDate?: string; endDate?: string }) => Promise<string>;
   generateAILocalPlan: (location: string, categories: string[], days: number) => PlanDay[];
   submitGem: (gem: Omit<HiddenGem, "id" | "submittedBy" | "submitterTier" | "submitterVerified" | "pointsAwarded" | "createdAt" | "status">) => Promise<string>;
   approveGem: (gemId: string) => Promise<void>;
@@ -180,6 +182,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const markNotificationsAsReadMutation = useMutation(api.notifications.markAllAsRead);
   const dbTripPlans = useQuery(api.trips.getTripPlans);
   const completeTripPlanMutation = useMutation(api.trips.completeTripPlan);
+  const saveTripPlanMutation = useMutation(api.trips.saveTripPlan);
+
+  // Expenses Queries and Mutations
+  const dbExpenses = useQuery(api.expenses.getUserExpenses);
+  const addExpenseMutation = useMutation(api.expenses.addExpense);
+  const deleteExpenseMutation = useMutation(api.expenses.deleteExpense);
 
   // Wishlist Queries and Mutations
   const dbWishlist = useQuery(api.wishlist.getWishlist);
@@ -407,6 +415,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   ]);
 
+  // Formatted DB expenses
+  const formattedDbExpenses = useMemo(() => {
+    if (!dbExpenses) return [];
+    return dbExpenses.map((e: any) => ({
+      id: e._id,
+      tripId: e.tripId,
+      amount: e.amount,
+      category: e.category as Expense["category"],
+      date: e.date,
+      description: e.description || "",
+    }));
+  }, [dbExpenses]);
+
+  // Sync expenses with Convex database when authenticated
+  useEffect(() => {
+    if (isAuthenticated && dbExpenses !== undefined) {
+      setExpenses(formattedDbExpenses);
+    }
+  }, [isAuthenticated, dbExpenses, formattedDbExpenses]);
+
   const pointsLedger: PointsLedgerEntry[] = useMemo(() => {
     return dbPointsLedger
       ? dbPointsLedger.map((entry) => ({
@@ -489,21 +517,91 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const isWishlisted = (id: string) => wishlist.includes(id);
 
   // Expense Tracker Actions
-  const addExpense = (
+  const addExpense = async (
     tripId: string,
     amount: number,
     category: Expense["category"],
     description: string
   ) => {
-    const newExpense: Expense = {
-      id: `exp-${Math.random().toString()}`,
-      tripId,
-      amount,
-      category,
-      date: new Date().toISOString().split("T")[0],
-      description,
-    };
-    setExpenses((prev) => [...prev, newExpense]);
+    if (isAuthenticated) {
+      try {
+        const newId = await addExpenseMutation({
+          tripId,
+          amount,
+          category,
+          description,
+          date: new Date().toISOString().split("T")[0],
+        });
+        const newExpense: Expense = {
+          id: newId,
+          tripId,
+          amount,
+          category,
+          date: new Date().toISOString().split("T")[0],
+          description,
+        };
+        setExpenses((prev) => [newExpense, ...prev.filter((e) => e.id !== newId)]);
+      } catch (err) {
+        console.error("Failed to save expense on Convex:", err);
+      }
+    } else {
+      const newExpense: Expense = {
+        id: `exp-${Date.now()}-${Math.random().toString().slice(2, 6)}`,
+        tripId,
+        amount,
+        category,
+        date: new Date().toISOString().split("T")[0],
+        description,
+      };
+      setExpenses((prev) => [newExpense, ...prev]);
+    }
+  };
+
+  const deleteExpense = async (expenseId: string) => {
+    if (isAuthenticated && !expenseId.startsWith("exp-")) {
+      try {
+        await deleteExpenseMutation({ id: expenseId as any });
+      } catch (err) {
+        console.error("Failed to delete expense on Convex:", err);
+      }
+    }
+    setExpenses((prev) => prev.filter((e) => e.id !== expenseId));
+  };
+
+  const createCustomTrip = async (trip: {
+    title?: string;
+    destination: string;
+    description?: string;
+    startDate?: string;
+    endDate?: string;
+  }): Promise<string> => {
+    const title = trip.title || `Trip to ${trip.destination}`;
+    if (isAuthenticated) {
+      const tripId = await saveTripPlanMutation({
+        title,
+        destination: trip.destination,
+        description: trip.description || `Travel expenses and details for ${trip.destination}`,
+        startDate: trip.startDate,
+        endDate: trip.endDate,
+        isAI: false,
+        status: "planning",
+        travelers: 1,
+      });
+      return tripId;
+    } else {
+      const newJourney: Journey = {
+        id: `journey-${Date.now()}`,
+        title,
+        duration: "Custom Trip",
+        type: "Manual",
+        description: trip.description || `Custom trip to ${trip.destination}`,
+        stops: [trip.destination],
+        author: currentUser ? currentUser.name : "You",
+        completed: false,
+      };
+      setLocalJourneys((prev) => [newJourney, ...prev]);
+      return newJourney.id;
+    }
   };
 
   // AI Planner (Local Recommendation First)
@@ -925,6 +1023,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         isWishlisted,
         expenses,
         addExpense,
+        deleteExpense,
+        createCustomTrip,
         generateAILocalPlan,
         submitGem,
         approveGem,
