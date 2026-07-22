@@ -70,3 +70,47 @@ export const deleteBlog = mutation({
     return { success: true };
   },
 });
+
+// Get enriched blogs
+export const getEnrichedBlogs = query({
+  handler: async (ctx) => {
+    const blogs = await ctx.db.query("blogs").collect();
+    const results = [];
+    for (const b of blogs) {
+      let authorName = b.authorName || "Anonymous";
+      let authorAvatar = b.authorAvatar || "";
+      let authorTier: "Bronze" | "Silver" | "Gold" = "Bronze";
+      let authorVerified = false;
+
+      if (b.author) {
+        const user = await ctx.db.get(b.author);
+        if (user) {
+          authorName = user.name || user.email?.split("@")[0] || authorName;
+          authorAvatar = user.image || authorAvatar;
+          authorTier = (user.tier || "Bronze") as "Bronze" | "Silver" | "Gold";
+          authorVerified = user.isVerified || false;
+        }
+      }
+
+      results.push({
+        id: b._id,
+        title: b.title || "Untitled",
+        content: b.content || "",
+        coverImage: b.coverImage || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+        author: authorName,
+        authorImage: authorAvatar,
+        authorTier,
+        authorVerified,
+        date: new Date(b.createdAt || Date.now()).toLocaleDateString("en-US", {
+          month: "short",
+          day: "2-digit",
+          year: "numeric",
+        }),
+        status: b.status || "published",
+        flagged: b.flagged ?? false,
+      });
+    }
+    return results;
+  },
+});
+

@@ -127,4 +127,42 @@ export const getReviewsForGem = query({
   },
 });
 
+// Get all enriched reviews (public & admin moderation)
+export const getEnrichedReviews = query({
+  handler: async (ctx) => {
+    const reviews = await ctx.db.query("reviews").collect();
+    const results = [];
+    for (const r of reviews) {
+      const author = await ctx.db.get(r.author);
+      let locationName = "Unknown";
+      if (r.destinationId) {
+        const dest = await ctx.db.get(r.destinationId);
+        if (dest) locationName = dest.title;
+      } else if (r.gemId) {
+        const gem = await ctx.db.get(r.gemId);
+        if (gem) locationName = gem.title;
+      }
+      results.push({
+        id: r._id,
+        rating: r.rating,
+        text: r.text,
+        title: r.text.substring(0, 30) + (r.text.length > 30 ? "..." : ""),
+        author: author?.name || author?.email?.split("@")[0] || "Anonymous",
+        authorTier: (author?.tier || "Bronze") as "Bronze" | "Silver" | "Gold",
+        authorVerified: author?.isVerified || false,
+        location: locationName,
+        date: new Date(r.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "2-digit",
+          year: "numeric",
+        }),
+        flagged: r.flagged ?? false,
+        createdAt: r.createdAt,
+      });
+    }
+    return results.sort((a, b) => b.createdAt - a.createdAt);
+  },
+});
+
+
 

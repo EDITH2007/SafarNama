@@ -100,8 +100,8 @@ interface UserContextType {
     tips?: string[];
     photoGallery?: string[];
   }) => Promise<void>;
-  addReview: (review: Omit<Review, "id" | "author" | "authorTier" | "authorVerified" | "date">) => void;
-  addBlog: (blog: Omit<Blog, "id" | "author" | "authorTier" | "authorVerified" | "date">) => void;
+  addReview: (review: Omit<Review, "id" | "author" | "authorTier" | "authorVerified" | "date"> & { destinationId?: string; gemId?: string }) => Promise<void> | void;
+  addBlog: (blog: Omit<Blog, "id" | "author" | "authorTier" | "authorVerified" | "date">) => Promise<void> | void;
   completeTrip: (journeyId: string) => void;
   addTrip: (trip: Omit<Journey, "id" | "author" | "completed">) => void;
   toggleUserVerification: () => void;
@@ -115,6 +115,10 @@ interface UserContextType {
   mySubmissions: any[];
   notifications: InAppNotification[];
   markNotificationsAsRead: () => Promise<void>;
+  pendingJourneys: any[];
+  submitJourney: (journey: { title: string; description: string; duration: string; stops: string[] }) => Promise<string>;
+  approveJourney: (journeyId: string) => Promise<void>;
+  rejectJourney: (journeyId: string, reason?: string) => Promise<void>;
 }
 
 const PLACEHOLDER_USER: UserProfile = {
@@ -178,6 +182,24 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const dbNotifications = useQuery(api.notifications.getUserNotifications);
   const notifications = dbNotifications || EMPTY_ARRAY;
+
+  const dbApprovedBlogs = useQuery(api.blogs.getEnrichedBlogs);
+  const dbApprovedReviews = useQuery(api.reviews.getEnrichedReviews);
+  const dbApprovedJourneys = useQuery(api.journeys.getApprovedJourneys);
+  const dbPendingJourneys = useQuery(api.journeys.getPendingJourneys, isLocalAdmin ? {} : "skip");
+
+  // Mutations for blogs/reviews/journeys
+  const addBlogMutation = useMutation(api.blogs.addBlog);
+  const flagBlogMutation = useMutation(api.blogs.flagBlog);
+  const deleteBlogMutation = useMutation(api.blogs.deleteBlog);
+
+  const addReviewMutation = useMutation(api.reviews.addReview);
+  const flagReviewMutation = useMutation(api.reviews.flagReview);
+  const deleteReviewMutation = useMutation(api.reviews.deleteReview);
+
+  const submitJourneyMutation = useMutation(api.journeys.submitJourney);
+  const approveJourneyMutation = useMutation(api.journeys.approveJourney);
+  const rejectJourneyMutation = useMutation(api.journeys.rejectJourney);
 
   const markNotificationsAsReadMutation = useMutation(api.notifications.markAllAsRead);
   const dbTripPlans = useQuery(api.trips.getTripPlans);
@@ -261,8 +283,44 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     ? [...approvedGems, ...pendingGems] 
     : approvedGems) as HiddenGem[];
 
-  const [blogs, setBlogs] = useState<Blog[]>(mockBlogs);
-  const [reviews, setReviews] = useState<Review[]>(mockReviews);
+  const blogs = useMemo(() => {
+    return dbApprovedBlogs || mockBlogs;
+  }, [dbApprovedBlogs]);
+
+  const reviews = useMemo(() => {
+    return dbApprovedReviews || mockReviews;
+  }, [dbApprovedReviews]);
+
+  const approvedJourneys = useMemo(() => {
+    if (!dbApprovedJourneys) return [];
+    return dbApprovedJourneys.map((j: any) => ({
+      id: j.id || j._id,
+      title: j.title,
+      duration: j.duration,
+      type: "Manual" as const,
+      description: j.description,
+      stops: j.stops,
+      author: j.author,
+      completed: true,
+    }));
+  }, [dbApprovedJourneys]);
+
+  const pendingJourneys = useMemo(() => {
+    if (!dbPendingJourneys) return [];
+    return dbPendingJourneys.map((j: any) => ({
+      id: j.id || j._id,
+      title: j.title,
+      duration: j.duration,
+      type: "Manual" as const,
+      description: j.description,
+      stops: j.stops,
+      author: j.author,
+      authorTier: j.authorTier,
+      authorVerified: j.authorVerified,
+      createdAtFormatted: j.createdAtFormatted,
+    }));
+  }, [dbPendingJourneys]);
+
   const [localJourneys, setLocalJourneys] = useState<Journey[]>(mockJourneys);
   const [wishlist, setWishlist] = useState<string[]>([]);
 
@@ -368,8 +426,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   }, [dbTripPlans, currentUser]);
 
   const journeys = useMemo(() => {
-    return [...mappedDbTripPlans, ...localJourneys];
-  }, [mappedDbTripPlans, localJourneys]);
+    return [...mappedDbTripPlans, ...approvedJourneys, ...localJourneys];
+  }, [mappedDbTripPlans, approvedJourneys, localJourneys]);
   
   // Expenses state
   const [expenses, setExpenses] = useState<Expense[]>([
@@ -889,46 +947,48 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Add a Review
-  const addReview = (
-    review: Omit<Review, "id" | "author" | "authorTier" | "authorVerified" | "date">
+  const addReview = async (
+    review: Omit<Review, "id" | "author" | "authorTier" | "authorVerified" | "date"> & { destinationId?: string; gemId?: string }
   ) => {
     const authorName = currentUser?.name || "Guest";
-    const newReview: Review = {
-      ...review,
-      id: `rev-${Math.random().toString()}`,
-      author: authorName,
-      authorTier: currentUser?.tier || "Bronze",
-      authorVerified: currentUser?.isVerified || false,
-      date: "Just now",
-    };
-
-    setReviews((prev) => [newReview, ...prev]);
+    if (isAuthenticated && currentUser?.id) {
+      try {
+        await addReviewMutation({
+          rating: review.rating,
+          text: review.text,
+          author: currentUser.id as any,
+          destinationId: review.destinationId as any,
+          gemId: review.gemId as any,
+        });
+      } catch (err) {
+        console.error("Failed to add review on Convex:", err);
+      }
+    }
     updateProfilePointsAndTier(
       authorName,
       POINTS.WRITE_REVIEW,
-      `Written Review: ${review.title}`
+      `Written Review: ${review.title || review.text.substring(0, 15)}`
     );
   };
 
   // Add a Blog Post
-  const addBlog = (
+  const addBlog = async (
     blog: Omit<Blog, "id" | "author" | "authorTier" | "authorVerified" | "date">
   ) => {
     const authorName = currentUser?.name || "Guest";
-    const newBlog: Blog = {
-      ...blog,
-      id: `blog-${Math.random().toString()}`,
-      author: authorName,
-      authorTier: currentUser?.tier || "Bronze",
-      authorVerified: currentUser?.isVerified || false,
-      date: new Date().toLocaleDateString("en-US", {
-        month: "short",
-        day: "2-digit",
-        year: "numeric",
-      }),
-    };
-
-    setBlogs((prev) => [newBlog, ...prev]);
+    if (isAuthenticated && currentUser?.id) {
+      try {
+        await addBlogMutation({
+          title: blog.title,
+          content: blog.content,
+          coverImage: blog.coverImage,
+          author: currentUser.id as any,
+          status: "published",
+        });
+      } catch (err) {
+        console.error("Failed to add blog post on Convex:", err);
+      }
+    }
     updateProfilePointsAndTier(
       authorName,
       POINTS.WRITE_BLOG,
@@ -985,24 +1045,70 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Moderation functions
-  const flagReview = (reviewId: string) => {
-    setReviews((prev) =>
-      prev.map((rev) => (rev.id === reviewId ? { ...rev, flagged: !rev.flagged } : rev))
-    );
+  const flagReview = async (reviewId: string) => {
+    if (!currentUser || !currentUser.id) return;
+    const rev = reviews.find((r) => r.id === reviewId);
+    if (!rev) return;
+    try {
+      await flagReviewMutation({
+        adminUserId: currentUser.id as any,
+        reviewId: reviewId as any,
+        flagged: !rev.flagged,
+      });
+    } catch (err) {
+      console.error("Failed to flag review:", err);
+    }
   };
 
-  const deleteReview = (reviewId: string) => {
-    setReviews((prev) => prev.filter((rev) => rev.id !== reviewId));
+  const deleteReview = async (reviewId: string) => {
+    if (!currentUser || !currentUser.id) return;
+    try {
+      await deleteReviewMutation({
+        adminUserId: currentUser.id as any,
+        reviewId: reviewId as any,
+      });
+    } catch (err) {
+      console.error("Failed to delete review:", err);
+    }
   };
 
-  const flagBlog = (blogId: string) => {
-    setBlogs((prev) =>
-      prev.map((b) => (b.id === blogId ? { ...b, flagged: !b.flagged } : b))
-    );
+  const flagBlog = async (blogId: string) => {
+    if (!currentUser || !currentUser.id) return;
+    const b = blogs.find((item) => item.id === blogId);
+    if (!b) return;
+    try {
+      await flagBlogMutation({
+        adminUserId: currentUser.id as any,
+        blogId: blogId as any,
+        flagged: !b.flagged,
+      });
+    } catch (err) {
+      console.error("Failed to flag blog:", err);
+    }
   };
 
-  const deleteBlog = (blogId: string) => {
-    setBlogs((prev) => prev.filter((b) => b.id !== blogId));
+  const deleteBlog = async (blogId: string) => {
+    if (!currentUser || !currentUser.id) return;
+    try {
+      await deleteBlogMutation({
+        adminUserId: currentUser.id as any,
+        blogId: blogId as any,
+      });
+    } catch (err) {
+      console.error("Failed to delete blog:", err);
+    }
+  };
+
+  const submitJourney = async (journey: { title: string; description: string; duration: string; stops: string[] }) => {
+    return await submitJourneyMutation(journey);
+  };
+
+  const approveJourney = async (journeyId: string) => {
+    await approveJourneyMutation({ journeyId: journeyId as any });
+  };
+
+  const rejectJourney = async (journeyId: string, reason?: string) => {
+    await rejectJourneyMutation({ journeyId: journeyId as any, rejectionReason: reason });
   };
 
   return (
@@ -1045,6 +1151,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         mySubmissions,
         notifications,
         markNotificationsAsRead,
+        pendingJourneys,
+        submitJourney,
+        approveJourney,
+        rejectJourney,
       }}
     >
       {children}

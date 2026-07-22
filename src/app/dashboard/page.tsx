@@ -38,6 +38,7 @@ import {
   Trash2,
   Flag,
   XCircle,
+  ChevronRight,
 } from "lucide-react";
 
 export default function DashboardPage() {
@@ -89,16 +90,39 @@ function Dashboard() {
     deleteBlog,
     logout,
     mySubmissions,
+    pendingJourneys,
+    submitJourney,
+    approveJourney,
+    rejectJourney,
   } = useUser();
 
-  const [activeTab, setActiveTab] = useState<"profile" | "submissions" | "wishlist" | "expenses" | "planner" | "addgem" | "admin">("profile");
+  const [activeTab, setActiveTab] = useState<"profile" | "submissions" | "wishlist" | "expenses" | "planner" | "addgem" | "admin" | "addjourney" | "writeblog">("profile");
 
   // Admin section sub-navigation states
-  const [adminSubTab, setAdminSubTab] = useState<"spots" | "reviews" | "blogs" | "add_destination" | "approved_gems">("spots");
+  const [adminSubTab, setAdminSubTab] = useState<"spots" | "reviews" | "blogs" | "add_destination" | "approved_gems" | "journeys">("spots");
   const hasRedirectedRef = useRef(false);
   const [activeRejectionGemId, setActiveRejectionGemId] = useState<string | null>(null);
   const [rejectionReasonText, setRejectionReasonText] = useState<{ [gemId: string]: string }>({});
   const [isAdminOverride, setIsAdminOverride] = useState(false);
+
+  const [activeRejectionJourneyId, setActiveRejectionJourneyId] = useState<string | null>(null);
+  
+  // Add Journey Form State
+  const [jTitle, setJTitle] = useState("");
+  const [jDesc, setJDesc] = useState("");
+  const [jDuration, setJDuration] = useState("");
+  const [stopsList, setStopsList] = useState<string[]>([""]);
+  const [jSuccess, setJSuccess] = useState(false);
+  const [jError, setJError] = useState("");
+  const [jLoading, setJLoading] = useState(false);
+
+  // Add Blog Form State
+  const [bTitle, setBTitle] = useState("");
+  const [bContent, setBContent] = useState("");
+  const [bCover, setBCover] = useState("");
+  const [bSuccess, setBSuccess] = useState(false);
+  const [bError, setBError] = useState("");
+  const [bLoading, setBLoading] = useState(false);
   
   // Add Destination Form State
   const [destTitle, setDestTitle] = useState("");
@@ -186,6 +210,65 @@ function Dashboard() {
   const [expAmount, setExpAmount] = useState("");
   const [expCategory, setExpCategory] = useState<"Food" | "Stay" | "Transport" | "Tickets" | "Shopping" | "Other">("Food");
   const [expDesc, setExpDesc] = useState("");
+
+  const handleAddJourneySubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!jTitle.trim() || !jDesc.trim() || !jDuration.trim()) {
+      setJError("Please fill out all required fields.");
+      return;
+    }
+    const filteredStops = stopsList.map(s => s.trim()).filter(Boolean);
+    if (filteredStops.length === 0) {
+      setJError("Please add at least one stop for your journey.");
+      return;
+    }
+    setJLoading(true);
+    setJError("");
+    setJSuccess(false);
+    try {
+      await submitJourney({
+        title: jTitle,
+        description: jDesc,
+        duration: jDuration,
+        stops: filteredStops,
+      });
+      setJSuccess(true);
+      setJTitle("");
+      setJDesc("");
+      setJDuration("");
+      setStopsList([""]);
+    } catch (err: any) {
+      setJError(err.message || "Failed to submit journey. Please try again.");
+    } finally {
+      setJLoading(false);
+    }
+  };
+
+  const handleAddBlogSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!bTitle.trim() || !bContent.trim()) {
+      setBError("Please fill out all required fields.");
+      return;
+    }
+    setBLoading(true);
+    setBError("");
+    setBSuccess(false);
+    try {
+      await addBlog({
+        title: bTitle,
+        content: bContent,
+        coverImage: bCover.trim() || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+      });
+      setBSuccess(true);
+      setBTitle("");
+      setBContent("");
+      setBCover("");
+    } catch (err: any) {
+      setBError(err.message || "Failed to publish blog post.");
+    } finally {
+      setBLoading(false);
+    }
+  };
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -744,7 +827,9 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
                 { id: "expenses", name: "Expense Visualizer", icon: Activity },
                 { id: "planner", name: "AI Local Planner", icon: Route },
                 { id: "addgem", name: "Add a Spot Discovery", icon: Plus },
-                ...(currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com"
+                { id: "addjourney", name: "Share a Journey", icon: Route },
+                { id: "writeblog", name: "Write a Blog Story", icon: BookOpen },
+                ...(currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com" || currentUser?.role === "admin"
                   ? [{ id: "admin", name: "Admin Mod sandbox", icon: Sparkles }]
                   : []),
               ].map((tab) => {
@@ -2045,6 +2130,223 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
                 </div>
               )}
 
+              {/* Add Journey Tab */}
+              {activeTab === "addjourney" && (
+                <div className="space-y-8 animate-in fade-in duration-300">
+                  <div className="space-y-1 border-b border-earth-clay/10 pb-4">
+                    <h3 className="font-serif text-lg font-bold text-earth-forest">
+                      Share Your Journey Chronicles
+                    </h3>
+                    <p className="font-sans text-xs font-light text-earth-charcoal/70">
+                      Submit your detailed trip route and stops. On admin approval, it will be published to the Traveler Stories on the homepage and you will earn <span className="font-bold text-earth-terracotta">100 points</span>.
+                    </p>
+                  </div>
+
+                  {jSuccess && (
+                    <div className="p-4 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-2 rounded-none animate-in fade-in duration-300">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+                      <span>Your Journey has been submitted successfully! It will appear on lists once the administrator reviews and approves it.</span>
+                    </div>
+                  )}
+
+                  {jError && (
+                    <div className="p-4 bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center space-x-2 rounded-none animate-in fade-in duration-300">
+                      <ShieldAlert className="h-5 w-5 text-red-650 shrink-0" />
+                      <span>{jError}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleAddJourneySubmit} className="space-y-6 font-sans text-xs">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Title */}
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                          Journey Title
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={jTitle}
+                          onChange={(e) => setJTitle(e.target.value)}
+                          placeholder="e.g. 7-Day Ladakh Backpacking Expedition"
+                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                        />
+                      </div>
+
+                      {/* Duration */}
+                      <div className="space-y-1 md:col-span-1">
+                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                          Duration
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={jDuration}
+                          onChange={(e) => setJDuration(e.target.value)}
+                          placeholder="e.g. 7 Days"
+                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Description */}
+                    <div className="space-y-1">
+                      <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                        Journey Overview / Story
+                      </label>
+                      <textarea
+                        rows={4}
+                        required
+                        value={jDesc}
+                        onChange={(e) => setJDesc(e.target.value)}
+                        placeholder="Provide details about your itinerary, general path, unique experiences, local guidelines, best season and logistics..."
+                        className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none resize-none"
+                      />
+                    </div>
+
+                    {/* Dynamic Stops */}
+                    <div className="space-y-3">
+                      <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                        Route Stops / Landmarks in Sequence
+                      </label>
+                      <p className="text-[10px] text-earth-charcoal/60 font-light">
+                        Add the stops or villages/cities visited along the way in order.
+                      </p>
+
+                      <div className="space-y-2">
+                        {stopsList.map((stop, idx) => (
+                          <div key={idx} className="flex items-center space-x-2 animate-in fade-in duration-150">
+                            <span className="w-6 text-[10px] font-bold text-earth-terracotta">#{idx + 1}</span>
+                            <input
+                              type="text"
+                              required
+                              value={stop}
+                              onChange={(e) => {
+                                const nextList = [...stopsList];
+                                nextList[idx] = e.target.value;
+                                setStopsList(nextList);
+                              }}
+                              placeholder={`Stop #${idx + 1} name (e.g. Hunder Village)`}
+                              className="flex-1 p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                            />
+                            {stopsList.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => setStopsList(stopsList.filter((_, i) => i !== idx))}
+                                className="px-2.5 py-2 border border-red-200 text-red-650 hover:bg-red-50 hover:text-red-700 text-[10px] font-bold uppercase cursor-pointer"
+                              >
+                                Remove
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+
+                      <button
+                        type="button"
+                        onClick={() => setStopsList([...stopsList, ""])}
+                        className="px-3.5 py-2 border border-earth-forest text-earth-forest hover:bg-earth-forest hover:text-white text-[10px] font-bold uppercase tracking-wider transition-colors cursor-pointer rounded-none animate-none"
+                      >
+                        + Add Stop
+                      </button>
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={jLoading || !jTitle || !jDesc || !jDuration}
+                      className="w-full py-3 bg-earth-forest hover:bg-earth-terracotta disabled:bg-earth-clay/30 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer shadow-md"
+                    >
+                      {jLoading ? "Submitting Journey..." : "Submit Journey for Review"}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+              {/* Write Blog Tab */}
+              {activeTab === "writeblog" && (
+                <div className="space-y-8 animate-in fade-in duration-300">
+                  <div className="space-y-1 border-b border-earth-clay/10 pb-4">
+                    <h3 className="font-serif text-lg font-bold text-earth-forest">
+                      Write a Traveler Chronicles Story
+                    </h3>
+                    <p className="font-sans text-xs font-light text-earth-charcoal/70">
+                      Draft and publish a travelogue or essay to share with the SafarNama community.
+                    </p>
+                  </div>
+
+                  {bSuccess && (
+                    <div className="p-4 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-2 rounded-none animate-in fade-in duration-300">
+                      <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
+                      <span>Your traveler story has been published successfully and is now live on the homepage!</span>
+                    </div>
+                  )}
+
+                  {bError && (
+                    <div className="p-4 bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center space-x-2 rounded-none animate-in fade-in duration-300">
+                      <ShieldAlert className="h-5 w-5 text-red-650 shrink-0" />
+                      <span>{bError}</span>
+                    </div>
+                  )}
+
+                  <form onSubmit={handleAddBlogSubmit} className="space-y-6 font-sans text-xs">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                      {/* Title */}
+                      <div className="space-y-1 md:col-span-2">
+                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                          Story Title *
+                        </label>
+                        <input
+                          type="text"
+                          required
+                          value={bTitle}
+                          onChange={(e) => setBTitle(e.target.value)}
+                          placeholder="e.g. Finding Peace in the Valleys of Spiti"
+                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                        />
+                      </div>
+
+                      {/* Cover Image URL */}
+                      <div className="space-y-1 md:col-span-1">
+                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                          Cover Image URL (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={bCover}
+                          onChange={(e) => setBCover(e.target.value)}
+                          placeholder="https://unsplash.com/..."
+                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Blog Content */}
+                    <div className="space-y-1">
+                      <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                        Chronicle Body Content *
+                      </label>
+                      <textarea
+                        rows={12}
+                        required
+                        value={bContent}
+                        onChange={(e) => setBContent(e.target.value)}
+                        placeholder="Write your beautiful travel story here. Feel free to describe the people, the sights, the colors, and the spirit of your exploration..."
+                        className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none font-sans leading-relaxed"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={bLoading || !bTitle || !bContent}
+                      className="w-full py-3 bg-earth-forest hover:bg-earth-terracotta disabled:bg-earth-clay/30 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none transition-colors cursor-pointer shadow-md"
+                    >
+                      {bLoading ? "Publishing Story..." : "Publish Traveler Story"}
+                    </button>
+                  </form>
+                </div>
+              )}
+
+
               {/* Admin Sandbox queue tab */}
               {activeTab === "admin" && (() => {
                 const isUserAdmin = currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com";
@@ -2104,6 +2406,7 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
                     <div className="flex space-x-2 border-b border-earth-clay/10 pb-1 flex-wrap gap-y-2">
                       {[
                         { id: "spots", name: `Spot Discoveries (${pendingGems.length})` },
+                        { id: "journeys", name: `Journeys (${pendingJourneys.length})` },
                         { id: "reviews", name: `Reviews (${reviews.length})` },
                         { id: "blogs", name: `Traveler Stories (${blogs.length})` },
                         { id: "add_destination", name: "Add Official Destination" },
@@ -2339,6 +2642,123 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
                           ) : (
                             <div className="text-center py-12 bg-earth-sand/5 border border-dashed border-earth-clay/10 text-earth-clay font-medium">
                               No user reviews found in the database.
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Sub-tab: Journeys moderation */}
+                      {adminSubTab === "journeys" && (
+                        <div className="space-y-4">
+                          <p className="text-earth-charcoal/70 font-light leading-relaxed">
+                            Moderate traveler shared journeys. Approving a journey awards <span className="font-bold text-earth-terracotta">100 points</span> to the author and publishes it to the homepage.
+                          </p>
+
+                          {pendingJourneys.length > 0 ? (
+                            <div className="space-y-4">
+                              {pendingJourneys.map((j) => (
+                                <div
+                                  key={j.id}
+                                  className="bg-white border border-earth-clay/10 p-6 flex flex-col justify-between hover:border-earth-terracotta/30 transition-all duration-300 relative animate-in fade-in duration-300"
+                                >
+                                  <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center space-x-2">
+                                        <span className="px-2.5 py-1 text-[10px] font-sans font-bold uppercase tracking-wider bg-earth-terracotta/15 text-earth-terracotta">
+                                          {j.duration}
+                                        </span>
+                                        <span className="text-[10px] text-earth-clay font-medium font-sans">
+                                          Submitted by: <span className="font-bold text-earth-charcoal">{j.author}</span> ({j.authorTier} Explorer)
+                                        </span>
+                                      </div>
+                                      <span className="font-sans text-[10px] text-earth-clay/70 font-medium">
+                                        {j.createdAtFormatted}
+                                      </span>
+                                    </div>
+
+                                    <h4 className="font-serif text-lg font-bold text-earth-charcoal">
+                                      {j.title}
+                                    </h4>
+                                    <p className="font-sans text-xs text-earth-charcoal/70 font-light leading-relaxed">
+                                      {j.description}
+                                    </p>
+
+                                    {/* Stops */}
+                                    <div className="flex flex-wrap items-center gap-1.5 pt-2">
+                                      {j.stops.map((stop: string, idx: number) => (
+                                        <div key={idx} className="flex items-center text-[10px] font-sans text-earth-charcoal/80 font-medium bg-earth-sand px-2 py-1 border border-earth-clay/5">
+                                          <span>{stop}</span>
+                                          {idx < j.stops.length - 1 && (
+                                            <ChevronRight className="h-3 w-3 text-earth-clay/40 ml-1.5 shrink-0" />
+                                          )}
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+
+                                  <div className="pt-4 mt-4 border-t border-earth-clay/5 flex items-center justify-end space-x-2.5">
+                                    <button
+                                      onClick={async () => {
+                                        if (window.confirm("Approve this journey and award 100 points?")) {
+                                          await approveJourney(j.id);
+                                        }
+                                      }}
+                                      className="px-4 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-wider rounded-none cursor-pointer transition-colors"
+                                    >
+                                      Approve (+100 pts)
+                                    </button>
+                                    
+                                    <button
+                                      type="button"
+                                      onClick={() => setActiveRejectionJourneyId(j.id)}
+                                      className="px-4 py-2 border border-red-250 text-red-650 hover:bg-red-50 hover:text-red-700 font-sans text-xs font-bold uppercase tracking-wider rounded-none cursor-pointer transition-colors"
+                                    >
+                                      Reject
+                                    </button>
+                                  </div>
+
+                                  {activeRejectionJourneyId === j.id && (
+                                    <div className="mt-4 p-4 bg-red-50/50 border border-red-200 space-y-3 font-sans animate-in slide-in-from-top duration-200">
+                                      <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal">
+                                        Rejection Reason *
+                                      </label>
+                                      <input
+                                        type="text"
+                                        required
+                                        value={rejectionReasonText[j.id] || ""}
+                                        onChange={(e) => setRejectionReasonText({ ...rejectionReasonText, [j.id]: e.target.value })}
+                                        placeholder="e.g. Incomplete stops or duplicate information"
+                                        className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none"
+                                      />
+                                      <div className="flex items-center justify-end space-x-2">
+                                        <button
+                                          type="button"
+                                          onClick={() => setActiveRejectionJourneyId(null)}
+                                          className="px-3 py-1.5 border border-earth-clay/35 text-earth-charcoal text-[10px] font-bold uppercase tracking-wider"
+                                        >
+                                          Cancel
+                                        </button>
+                                        <button
+                                          type="button"
+                                          onClick={async () => {
+                                            const reason = rejectionReasonText[j.id];
+                                            if (!reason) return;
+                                            await rejectJourney(j.id, reason);
+                                            setActiveRejectionJourneyId(null);
+                                          }}
+                                          className="px-3 py-1.5 bg-red-600 hover:bg-red-700 text-white text-[10px] font-bold uppercase tracking-wider"
+                                        >
+                                          Confirm Rejection
+                                        </button>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="text-center py-12 bg-earth-sand/5 border border-dashed border-earth-clay/10 text-earth-clay font-medium">
+                              No pending traveler journey submissions in the review queue.
                             </div>
                           )}
                         </div>

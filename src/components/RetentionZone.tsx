@@ -11,6 +11,7 @@ interface RetentionZoneProps {
 
 export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
   const [activeStoryTab, setActiveStoryTab] = useState<"Journeys" | "Reviews" | "Blogs">("Journeys");
+  const [selectedReadBlog, setSelectedReadBlog] = useState<any | null>(null);
   const { journeys, reviews, blogs } = useUser();
 
   // Filter out flagged reviews and blogs from public view
@@ -164,7 +165,10 @@ export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
                 key={b.id}
                 className="group flex flex-col bg-white border border-earth-clay/10 hover:border-earth-terracotta/30 transition-all duration-300"
               >
-                <div className="aspect-[16/10] overflow-hidden bg-stone-100 relative">
+                <div
+                  onClick={() => setSelectedReadBlog(b)}
+                  className="aspect-[16/10] overflow-hidden bg-stone-100 relative cursor-pointer"
+                >
                   <img
                     src={b.coverImage}
                     alt={b.title}
@@ -178,7 +182,10 @@ export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
 
                 <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
                   <div className="space-y-2">
-                    <h4 className="font-serif text-base font-bold text-earth-charcoal line-clamp-2 group-hover:text-earth-terracotta transition-colors">
+                    <h4
+                      onClick={() => setSelectedReadBlog(b)}
+                      className="font-serif text-base font-bold text-earth-charcoal line-clamp-2 group-hover:text-earth-terracotta transition-colors cursor-pointer"
+                    >
                       {b.title}
                     </h4>
                     <p className="font-sans text-xs text-earth-charcoal/70 line-clamp-3 leading-relaxed font-light">
@@ -214,7 +221,10 @@ export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
                       </div>
                     </div>
 
-                    <button className="font-sans text-xs font-semibold text-earth-terracotta uppercase tracking-wider flex items-center space-x-0.5">
+                    <button
+                      onClick={() => setSelectedReadBlog(b)}
+                      className="font-sans text-xs font-semibold text-earth-terracotta uppercase tracking-wider flex items-center space-x-0.5 cursor-pointer bg-transparent border-0"
+                    >
                       <span>Read Story</span>
                       <span>→</span>
                     </button>
@@ -292,6 +302,73 @@ export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
           
         </div>
       </div>
+
+      {/* Blog Detail Reader Modal */}
+      {selectedReadBlog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-200">
+          <div className="bg-white border border-earth-clay/20 shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col rounded-none relative animate-in slide-in-from-bottom-4 duration-300">
+            {/* Close Button */}
+            <button
+              onClick={() => setSelectedReadBlog(null)}
+              className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white text-earth-charcoal px-3 py-1.5 border border-earth-clay/10 transition-colors shadow-sm cursor-pointer font-bold text-xs uppercase"
+              aria-label="Close reader"
+            >
+              ✕ Close
+            </button>
+
+            {/* Cover Image */}
+            <div className="h-48 sm:h-64 w-full overflow-hidden bg-stone-100 relative shrink-0">
+              <img
+                src={selectedReadBlog.coverImage}
+                alt={selectedReadBlog.title}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/75 to-transparent flex items-end p-6">
+                <h3 className="font-serif text-xl sm:text-2xl font-bold text-white leading-tight">
+                  {selectedReadBlog.title}
+                </h3>
+              </div>
+            </div>
+
+            {/* Author details / Metadata bar */}
+            <div className="px-6 py-4 bg-earth-sand/30 border-b border-earth-clay/10 flex items-center justify-between text-xs shrink-0 flex-wrap gap-2">
+              <div className="flex items-center space-x-2">
+                {selectedReadBlog.authorImage ? (
+                  <img
+                    src={selectedReadBlog.authorImage}
+                    alt={selectedReadBlog.author}
+                    className="h-7 w-7 rounded-none object-cover border border-earth-clay/20"
+                  />
+                ) : (
+                  <div className="h-7 w-7 bg-earth-terracotta/15 flex items-center justify-center text-xs text-earth-terracotta font-bold font-sans">
+                    {selectedReadBlog.author.split(" ").map((n: string) => n[0]).join("").substring(0,2).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <div className="font-bold text-earth-charcoal flex items-center space-x-1">
+                    <span>{selectedReadBlog.author}</span>
+                    {selectedReadBlog.authorVerified && (
+                      <span className="text-blue-500 text-[10px]" title="Verified Explorer">✓</span>
+                    )}
+                  </div>
+                  <span className="text-[9px] uppercase font-bold tracking-wider text-earth-clay/70">
+                    {selectedReadBlog.authorTier} Explorer
+                  </span>
+                </div>
+              </div>
+              
+              <span className="text-[10px] text-earth-clay font-medium uppercase tracking-widest font-sans">
+                {selectedReadBlog.date}
+              </span>
+            </div>
+
+            {/* Scrollable Content */}
+            <div className="p-6 overflow-y-auto flex-1 font-sans text-sm text-earth-charcoal/90 leading-relaxed font-light whitespace-pre-line space-y-4">
+              {selectedReadBlog.content}
+            </div>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

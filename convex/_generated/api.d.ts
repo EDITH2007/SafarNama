@@ -14,6 +14,7 @@ import type * as destinations from "../destinations.js";
 import type * as expenses from "../expenses.js";
 import type * as gems from "../gems.js";
 import type * as http from "../http.js";
+import type * as journeys from "../journeys.js";
 import type * as notifications from "../notifications.js";
 import type * as reviews from "../reviews.js";
 import type * as seed from "../seed.js";
@@ -34,6 +35,7 @@ declare const fullApi: ApiFromModules<{
   expenses: typeof expenses;
   gems: typeof gems;
   http: typeof http;
+  journeys: typeof journeys;
   notifications: typeof notifications;
   reviews: typeof reviews;
   seed: typeof seed;

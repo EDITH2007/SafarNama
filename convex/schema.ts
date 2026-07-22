@@ -200,4 +200,22 @@ export default defineSchema({
   })
     .index("by_user_unread", ["userId", "read"])
     .index("by_user_created", ["userId", "createdAt"]),
+
+  // Shared traveler journeys
+  journeys: defineTable({
+    title: v.string(),
+    description: v.string(),
+    duration: v.string(),
+    stops: v.array(v.string()),
+    author: v.id("users"),
+    status: v.string(), // "pending" | "approved" | "rejected"
+    approvedBy: v.optional(v.id("users")),
+    pointsAwarded: v.optional(v.number()),
+    rejectionReason: v.optional(v.string()),
+    approvedAt: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_status", ["status"])
+    .index("by_author", ["author"]),
 });
+
