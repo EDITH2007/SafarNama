@@ -4,8 +4,9 @@ import { useUser } from "./UserContext";
 import { Award, Sparkles, ShieldCheck } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
+import Link from "next/link";
 
-export default function Leaderboard() {
+export default function Leaderboard({ isLandingPage = false }: { isLandingPage?: boolean }) {
   const { leaderboard, currentUser } = useUser();
 
   // Helper to get initials
@@ -83,6 +84,7 @@ export default function Leaderboard() {
       }))
     : leaderboard;
 
+  const displayLeaderboard = isLandingPage ? leaderboardData.slice(0, 5) : leaderboardData;
   const topThree = leaderboardData.slice(0, 3);
   const currentUserRankInfo = leaderboardData.find((u) => u.isCurrentUser);
   const isCurrentUserInTopThree = currentUserRankInfo && currentUserRankInfo.rank <= 3;
@@ -97,7 +99,7 @@ export default function Leaderboard() {
 
       {/* Ranks list */}
       <div className="space-y-3">
-        {leaderboardData.map((u) => {
+        {displayLeaderboard.map((u) => {
           const initials = getInitials(u.name);
           const isTopThree = u.rank <= 3;
           
@@ -163,6 +165,18 @@ export default function Leaderboard() {
           );
         })}
       </div>
+
+      {isLandingPage && (
+        <div className="pt-2 text-center border-t border-earth-clay/5">
+          <Link
+            href="/leaderboard"
+            className="inline-flex items-center space-x-1 font-sans text-xs font-bold text-earth-terracotta hover:text-earth-forest uppercase tracking-widest transition-colors duration-200 cursor-pointer"
+          >
+            <span>View Full Leader Board</span>
+            <span>→</span>
+          </Link>
+        </div>
+      )}
 
       {/* Persistent rank drawer for user if not in top 3 */}
       {!isCurrentUserInTopThree && currentUserRankInfo && currentUser && (

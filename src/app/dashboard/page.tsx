@@ -813,10 +813,10 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
           </div>
         </div>
 
-        {/* Grid Dashboard */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+        {/* Dashboard Container */}
+        <div className="w-full">
           {/* Main Panel */}
-          <div className="lg:col-span-2 space-y-8 bg-white border border-earth-clay/10 p-6 md:p-8">
+          <div className="w-full space-y-8 bg-white border border-earth-clay/10 p-6 md:p-8">
             
             {/* Tabs Header */}
             <div className="flex border-b border-earth-clay/10 pb-2 flex-wrap gap-2">
@@ -949,7 +949,7 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
                   </h3>
                   
                   {mySubmissions && mySubmissions.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 animate-in fade-in duration-300">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 animate-in fade-in duration-300">
                       {mySubmissions.map((gem) => (
                         <div
                           key={gem.id}
@@ -1046,7 +1046,7 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
                   </h3>
                   
                   {resolvedWishlistItems.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                       {resolvedWishlistItems.map((item) => (
                         <div
                           key={item.id}
@@ -2900,23 +2900,6 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
               })()}
 
             </div>
-          </div>
-
-          {/* Right Sidebar */}
-          <div className="space-y-8 lg:sticky lg:top-28">
-            <div className="space-y-3">
-              <span className="font-sans text-xs font-semibold uppercase tracking-widest text-earth-terracotta">
-                Honors & Standings
-              </span>
-              <h2 className="font-serif text-3xl font-bold tracking-tight text-earth-forest">
-                Explorer Ranks
-              </h2>
-              <p className="font-sans text-xs text-earth-charcoal/70 font-light leading-relaxed">
-                Your rank updates reactively in real-time as you log expenses, map AI trails, or verify gems.
-              </p>
-            </div>
-
-            <Leaderboard />
           </div>
         </div>
       </main>

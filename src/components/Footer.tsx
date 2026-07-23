@@ -52,13 +52,13 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a href="#stories" className="hover:text-earth-saffron transition-colors">
+                <a href="/traveler-stories" className="hover:text-earth-saffron transition-colors">
                   Traveler Stories
                 </a>
               </li>
               <li>
-                <a href="#leaderboard" className="hover:text-earth-saffron transition-colors">
-                  Explorer Ranks
+                <a href="/leaderboard" className="hover:text-earth-saffron transition-colors">
+                  Leader Board
                 </a>
               </li>
             </ul>

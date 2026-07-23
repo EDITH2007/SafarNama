@@ -4,12 +4,14 @@ import { useState } from "react";
 import { Star, BookOpen, MessageSquare, Route, ChevronRight, ShieldCheck, CheckCircle } from "lucide-react";
 import { useUser } from "./UserContext";
 import Leaderboard from "./Leaderboard";
+import Link from "next/link";
 
 interface RetentionZoneProps {
   onViewPlan?: (journeyId: string) => void;
+  isLandingPage?: boolean;
 }
 
-export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
+export default function RetentionZone({ onViewPlan, isLandingPage = false }: RetentionZoneProps) {
   const [activeStoryTab, setActiveStoryTab] = useState<"Journeys" | "Reviews" | "Blogs">("Journeys");
   const [selectedReadBlog, setSelectedReadBlog] = useState<any | null>(null);
   const { journeys, reviews, blogs } = useUser();
@@ -17,6 +19,10 @@ export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
   // Filter out flagged reviews and blogs from public view
   const visibleReviews = reviews.filter((r) => !r.flagged);
   const visibleBlogs = blogs.filter((b) => !b.flagged);
+
+  const displayJourneys = isLandingPage ? journeys.slice(0, 2) : journeys;
+  const displayReviews = isLandingPage ? visibleReviews.slice(0, 2) : visibleReviews;
+  const displayBlogs = isLandingPage ? visibleBlogs.slice(0, 2) : visibleBlogs;
 
   const storyTabs = [
     { id: "Journeys", name: "Journeys", icon: Route },
@@ -42,7 +48,7 @@ export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
       case "Journeys":
         return (
           <div className="space-y-6">
-            {journeys.map((j) => (
+            {displayJourneys.map((j) => (
               <div
                 key={j.id}
                 className="bg-white border border-earth-clay/10 p-6 flex flex-col justify-between hover:border-earth-terracotta/30 transition-all duration-300 relative"
@@ -105,7 +111,7 @@ export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
       case "Reviews":
         return (
           <div className="space-y-6">
-            {visibleReviews.map((r) => (
+            {displayReviews.map((r) => (
               <div
                 key={r.id}
                 className="bg-white border border-earth-clay/10 p-6 space-y-4 hover:border-earth-terracotta/30 transition-all duration-300"
@@ -160,7 +166,7 @@ export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
       case "Blogs":
         return (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {visibleBlogs.map((b) => (
+            {displayBlogs.map((b) => (
               <article
                 key={b.id}
                 className="group flex flex-col bg-white border border-earth-clay/10 hover:border-earth-terracotta/30 transition-all duration-300"
@@ -240,22 +246,78 @@ export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
   return (
     <section id="stories" className="bg-earth-sand py-24 border-t border-earth-clay/10 scroll-mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-          
-          {/* Left Column: Traveler Stories Switcher (65% equivalent) */}
-          <div className="lg:col-span-2 space-y-8">
-            <div className="space-y-3">
-              <span className="font-sans text-xs font-semibold uppercase tracking-widest text-earth-terracotta">
-                Logbook & Chronicles
-              </span>
-              <h2 className="font-serif text-4xl font-bold tracking-tight text-earth-forest">
-                Traveler Stories
-              </h2>
-              <p className="font-sans text-sm text-earth-charcoal/70 font-light leading-relaxed max-w-xl">
-                Browse detailed routes, local assessments, and personal travelogues shared by our explorer community.
-              </p>
+        {isLandingPage ? (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
+            {/* Left Column: Traveler Stories Switcher (65% equivalent) */}
+            <div className="lg:col-span-2 space-y-8">
+              <div className="space-y-3">
+                <span className="font-sans text-xs font-semibold uppercase tracking-widest text-earth-terracotta">
+                  Logbook & Chronicles
+                </span>
+                <h2 className="font-serif text-4xl font-bold tracking-tight text-earth-forest">
+                  Traveler Stories
+                </h2>
+                <p className="font-sans text-sm text-earth-charcoal/70 font-light leading-relaxed max-w-xl">
+                  Browse detailed routes, local assessments, and personal travelogues shared by our explorer community.
+                </p>
+              </div>
+
+              {/* Tab Switched Header */}
+              <div className="flex border-b border-earth-clay/10 pb-2">
+                {storyTabs.map((tab) => {
+                  const Icon = tab.icon;
+                  const isActive = activeStoryTab === tab.id;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveStoryTab(tab.id)}
+                      className={`flex items-center space-x-2 px-6 py-3 font-sans text-xs font-semibold uppercase tracking-wider border-b-2 -mb-[10px] transition-all duration-200 cursor-pointer ${
+                        isActive
+                          ? "border-earth-terracotta text-earth-terracotta"
+                          : "border-transparent text-earth-charcoal/60 hover:text-earth-charcoal"
+                      }`}
+                    >
+                      <Icon className="h-4 w-4 shrink-0" />
+                      <span>{tab.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Switched Tab Body Grid */}
+              <div className="pt-2">{renderStoriesContent()}</div>
+
+              <div className="pt-4 text-center">
+                <Link
+                  href="/traveler-stories"
+                  className="inline-flex items-center space-x-1 font-sans text-xs font-bold text-earth-terracotta hover:text-earth-forest uppercase tracking-widest transition-colors duration-200 cursor-pointer"
+                >
+                  <span>View All Traveler Stories</span>
+                  <span>→</span>
+                </Link>
+              </div>
             </div>
 
+            {/* Right Column: Explorer Leaderboard (35% equivalent) */}
+            <div id="leaderboard" className="space-y-8 lg:sticky lg:top-28 scroll-mt-28">
+              <div className="space-y-3">
+                <span className="font-sans text-xs font-semibold uppercase tracking-widest text-earth-terracotta">
+                  Honors & Standings
+                </span>
+                <h2 className="font-serif text-4xl font-bold tracking-tight text-earth-forest">
+                  Explorer Ranks
+                </h2>
+                <p className="font-sans text-sm text-earth-charcoal/70 font-light leading-relaxed">
+                  Celebrating members of the community who submit and verify hidden gems across India.
+                </p>
+              </div>
+
+              {/* Reusable Leaderboard Component */}
+              <Leaderboard isLandingPage={true} />
+            </div>
+          </div>
+        ) : (
+          <div className="max-w-4xl mx-auto space-y-8">
             {/* Tab Switched Header */}
             <div className="flex border-b border-earth-clay/10 pb-2">
               {storyTabs.map((tab) => {
@@ -281,26 +343,7 @@ export default function RetentionZone({ onViewPlan }: RetentionZoneProps) {
             {/* Switched Tab Body Grid */}
             <div className="pt-2">{renderStoriesContent()}</div>
           </div>
-
-          {/* Right Column: Explorer Leaderboard (35% equivalent) */}
-          <div id="leaderboard" className="space-y-8 lg:sticky lg:top-28 scroll-mt-28">
-            <div className="space-y-3">
-              <span className="font-sans text-xs font-semibold uppercase tracking-widest text-earth-terracotta">
-                Honors & Standings
-              </span>
-              <h2 className="font-serif text-4xl font-bold tracking-tight text-earth-forest">
-                Explorer Ranks
-              </h2>
-              <p className="font-sans text-sm text-earth-charcoal/70 font-light leading-relaxed">
-                Celebrating members of the community who submit and verify hidden gems across India.
-              </p>
-            </div>
-
-            {/* Reusable Leaderboard Component */}
-            <Leaderboard />
-          </div>
-          
-        </div>
+        )}
       </div>
 
       {/* Blog Detail Reader Modal */}

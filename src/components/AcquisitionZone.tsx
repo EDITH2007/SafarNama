@@ -462,7 +462,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
       {/* 4. Submit Spot Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white border border-earth-clay/10 max-w-lg w-full p-8 space-y-6 relative rounded-none animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white border border-earth-clay/10 max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 space-y-6 relative rounded-none animate-in fade-in zoom-in-95 duration-200">
             <button
               onClick={() => setIsModalOpen(false)}
               className="absolute top-4 right-4 p-2 text-earth-charcoal/60 hover:text-earth-charcoal cursor-pointer"

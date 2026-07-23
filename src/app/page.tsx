@@ -18,7 +18,10 @@ export default function Home() {
       <main className="flex-grow">
         <Hero onSearch={setSearchQuery} />
         <AcquisitionZone searchQuery={searchQuery} />
-        <RetentionZone onViewPlan={(journeyId) => router.push(`/dashboard?tab=planner&planId=${journeyId}`)} />
+        <RetentionZone 
+          isLandingPage={true}
+          onViewPlan={(journeyId) => router.push(`/dashboard?tab=planner&planId=${journeyId}`)} 
+        />
       </main>
       <Footer />
     </div>

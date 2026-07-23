@@ -122,8 +122,8 @@ export default function Navbar() {
   const navItems = [
     { name: "Destinations", href: isHome ? "#destinations" : "/destinations" },
     { name: "Hidden Gems", href: isHome ? "#hidden-gems" : "/hidden-gems" },
-    { name: "Traveler Stories", href: isHome ? "#stories" : "/#stories" },
-    { name: "Leaderboard", href: isHome ? "#leaderboard" : "/#leaderboard" },
+    { name: "Traveler Stories", href: "/traveler-stories" },
+    { name: "Leader Board", href: "/leaderboard" },
   ];
 
   // Helper to render mini tier badge
