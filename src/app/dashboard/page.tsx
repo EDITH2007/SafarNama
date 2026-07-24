@@ -362,7 +362,7 @@ function Dashboard() {
       if (d.state) list.add(d.state.trim());
     });
     hiddenGems.forEach((g) => {
-      if (g.status === "approved") {
+      if (g.status === "approved" || g.status === "verified") {
         if (g.location) list.add(g.location.trim());
         if (g.state) list.add(g.state.trim());
       }
@@ -449,7 +449,7 @@ function Dashboard() {
     );
     const matchedGems = hiddenGems.filter(
       (g) =>
-        g.status === "approved" &&
+        (g.status === "approved" || g.status === "verified") &&
         (g.location.toLowerCase().includes(locLower) ||
           g.state.toLowerCase().includes(locLower) ||
           g.title.toLowerCase().includes(locLower))

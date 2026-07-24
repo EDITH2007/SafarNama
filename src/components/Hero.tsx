@@ -20,7 +20,7 @@ export default function Hero({ onSearch }: HeroProps) {
     // Combine official destinations and approved hidden gems
     const all = [
       ...destinations.map((d: any) => ({ title: d.title, time: d._creationTime || d.createdAt || 0 })),
-      ...hiddenGems.filter((g: any) => g.status === "approved").map((g: any) => ({ title: g.title, time: g._creationTime || 0 }))
+      ...hiddenGems.filter((g: any) => g.status === "approved" || g.status === "verified").map((g: any) => ({ title: g.title, time: g.approvedAt || g._creationTime || 0 }))
     ];
     
     // Sort by creation date descending (newest first)

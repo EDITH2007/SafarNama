@@ -91,7 +91,15 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeletingGem, setIsDeletingGem] = useState(false);
 
+  const isUserAdmin = currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com";
 
+  useEffect(() => {
+    if (isUserAdmin && gem && gem.status === "submitted") {
+      markGemsInReview({ ids: [gemId] }).catch((err) => {
+        console.error("Failed to mark gem in review:", err);
+      });
+    }
+  }, [isUserAdmin, gem, gemId, markGemsInReview]);
 
   if (gem === undefined || reviews === undefined) {
     return (
@@ -138,15 +146,6 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
   // Combine main photo and gallery photos
   const allPhotos = [gem.photo, ...(gem.photoGallery || [])].filter(Boolean);
-  const isUserAdmin = currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com";
-
-  useEffect(() => {
-    if (isUserAdmin && gem && gem.status === "submitted") {
-      markGemsInReview({ ids: [gemId] }).catch((err) => {
-        console.error("Failed to mark gem in review:", err);
-      });
-    }
-  }, [isUserAdmin, gem, gemId, markGemsInReview]);
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
