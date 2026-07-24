@@ -29,7 +29,7 @@ export interface UserProfile {
   name: string;
   email?: string;
   points: number;
-  tier: "Bronze" | "Silver" | "Gold";
+  tier: "Bronze" | "Silver" | "Gold" | "Platinum";
   isVerified: boolean;
   avatar: string;
   bio: string;
@@ -247,7 +247,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           name: viewer.name || viewer.email?.split("@")[0] || "Traveler",
           email: viewer.email,
           points: viewer.totalPoints ?? 0,
-          tier: (viewer.tier || "Bronze") as "Bronze" | "Silver" | "Gold",
+          tier: (viewer.tier || "Bronze") as "Bronze" | "Silver" | "Gold" | "Platinum",
           isVerified: viewer.isVerified ?? false,
           avatar: (viewer.name || viewer.email || "TR")
             .split(" ")
@@ -677,7 +677,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     // Filter hidden gems by location or state (approved only)
     const matchedGems = hiddenGems.filter(
       (g) =>
-        g.status === "approved" &&
+        (g.status === "verified" || g.status === "approved") &&
         (g.location.toLowerCase().includes(locLower) ||
           g.state.toLowerCase().includes(locLower))
     );

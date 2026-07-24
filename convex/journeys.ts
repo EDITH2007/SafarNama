@@ -1,13 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-
-// Helper to determine tier from points
-function calculateTier(points: number): "Bronze" | "Silver" | "Gold" {
-  if (points >= 2500) return "Gold";
-  if (points >= 1000) return "Silver";
-  return "Bronze";
-}
+import { calculateUserTier } from "./users";
 
 // Submit a new journey (pending by default)
 export const submitJourney = mutation({
@@ -142,7 +136,7 @@ export const approveJourney = mutation({
     const authorUser = await ctx.db.get(journey.author);
     if (authorUser) {
       const newPoints = (authorUser.totalPoints ?? 0) + pointsToAward;
-      const newTier = calculateTier(newPoints);
+      const newTier = await calculateUserTier(ctx.db, journey.author);
 
       await ctx.db.patch(journey.author, {
         totalPoints: newPoints,

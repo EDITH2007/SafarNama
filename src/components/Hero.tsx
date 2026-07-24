@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import dynamic from "next/dynamic";
 import { Search, MapPin } from "lucide-react";
+import { useUser } from "./UserContext";
 
 // Dynamically import ThreeParticles with SSR disabled to prevent hydration issues
 const ThreeParticles = dynamic(() => import("./ThreeParticles"), { ssr: false });
@@ -13,10 +14,41 @@ interface HeroProps {
 
 export default function Hero({ onSearch }: HeroProps) {
   const [query, setQuery] = useState("");
+  const { destinations, hiddenGems } = useUser();
+
+  const trendingTags = useMemo(() => {
+    // Combine official destinations and approved hidden gems
+    const all = [
+      ...destinations.map((d: any) => ({ title: d.title, time: d._creationTime || d.createdAt || 0 })),
+      ...hiddenGems.filter((g: any) => g.status === "approved").map((g: any) => ({ title: g.title, time: g._creationTime || 0 }))
+    ];
+    
+    // Sort by creation date descending (newest first)
+    all.sort((a, b) => b.time - a.time);
+
+    // Get unique titles
+    const unique: string[] = [];
+    for (const item of all) {
+      if (!unique.includes(item.title)) {
+        unique.push(item.title);
+      }
+      if (unique.length >= 4) break;
+    }
+
+    // Fallback if empty (e.g. while database is loading or empty)
+    if (unique.length === 0) {
+      return ["Munnar Tea Hills", "Ruins of Hampi", "Gandikota Grand Canyon", "Phugtal Monastery"];
+    }
+    return unique;
+  }, [destinations, hiddenGems]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     onSearch(query);
+    const element = document.getElementById("destinations");
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" });
+    }
   };
 
   return (
@@ -66,12 +98,16 @@ export default function Hero({ onSearch }: HeroProps) {
         {/* Short suggestion pills */}
         <div className="flex flex-wrap items-center justify-center gap-3 text-earth-sand/70 text-xs font-sans tracking-wide">
           <span className="flex items-center space-x-1"><MapPin className="h-3 w-3 text-earth-saffron" /> <span>Trending:</span></span>
-          {["Hampi Cliffs", "Zanskar Cave", "Munnar Tea Hills", "Gandikota Gorge"].map((tag) => (
+          {trendingTags.map((tag) => (
             <button
               key={tag}
               onClick={() => {
                 setQuery(tag);
                 onSearch(tag);
+                const element = document.getElementById("destinations");
+                if (element) {
+                  element.scrollIntoView({ behavior: "smooth" });
+                }
               }}
               className="px-3 py-1 bg-white/5 border border-white/10 hover:border-earth-saffron hover:text-earth-saffron transition-all duration-200"
             >

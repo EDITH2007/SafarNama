@@ -7,11 +7,22 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useUser } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
+import dynamic from "next/dynamic";
+
+const DestinationMap = dynamic(() => import("@/components/DestinationMap"), {
+  ssr: false,
+  loading: () => (
+    <div className="w-full h-[400px] md:h-[480px] rounded-2xl bg-white border border-earth-clay/10 shadow-lg flex items-center justify-center font-sans text-earth-charcoal/50 animate-pulse">
+      Loading interactive map...
+    </div>
+  ),
+});
 
 export default function DestinationsPage() {
   const { destinations, toggleWishlist, isWishlisted } = useUser();
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
+  const [activeDestinationId, setActiveDestinationId] = useState<string | null>(null);
 
   const filteredDestinations = destinations.filter((dest) => {
     const matchesCategory =
@@ -79,13 +90,36 @@ export default function DestinationsPage() {
             </div>
           </div>
 
+          {/* Map Component Section */}
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="font-serif text-2xl font-bold text-earth-forest">
+                Interactive Exploration Route
+              </h2>
+              <span className="font-sans text-[11px] font-bold uppercase tracking-widest text-earth-terracotta bg-earth-terracotta/5 px-3 py-1 border border-earth-terracotta/10">
+                {sortedDestinations.length} Destination{sortedDestinations.length !== 1 ? "s" : ""} on Map
+              </span>
+            </div>
+            <DestinationMap
+              destinations={sortedDestinations}
+              activeDestinationId={activeDestinationId}
+            />
+          </div>
+
           {/* Grid Layout */}
           {sortedDestinations.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {sortedDestinations.map((dest) => (
                 <article
                   key={dest.id}
-                  className="group flex flex-col bg-white border border-earth-clay/5 hover:shadow-xl hover:border-earth-clay/10 transition-all duration-300 relative"
+                  id={`dest-card-${dest.id}`}
+                  onMouseEnter={() => setActiveDestinationId(dest.id)}
+                  onMouseLeave={() => setActiveDestinationId(null)}
+                  className={`group flex flex-col bg-white border hover:shadow-xl hover:border-earth-clay/10 transition-all duration-300 relative ${
+                    activeDestinationId === dest.id
+                      ? "ring-2 ring-earth-terracotta border-transparent shadow-xl scale-[1.01]"
+                      : "border-earth-clay/5"
+                  }`}
                 >
                   {/* Photo */}
                   <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">

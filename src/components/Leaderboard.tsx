@@ -5,6 +5,7 @@ import { Award, Sparkles, ShieldCheck } from "lucide-react";
 import { useQuery } from "convex/react";
 import { api } from "../../convex/_generated/api";
 import Link from "next/link";
+import ExplorerBadge from "./badges/ExplorerBadge";
 
 export default function Leaderboard({ isLandingPage = false }: { isLandingPage?: boolean }) {
   const { leaderboard, currentUser } = useUser();
@@ -20,28 +21,8 @@ export default function Leaderboard({ isLandingPage = false }: { isLandingPage?:
   };
 
   // Helper to render tier badge
-  const renderTierBadge = (tier: "Bronze" | "Silver" | "Gold") => {
-    switch (tier) {
-      case "Gold":
-        return (
-          <span className="px-2 py-0.5 font-sans text-[9px] font-bold uppercase tracking-wider border border-[#f3d082] bg-[#fdf6e2] text-[#d69e2e] inline-block shadow-sm">
-            Gold
-          </span>
-        );
-      case "Silver":
-        return (
-          <span className="px-2 py-0.5 font-sans text-[9px] font-bold uppercase tracking-wider border border-[#ccd2d8] bg-[#f0f2f5] text-[#5c6873] inline-block shadow-sm">
-            Silver
-          </span>
-        );
-      case "Bronze":
-      default:
-        return (
-          <span className="px-2 py-0.5 font-sans text-[9px] font-bold uppercase tracking-wider border border-[#d8c3b7] bg-[#fbf5f0] text-[#8c5230] inline-block shadow-sm">
-            Bronze
-          </span>
-        );
-    }
+  const renderTierBadge = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
+    return <ExplorerBadge tier={tier} size={28} showTooltip showLabel />;
   };
 
   const convexUsers = useQuery(api.users.getLeaderboard);
@@ -77,7 +58,7 @@ export default function Leaderboard({ isLandingPage = false }: { isLandingPage?:
     ? convexUsers.map(u => ({
         rank: u.rank,
         name: u.name,
-        tier: u.tier as "Bronze" | "Silver" | "Gold",
+        tier: u.tier as "Bronze" | "Silver" | "Gold" | "Platinum",
         points: u.points,
         isVerified: u.isVerified,
         isCurrentUser: currentUser ? u.name === currentUser.name : false
@@ -131,7 +112,9 @@ export default function Leaderboard({ isLandingPage = false }: { isLandingPage?:
                 {/* Initials Circle */}
                 <div
                   className={`h-9 w-9 rounded-full flex items-center justify-center font-bold text-xs font-sans shrink-0 border ${
-                    u.tier === "Gold"
+                    u.tier === "Platinum"
+                      ? "bg-sky-50 border-sky-350 text-sky-700"
+                      : u.tier === "Gold"
                       ? "bg-earth-saffron/10 border-earth-saffron/30 text-earth-saffron"
                       : u.tier === "Silver"
                       ? "bg-slate-100 border-slate-300 text-slate-700"
@@ -208,12 +191,18 @@ export default function Leaderboard({ isLandingPage = false }: { isLandingPage?:
 
           {/* Progress details */}
           <div className="space-y-1.5">
-            {currentUser.tier !== "Gold" ? (
+            {currentUser.tier !== "Platinum" ? (
               (() => {
-                const nextTierName = currentUser.tier === "Bronze" ? "Silver" : "Gold";
-                const targetPoints = currentUser.tier === "Bronze" ? 1000 : 2500;
+                const nextTierName = 
+                  currentUser.tier === "Bronze" ? "Silver" : 
+                  currentUser.tier === "Silver" ? "Gold" : "Platinum";
+                
+                const targetPoints = 
+                  currentUser.tier === "Bronze" ? 1000 : 
+                  currentUser.tier === "Silver" ? 2500 : 5000;
+                
                 const pointsToNext = targetPoints - currentUser.points;
-                const percent = Math.min(100, (currentUser.points / targetPoints) * 100);
+                const percent = Math.max(0, Math.min(100, (currentUser.points / targetPoints) * 100));
 
                 return (
                   <>
@@ -224,14 +213,14 @@ export default function Leaderboard({ isLandingPage = false }: { isLandingPage?:
                       />
                     </div>
                     <p className="font-sans text-[10px] text-earth-clay text-right font-medium">
-                      {pointsToNext} points to next tier ({nextTierName})
+                      {pointsToNext > 0 ? `${pointsToNext} points to next tier (${nextTierName})` : `Ready for next tier (${nextTierName})!`}
                     </p>
                   </>
                 );
               })()
             ) : (
               <p className="font-sans text-[10px] text-earth-saffron text-center font-bold">
-                🎉 You have reached the highest tier (Gold)!
+                🎉 You have reached the highest tier (Platinum)!
               </p>
             )}
           </div>

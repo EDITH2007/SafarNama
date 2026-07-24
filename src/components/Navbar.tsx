@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { Menu, X, Compass, User, ShieldCheck, Bell } from "lucide-react";
 import { useUser } from "./UserContext";
+import ExplorerBadge from "./badges/ExplorerBadge";
 
 function formatTimeAgo(timestamp: number) {
   const diff = Date.now() - timestamp;
@@ -127,28 +128,8 @@ export default function Navbar() {
   ];
 
   // Helper to render mini tier badge
-  const renderMiniTierBadge = (tier: "Bronze" | "Silver" | "Gold") => {
-    switch (tier) {
-      case "Gold":
-        return (
-          <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider border border-[#f3d082] bg-[#fdf6e2] text-[#d69e2e] shadow-sm scale-90 origin-left">
-            Gold
-          </span>
-        );
-      case "Silver":
-        return (
-          <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider border border-[#ccd2d8] bg-[#f0f2f5] text-[#5c6873] shadow-sm scale-90 origin-left">
-            Silver
-          </span>
-        );
-      case "Bronze":
-      default:
-        return (
-          <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider border border-[#d8c3b7] bg-[#fbf5f0] text-[#8c5230] shadow-sm scale-90 origin-left">
-            Bronze
-          </span>
-        );
-    }
+  const renderMiniTierBadge = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
+    return <ExplorerBadge tier={tier} size={20} showTooltip />;
   };
 
   return (

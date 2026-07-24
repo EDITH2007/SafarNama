@@ -3,9 +3,10 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Star, MapPin, Compass, ShieldCheck, Gift, X, Heart, ShieldAlert } from "lucide-react";
+import { Star, MapPin, Compass, ShieldCheck, Gift, X, Heart, ShieldAlert, Check } from "lucide-react";
 import { CATEGORIES } from "../app/data/mockData";
 import { useUser } from "./UserContext";
+import ExplorerBadge from "./badges/ExplorerBadge";
 
 interface AcquisitionZoneProps {
   searchQuery: string;
@@ -54,7 +55,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
   // Filter and sort hidden gems
   // 1. Only show approved ones in the public feed
   // 2. Gold-tier submissions get priority placement (placed at the top)
-  const approvedGems = hiddenGems.filter((gem) => gem.status === "approved");
+  const approvedGems = hiddenGems.filter((gem) => gem.status === "verified" || gem.status === "approved");
 
   const filteredGems = approvedGems.filter((gem) => {
     const gemCats = gem.category.split(",").map((c) => c.trim());
@@ -68,11 +69,11 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
     return matchesCategory && matchesSearch;
   });
 
-  const tierPriority = { Gold: 3, Silver: 2, Bronze: 1 };
+  const tierPriority = { Platinum: 4, Gold: 3, Silver: 2, Bronze: 1 };
 
   const prioritizedGems = [...filteredGems].sort((a, b) => {
-    const prioA = tierPriority[a.submitterTier] || 1;
-    const prioB = tierPriority[b.submitterTier] || 1;
+    const prioA = tierPriority[a.submitterTier as keyof typeof tierPriority] || 1;
+    const prioB = tierPriority[b.submitterTier as keyof typeof tierPriority] || 1;
     return prioB - prioA; // Higher tier first
   });
 
@@ -135,8 +136,10 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
   };
 
   // Helper to color tier label
-  const getTierColorClass = (tier: "Bronze" | "Silver" | "Gold") => {
+  const getTierColorClass = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
     switch (tier) {
+      case "Platinum":
+        return "text-sky-400";
       case "Gold":
         return "text-earth-saffron";
       case "Silver":
@@ -307,10 +310,18 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                         <span>+{gem.pointsAwarded} pts awarded</span>
                       </span>
 
-                      {/* If Gold submitter, show a badge on the image as well */}
-                      {gem.submitterTier === "Gold" && (
-                        <span className="absolute top-14 right-4 bg-earth-saffron text-earth-forest px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-widest shadow-md z-10">
-                          Gold Priority
+                      {/* Verified Safar Gem Badge */}
+                      {(gem.status === "verified" || gem.status === "approved") && (
+                        <span className="absolute top-4 right-14 bg-earth-forest border border-white/20 text-white px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-widest flex items-center space-x-1 shadow-md z-10">
+                          <Check className="h-3 w-3 text-earth-saffron shrink-0" />
+                          <span>Verified Safar Gem</span>
+                        </span>
+                      )}
+
+                      {/* If Gold/Platinum submitter, show a badge on the image as well */}
+                      {(gem.submitterTier === "Gold" || gem.submitterTier === "Platinum") && (
+                        <span className={`absolute top-14 right-4 ${gem.submitterTier === "Platinum" ? "bg-sky-400 text-slate-900" : "bg-earth-saffron text-earth-forest"} px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-widest shadow-md z-10`}>
+                          {gem.submitterTier} Priority
                         </span>
                       )}
                     </div>
@@ -334,9 +345,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                       <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                         {/* Submitter details */}
                         <div className="flex items-center space-x-2">
-                          <div className="h-7 w-7 rounded-none bg-earth-saffron/10 border border-earth-saffron/20 flex items-center justify-center text-[10px] font-bold text-earth-saffron font-sans">
-                            {gem.submittedBy.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase()}
-                          </div>
+                          <ExplorerBadge tier={gem.submitterTier} size={28} showTooltip />
                           <div className="flex flex-col">
                             <div className="flex items-center space-x-1">
                               <span className="text-xs font-sans font-medium text-white">{gem.submittedBy}</span>
@@ -426,9 +435,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
 
             {/* Quote block author */}
             <div className="flex items-center space-x-3 pt-2">
-              <div className="h-10 w-10 bg-earth-terracotta/5 border border-earth-terracotta/20 flex items-center justify-center font-bold text-earth-terracotta font-sans">
-                {spotlightGem ? spotlightGem.submittedBy.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase() : "TN"}
-              </div>
+              <ExplorerBadge tier={spotlightGem ? spotlightGem.submitterTier : "Gold"} size={44} showTooltip />
               <div>
                 <div className="flex items-center space-x-1">
                   <h4 className="font-sans text-sm font-semibold text-earth-charcoal">

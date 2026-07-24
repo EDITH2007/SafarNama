@@ -13,6 +13,10 @@ export interface Destination {
   nearbyAttractions?: string[];
   tips?: string[];
   photoGallery?: string[];
+  geo?: {
+    lat: number;
+    lng: number;
+  };
 }
 
 export interface HiddenGem {
@@ -24,11 +28,11 @@ export interface HiddenGem {
   photo: string;
   category: string;
   submittedBy: string;
-  submitterTier: "Bronze" | "Silver" | "Gold";
+  submitterTier: "Bronze" | "Silver" | "Gold" | "Platinum";
   submitterVerified: boolean;
   pointsAwarded: number;
   createdAt: string;
-  status: "pending" | "approved" | "rejected";
+  status: "submitted" | "in_review" | "verified" | "rejected" | "pending" | "approved";
   rejectionReason?: string;
   geo?: {
     lat: number;
@@ -43,7 +47,7 @@ export interface Blog {
   coverImage: string;
   author: string;
   authorImage?: string;
-  authorTier: "Bronze" | "Silver" | "Gold";
+  authorTier: "Bronze" | "Silver" | "Gold" | "Platinum";
   authorVerified: boolean;
   date: string;
   flagged?: boolean;
@@ -55,7 +59,7 @@ export interface Review {
   text: string;
   rating: number;
   author: string;
-  authorTier: "Bronze" | "Silver" | "Gold";
+  authorTier: "Bronze" | "Silver" | "Gold" | "Platinum";
   authorVerified: boolean;
   location: string;
   date: string;
@@ -77,7 +81,7 @@ export interface Journey {
 export interface LeaderboardUser {
   rank: number;
   name: string;
-  tier: "Bronze" | "Silver" | "Gold";
+  tier: "Bronze" | "Silver" | "Gold" | "Platinum";
   points: number;
   isVerified: boolean;
   isCurrentUser?: boolean;
@@ -92,7 +96,8 @@ export const POINTS = {
 };
 
 // Tier thresholds
-export const getTier = (points: number): "Bronze" | "Silver" | "Gold" => {
+export const getTier = (points: number): "Bronze" | "Silver" | "Gold" | "Platinum" => {
+  if (points >= 5000) return "Platinum";
   if (points >= 2500) return "Gold";
   if (points >= 1000) return "Silver";
   return "Bronze";
@@ -172,7 +177,7 @@ export const mockHiddenGems: HiddenGem[] = [
     submitterVerified: false,
     pointsAwarded: 100,
     createdAt: "July 2026",
-    status: "approved",
+    status: "verified",
   },
   {
     id: "gem-2",
@@ -187,7 +192,7 @@ export const mockHiddenGems: HiddenGem[] = [
     submitterVerified: true,
     pointsAwarded: 100,
     createdAt: "June 2026",
-    status: "approved",
+    status: "verified",
   },
   {
     id: "gem-3",
@@ -202,7 +207,7 @@ export const mockHiddenGems: HiddenGem[] = [
     submitterVerified: true,
     pointsAwarded: 100,
     createdAt: "May 2026",
-    status: "approved",
+    status: "verified",
   }
 ];
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
+import ExplorerBadge from "@/components/badges/ExplorerBadge";
 import {
   Star,
   MapPin,
@@ -132,16 +133,8 @@ export default function DestinationDetailPage({ params }: PageProps) {
     });
   };
 
-  const renderTierBadge = (tier: "Bronze" | "Silver" | "Gold") => {
-    switch (tier) {
-      case "Gold":
-        return <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider border border-[#f3d082] bg-[#fdf6e2] text-[#d69e2e] shadow-sm ml-1">Gold</span>;
-      case "Silver":
-        return <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider border border-[#ccd2d8] bg-[#f0f2f5] text-[#5c6873] shadow-sm ml-1">Silver</span>;
-      case "Bronze":
-      default:
-        return <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider border border-[#d8c3b7] bg-[#fbf5f0] text-[#8c5230] shadow-sm ml-1">Bronze</span>;
-    }
+  const renderTierBadge = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
+    return <ExplorerBadge tier={tier} size={20} showTooltip showLabel />;
   };
 
   return (

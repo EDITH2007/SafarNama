@@ -1,14 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { ensureUsersSeeded } from "./users";
+import { ensureUsersSeeded, calculateUserTier } from "./users";
 import { getAuthUserId } from "@convex-dev/auth/server";
-
-// Helper to determine tier from points
-function calculateTier(points: number): "Bronze" | "Silver" | "Gold" {
-  if (points >= 2500) return "Gold";
-  if (points >= 1000) return "Silver";
-  return "Bronze";
-}
 
 export async function ensureGemsSeeded(db: any) {
   await ensureUsersSeeded(db);
@@ -93,7 +86,7 @@ export const submitGem = mutation({
     const gemId = await ctx.db.insert("hiddenGems", {
       ...args,
       submittedBy: userId,
-      status: "pending",
+      status: "submitted",
       createdAt: Date.now(),
     });
     return gemId;
@@ -113,10 +106,22 @@ export const getPendingGems = query({
       return [];
     }
     
-    const gems = await ctx.db
+    const submittedGems = await ctx.db
+      .query("hiddenGems")
+      .withIndex("by_status", (q) => q.eq("status", "submitted"))
+      .collect();
+
+    const inReviewGems = await ctx.db
+      .query("hiddenGems")
+      .withIndex("by_status", (q) => q.eq("status", "in_review"))
+      .collect();
+
+    const legacyPendingGems = await ctx.db
       .query("hiddenGems")
       .withIndex("by_status", (q) => q.eq("status", "pending"))
       .collect();
+
+    const gems = [...submittedGems, ...inReviewGems, ...legacyPendingGems];
 
     const results = [];
     for (const gem of gems) {
@@ -141,10 +146,17 @@ export const getPendingGems = query({
 export const getApprovedGems = query({
   args: {},
   handler: async (ctx) => {
-    const gems = await ctx.db
+    const verifiedGems = await ctx.db
+      .query("hiddenGems")
+      .withIndex("by_status", (q) => q.eq("status", "verified"))
+      .collect();
+
+    const legacyApprovedGems = await ctx.db
       .query("hiddenGems")
       .withIndex("by_status", (q) => q.eq("status", "approved"))
       .collect();
+
+    const gems = [...verifiedGems, ...legacyApprovedGems];
 
     // Sort by approval date (most recent first) with fallback to creation date
     gems.sort((a, b) => {
@@ -191,15 +203,15 @@ export const approveGem = mutation({
     if (!gem) {
       throw new Error("Gem not found");
     }
-    if (gem.status !== "pending") {
+    if (gem.status !== "pending" && gem.status !== "submitted" && gem.status !== "in_review") {
       throw new Error("Gem is already processed");
     }
 
     const pointsToAward = 100; // Standard gem approval points
 
-    // Update gem status to approved
+    // Update gem status to verified
     await ctx.db.patch(args.gemId, {
-      status: "approved",
+      status: "verified",
       approvedBy: admin._id,
       pointsAwarded: pointsToAward,
       approvedAt: Date.now(),
@@ -209,7 +221,7 @@ export const approveGem = mutation({
     const submitter = await ctx.db.get(gem.submittedBy);
     if (submitter) {
       const newPoints = (submitter.totalPoints ?? 0) + pointsToAward;
-      const newTier = calculateTier(newPoints);
+      const newTier = await calculateUserTier(ctx.db, gem.submittedBy);
 
       await ctx.db.patch(gem.submittedBy, {
         totalPoints: newPoints,
@@ -259,7 +271,7 @@ export const rejectGem = mutation({
     if (!gem) {
       throw new Error("Gem not found");
     }
-    if (gem.status !== "pending") {
+    if (gem.status !== "pending" && gem.status !== "submitted" && gem.status !== "in_review") {
       throw new Error("Gem is already processed");
     }
 
@@ -367,6 +379,29 @@ export const getMySubmissions = query({
       });
     }
     return results;
+  },
+});
+
+// Bulk mark gems as in review
+export const markGemsInReview = mutation({
+  args: { ids: v.array(v.id("hiddenGems")) },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Unauthorized: Not authenticated");
+    }
+    const admin = await ctx.db.get(userId);
+    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
+      throw new Error("Unauthorized: Admin privileges required");
+    }
+
+    for (const id of args.ids) {
+      const gem = await ctx.db.get(id);
+      if (gem && gem.status === "submitted") {
+        await ctx.db.patch(id, { status: "in_review" });
+      }
+    }
+    return { success: true };
   },
 });
 

@@ -6,12 +6,14 @@ import { useSearchParams } from "next/navigation";
 import { useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import Navbar from "@/components/Navbar";
+import ExplorerBadge from "@/components/badges/ExplorerBadge";
 import Footer from "@/components/Footer";
 import Leaderboard from "@/components/Leaderboard";
 import MapPicker from "@/components/MapPicker";
 import { CategoryDonutChart } from "@/components/ExpenseCharts";
 import { useUser, PlanDay } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
+import VerificationStepper from "@/components/VerificationStepper";
 import {
   Compass,
   Gift,
@@ -104,6 +106,31 @@ function Dashboard() {
   const [activeRejectionGemId, setActiveRejectionGemId] = useState<string | null>(null);
   const [rejectionReasonText, setRejectionReasonText] = useState<{ [gemId: string]: string }>({});
   const [isAdminOverride, setIsAdminOverride] = useState(false);
+
+  // Moderation Sandbox list
+  const pendingGems = useMemo(() => {
+    if (!hiddenGems) return [];
+    return hiddenGems.filter(
+      (g) => g.status === "pending" || g.status === "submitted" || g.status === "in_review"
+    );
+  }, [hiddenGems]);
+
+  const markGemsInReview = useMutation(api.gems.markGemsInReview);
+
+  useEffect(() => {
+    const isUserAdmin = currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com";
+    if (isUserAdmin && activeTab === "admin" && adminSubTab === "spots" && pendingGems.length > 0) {
+      const submittedGemIds = pendingGems
+        .filter((g) => g.status === "submitted")
+        .map((g) => g.id);
+      
+      if (submittedGemIds.length > 0) {
+        markGemsInReview({ ids: submittedGemIds as any[] }).catch((err) => {
+          console.error("Failed to mark gems in review:", err);
+        });
+      }
+    }
+  }, [activeTab, adminSubTab, pendingGems, currentUser, markGemsInReview]);
 
   const [activeRejectionJourneyId, setActiveRejectionJourneyId] = useState<string | null>(null);
   
@@ -717,38 +744,15 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
   };
 
   // Helper to color tier label
-  const renderTierBadge = (tier: "Bronze" | "Silver" | "Gold") => {
-    switch (tier) {
-      case "Gold":
-        return (
-          <span className="px-3 py-1 font-sans text-xs font-bold uppercase tracking-wider border border-[#f3d082] bg-[#fdf6e2] text-[#d69e2e] inline-block shadow-sm">
-            Gold Member
-          </span>
-        );
-      case "Silver":
-        return (
-          <span className="px-3 py-1 font-sans text-xs font-bold uppercase tracking-wider border border-[#ccd2d8] bg-[#f0f2f5] text-[#5c6873] inline-block shadow-sm">
-            Silver Member
-          </span>
-        );
-      case "Bronze":
-      default:
-        return (
-          <span className="px-3 py-1 font-sans text-xs font-bold uppercase tracking-wider border border-[#d8c3b7] bg-[#fbf5f0] text-[#8c5230] inline-block shadow-sm">
-            Bronze Member
-          </span>
-        );
-    }
+  const renderTierBadge = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
+    return <ExplorerBadge tier={tier} size={32} showTooltip showLabel />;
   };
 
   // Badges Earned Calculations
   const hasSubmittedGem = hiddenGems.some(g => g.submittedBy === currentUser.name);
   const hasWrittenReview = reviews.some(r => r.author === currentUser.name) || blogs.some(b => b.author === currentUser.name);
   const hasCompletedTrip = journeys.some(j => j.author === currentUser.name && j.completed);
-  const isGoldOrSilver = currentUser.tier === "Gold" || currentUser.tier === "Silver";
-
-  // Moderation Sandbox list
-  const pendingGems = hiddenGems.filter(g => g.status === "pending");
+  const isGoldOrSilver = currentUser.tier === "Gold" || currentUser.tier === "Silver" || currentUser.tier === "Platinum";
 
   return (
     <div className="flex flex-col min-h-screen bg-earth-sand text-earth-charcoal font-sans">
@@ -969,14 +973,19 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
                               ))}
                             </div>
                             <div className="absolute top-4 right-4 z-10">
-                              {gem.status === "approved" && (
+                              {(gem.status === "approved" || gem.status === "verified") && (
                                 <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border border-green-200 bg-green-50 text-green-800 shadow-sm">
-                                  Approved
+                                  Verified
                                 </span>
                               )}
-                              {gem.status === "pending" && (
+                              {(gem.status === "pending" || gem.status === "submitted") && (
                                 <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border border-amber-200 bg-amber-50 text-amber-800 shadow-sm">
-                                  Pending
+                                  Submitted
+                                </span>
+                              )}
+                              {gem.status === "in_review" && (
+                                <span className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border border-blue-200 bg-blue-50 text-blue-800 shadow-sm">
+                                  In Review
                                 </span>
                               )}
                               {gem.status === "rejected" && (
@@ -1008,13 +1017,19 @@ Ensure the activities match the specified ${planDays} days. The daily costs (tra
                                 </div>
                               )}
                               
-                              {gem.status === "approved" && gem.pointsAwarded && (
+                              {(gem.status === "approved" || gem.status === "verified") && gem.pointsAwarded && (
                                 <div className="mt-2 text-xs text-earth-forest font-semibold flex items-center space-x-1">
                                   <Coins className="h-3.5 w-3.5 text-earth-saffron animate-pulse" />
                                   <span>Awarded +{gem.pointsAwarded} points</span>
                                 </div>
                               )}
                             </div>
+
+                            {gem.status !== "rejected" && (
+                              <div className="pt-2 border-t border-earth-clay/5 flex justify-center">
+                                <VerificationStepper status={gem.status as any} />
+                              </div>
+                            )}
                             
                             <div className="text-[10px] text-earth-clay/60 text-right pt-2 border-t border-earth-clay/5">
                               Submitted on {new Date(gem.createdAt).toLocaleDateString("en-US", {

@@ -1,20 +1,21 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, Search, Heart, ShieldCheck, Gift } from "lucide-react";
+import { MapPin, Search, Heart, ShieldCheck, Gift, Check } from "lucide-react";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useUser } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
 import Link from "next/link";
+import ExplorerBadge from "@/components/badges/ExplorerBadge";
 
 export default function HiddenGemsPage() {
   const { hiddenGems, toggleWishlist, isWishlisted } = useUser();
   const [activeCategory, setActiveCategory] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Only show approved ones in the public feed
-  const approvedGems = hiddenGems.filter((gem) => gem.status === "approved");
+  // Only show approved/verified ones in the public feed
+  const approvedGems = hiddenGems.filter((gem) => gem.status === "verified" || gem.status === "approved");
 
   const filteredGems = approvedGems.filter((gem) => {
     const gemCats = gem.category.split(",").map((c) => c.trim());
@@ -28,16 +29,18 @@ export default function HiddenGemsPage() {
     return matchesCategory && matchesSearch;
   });
 
-  const tierPriority = { Gold: 3, Silver: 2, Bronze: 1 };
+  const tierPriority = { Platinum: 4, Gold: 3, Silver: 2, Bronze: 1 };
 
   const prioritizedGems = [...filteredGems].sort((a, b) => {
-    const prioA = tierPriority[a.submitterTier] || 1;
-    const prioB = tierPriority[b.submitterTier] || 1;
+    const prioA = tierPriority[a.submitterTier as keyof typeof tierPriority] || 1;
+    const prioB = tierPriority[b.submitterTier as keyof typeof tierPriority] || 1;
     return prioB - prioA; // Higher tier first
   });
 
-  const getTierColorClass = (tier: "Bronze" | "Silver" | "Gold") => {
+  const getTierColorClass = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
     switch (tier) {
+      case "Platinum":
+        return "text-sky-400";
       case "Gold":
         return "text-earth-saffron";
       case "Silver":
@@ -123,11 +126,19 @@ export default function HiddenGemsPage() {
                         <Gift className="h-3 w-3 shrink-0" />
                         <span>+{gem.pointsAwarded || 100} pts awarded</span>
                       </span>
+
+                      {/* Verified Safar Gem Badge */}
+                      {(gem.status === "verified" || gem.status === "approved") && (
+                        <span className="absolute top-4 right-14 bg-earth-forest border border-white/20 text-white px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-widest flex items-center space-x-1 shadow-md z-10">
+                          <Check className="h-3 w-3 text-earth-saffron shrink-0" />
+                          <span>Verified Safar Gem</span>
+                        </span>
+                      )}
                       
-                      {/* If Gold submitter, show a badge on the image as well */}
-                      {gem.submitterTier === "Gold" && (
-                        <span className="absolute top-14 left-4 bg-earth-saffron text-earth-forest px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-widest shadow-md z-10">
-                          Gold Priority
+                      {/* If Gold/Platinum submitter, show a badge on the image as well */}
+                      {(gem.submitterTier === "Gold" || gem.submitterTier === "Platinum") && (
+                        <span className={`absolute top-14 left-4 ${gem.submitterTier === "Platinum" ? "bg-sky-400 text-slate-900" : "bg-earth-saffron text-earth-forest"} px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-widest shadow-md z-10`}>
+                          {gem.submitterTier} Priority
                         </span>
                       )}
                     </div>
@@ -151,9 +162,7 @@ export default function HiddenGemsPage() {
                       <div className="pt-4 border-t border-white/5 flex items-center justify-between">
                         {/* Submitter details */}
                         <div className="flex items-center space-x-2">
-                          <div className="h-7 w-7 rounded-none bg-earth-saffron/10 border border-earth-saffron/20 flex items-center justify-center text-[10px] font-bold text-earth-saffron font-sans">
-                            {gem.submittedBy.split(" ").map(n => n[0]).join("").substring(0, 2).toUpperCase()}
-                          </div>
+                          <ExplorerBadge tier={gem.submitterTier} size={28} showTooltip />
                           <div className="flex flex-col">
                             <div className="flex items-center space-x-1">
                               <span className="text-xs font-sans font-medium text-white">{gem.submittedBy}</span>

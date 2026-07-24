@@ -68,7 +68,7 @@ export default defineSchema({
     photos: v.optional(v.array(v.string())),
     category: v.string(), // e.g. "Waterfall", "Trek", "Secret Beach", "Local Eatery"
     submittedBy: v.id("users"), // User who submitted this gem
-    status: v.string(), // "pending" | "approved" | "rejected"
+    status: v.string(), // "submitted" | "in_review" | "verified" | "rejected"
     approvedBy: v.optional(v.id("users")), // Admin who reviewed it
     pointsAwarded: v.optional(v.number()), // Points given for approval
     rejectionReason: v.optional(v.string()), // If status is "rejected"

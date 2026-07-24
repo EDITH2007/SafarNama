@@ -5,6 +5,7 @@ import { Star, BookOpen, MessageSquare, Route, ChevronRight, ShieldCheck, CheckC
 import { useUser } from "./UserContext";
 import Leaderboard from "./Leaderboard";
 import Link from "next/link";
+import ExplorerBadge from "./badges/ExplorerBadge";
 
 interface RetentionZoneProps {
   onViewPlan?: (journeyId: string) => void;
@@ -31,8 +32,10 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
   ] as const;
 
   // Helper to color tier label
-  const getTierColorClass = (tier: "Bronze" | "Silver" | "Gold") => {
+  const getTierColorClass = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
     switch (tier) {
+      case "Platinum":
+        return "text-sky-600";
       case "Gold":
         return "text-[#d69e2e]";
       case "Silver":
@@ -150,6 +153,7 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
                       )}
                     </span>
                     <span>•</span>
+                    <ExplorerBadge tier={r.authorTier} size={18} showTooltip />
                     <span className={`uppercase text-[9px] font-bold ${getTierColorClass(r.authorTier)}`}>
                       {r.authorTier} Explorer
                     </span>
@@ -201,17 +205,7 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
 
                   <div className="pt-4 border-t border-earth-clay/5 flex items-center justify-between">
                     <div className="flex items-center space-x-2">
-                      {b.authorImage ? (
-                        <img
-                          src={b.authorImage}
-                          alt={b.author}
-                          className="h-6 w-6 rounded-none object-cover border border-earth-clay/20"
-                        />
-                      ) : (
-                        <div className="h-6 w-6 bg-earth-terracotta/10 flex items-center justify-center text-[10px] text-earth-terracotta font-bold font-sans">
-                          {b.author.split(" ").map(n => n[0]).join("").substring(0,2).toUpperCase()}
-                        </div>
-                      )}
+                      <ExplorerBadge tier={b.authorTier} size={24} showTooltip />
                       <div className="flex flex-col">
                         <div className="flex items-center space-x-1">
                           <span className="font-sans text-[11px] font-semibold text-earth-charcoal/90">
@@ -248,7 +242,6 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {isLandingPage ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">
-            {/* Left Column: Traveler Stories Switcher (65% equivalent) */}
             <div className="lg:col-span-2 space-y-8">
               <div className="space-y-3">
                 <span className="font-sans text-xs font-semibold uppercase tracking-widest text-earth-terracotta">
@@ -262,7 +255,6 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
                 </p>
               </div>
 
-              {/* Tab Switched Header */}
               <div className="flex border-b border-earth-clay/10 pb-2">
                 {storyTabs.map((tab) => {
                   const Icon = tab.icon;
@@ -284,7 +276,6 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
                 })}
               </div>
 
-              {/* Switched Tab Body Grid */}
               <div className="pt-2">{renderStoriesContent()}</div>
 
               <div className="pt-4 text-center">
@@ -298,7 +289,6 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
               </div>
             </div>
 
-            {/* Right Column: Explorer Leaderboard (35% equivalent) */}
             <div id="leaderboard" className="space-y-8 lg:sticky lg:top-28 scroll-mt-28">
               <div className="space-y-3">
                 <span className="font-sans text-xs font-semibold uppercase tracking-widest text-earth-terracotta">
@@ -312,13 +302,11 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
                 </p>
               </div>
 
-              {/* Reusable Leaderboard Component */}
               <Leaderboard isLandingPage={true} />
             </div>
           </div>
         ) : (
           <div className="max-w-4xl mx-auto space-y-8">
-            {/* Tab Switched Header */}
             <div className="flex border-b border-earth-clay/10 pb-2">
               {storyTabs.map((tab) => {
                 const Icon = tab.icon;
@@ -340,17 +328,14 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
               })}
             </div>
 
-            {/* Switched Tab Body Grid */}
             <div className="pt-2">{renderStoriesContent()}</div>
           </div>
         )}
       </div>
 
-      {/* Blog Detail Reader Modal */}
       {selectedReadBlog && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 sm:p-6 animate-in fade-in duration-200">
           <div className="bg-white border border-earth-clay/20 shadow-2xl max-w-2xl w-full max-h-[85vh] flex flex-col rounded-none relative animate-in slide-in-from-bottom-4 duration-300">
-            {/* Close Button */}
             <button
               onClick={() => setSelectedReadBlog(null)}
               className="absolute top-4 right-4 z-10 bg-white/90 hover:bg-white text-earth-charcoal px-3 py-1.5 border border-earth-clay/10 transition-colors shadow-sm cursor-pointer font-bold text-xs uppercase"
@@ -359,7 +344,6 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
               ✕ Close
             </button>
 
-            {/* Cover Image */}
             <div className="h-48 sm:h-64 w-full overflow-hidden bg-stone-100 relative shrink-0">
               <img
                 src={selectedReadBlog.coverImage}
@@ -373,20 +357,9 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
               </div>
             </div>
 
-            {/* Author details / Metadata bar */}
             <div className="px-6 py-4 bg-earth-sand/30 border-b border-earth-clay/10 flex items-center justify-between text-xs shrink-0 flex-wrap gap-2">
               <div className="flex items-center space-x-2">
-                {selectedReadBlog.authorImage ? (
-                  <img
-                    src={selectedReadBlog.authorImage}
-                    alt={selectedReadBlog.author}
-                    className="h-7 w-7 rounded-none object-cover border border-earth-clay/20"
-                  />
-                ) : (
-                  <div className="h-7 w-7 bg-earth-terracotta/15 flex items-center justify-center text-xs text-earth-terracotta font-bold font-sans">
-                    {selectedReadBlog.author.split(" ").map((n: string) => n[0]).join("").substring(0,2).toUpperCase()}
-                  </div>
-                )}
+                <ExplorerBadge tier={selectedReadBlog.authorTier} size={32} showTooltip />
                 <div>
                   <div className="font-bold text-earth-charcoal flex items-center space-x-1">
                     <span>{selectedReadBlog.author}</span>

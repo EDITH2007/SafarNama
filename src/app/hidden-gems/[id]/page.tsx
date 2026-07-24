@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../../convex/_generated/api";
 import { Id } from "../../../../convex/_generated/dataModel";
+import ExplorerBadge from "@/components/badges/ExplorerBadge";
 import {
   Star,
   MapPin,
@@ -53,6 +54,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
   const editGemMutation = useMutation(api.gems.editGem);
   const deleteGemMutation = useMutation(api.gems.deleteGem);
   const addReviewMutation = useMutation(api.reviews.addReview);
+  const markGemsInReview = useMutation(api.gems.markGemsInReview);
 
   // States
   const [activePhotoIndex, setActivePhotoIndex] = useState(0);
@@ -137,6 +139,14 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
   // Combine main photo and gallery photos
   const allPhotos = [gem.photo, ...(gem.photoGallery || [])].filter(Boolean);
   const isUserAdmin = currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com";
+
+  useEffect(() => {
+    if (isUserAdmin && gem && gem.status === "submitted") {
+      markGemsInReview({ ids: [gemId] }).catch((err) => {
+        console.error("Failed to mark gem in review:", err);
+      });
+    }
+  }, [isUserAdmin, gem, gemId, markGemsInReview]);
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -272,16 +282,8 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
     setEditLng(String(selectedLng));
   };
 
-  const renderTierBadge = (tier: "Bronze" | "Silver" | "Gold") => {
-    switch (tier) {
-      case "Gold":
-        return <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider border border-[#f3d082] bg-[#fdf6e2] text-[#d69e2e] shadow-sm ml-1">Gold</span>;
-      case "Silver":
-        return <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider border border-[#ccd2d8] bg-[#f0f2f5] text-[#5c6873] shadow-sm ml-1">Silver</span>;
-      case "Bronze":
-      default:
-        return <span className="px-1.5 py-0.5 text-[8px] font-bold uppercase tracking-wider border border-[#d8c3b7] bg-[#fbf5f0] text-[#8c5230] shadow-sm ml-1">Bronze</span>;
-    }
+  const renderTierBadge = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
+    return <ExplorerBadge tier={tier} size={20} showTooltip showLabel />;
   };
 
   return (
@@ -348,7 +350,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
           </div>
 
           {/* Admin Moderation Queue Panel */}
-          {isUserAdmin && gem.status === "pending" && (
+          {isUserAdmin && (gem.status === "pending" || gem.status === "submitted" || gem.status === "in_review") && (
             <div className="bg-earth-terracotta/5 border border-earth-terracotta/20 p-5 space-y-4 animate-in slide-in-from-top-2 duration-300">
               <div className="flex items-center space-x-2 text-earth-terracotta">
                 <ShieldAlert className="h-5 w-5 shrink-0" />
@@ -733,13 +735,19 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
                   {/* Status Badge */}
                   <span className={`absolute top-4 right-4 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border z-10 ${
-                    gem.status === "approved"
+                    (gem.status === "verified" || gem.status === "approved")
                       ? "bg-green-50 border-green-200 text-green-700"
                       : gem.status === "rejected"
                       ? "bg-red-50 border-red-200 text-red-700"
                       : "bg-amber-50 border-amber-200 text-amber-700"
                   }`}>
-                    {gem.status}
+                    {gem.status === "verified" || gem.status === "approved"
+                      ? "Verified" 
+                      : gem.status === "in_review"
+                      ? "In Review"
+                      : gem.status === "submitted"
+                      ? "Submitted"
+                      : gem.status}
                   </span>
                 </div>
 

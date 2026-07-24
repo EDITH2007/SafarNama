@@ -26,9 +26,37 @@ export async function ensureUsersSeeded(db: any) {
 }
 
 // Helper to determine tier from points
-export function calculateTier(points: number): "Bronze" | "Silver" | "Gold" {
+export function calculateTier(points: number): "Bronze" | "Silver" | "Gold" | "Platinum" {
+  if (points >= 5000) return "Platinum";
   if (points >= 2500) return "Gold";
   if (points >= 1000) return "Silver";
+  return "Bronze";
+}
+
+// Data-driven tier calculation based on approved submissions
+export async function calculateUserTier(db: any, userId: any): Promise<"Bronze" | "Silver" | "Gold" | "Platinum"> {
+  const approvedGems = await db
+    .query("hiddenGems")
+    .withIndex("by_submittedBy", (q: any) => q.eq("submittedBy", userId))
+    .filter((q: any) => 
+      q.or(
+        q.eq(q.field("status"), "verified"),
+        q.eq(q.field("status"), "approved")
+      )
+    )
+    .collect();
+
+  const approvedJourneys = await db
+    .query("journeys")
+    .withIndex("by_author", (q: any) => q.eq("author", userId))
+    .filter((q: any) => q.eq(q.field("status"), "approved"))
+    .collect();
+
+  const approvedSubmissionsCount = approvedGems.length + approvedJourneys.length;
+
+  if (approvedSubmissionsCount >= 10) return "Platinum";
+  if (approvedSubmissionsCount >= 5) return "Gold";
+  if (approvedSubmissionsCount >= 2) return "Silver";
   return "Bronze";
 }
 
@@ -61,7 +89,7 @@ export const viewer = query({
     return {
       ...user,
       name: user.name || user.email?.split("@")[0] || "Traveler",
-      tier: (user.tier || "Bronze") as "Bronze" | "Silver" | "Gold",
+      tier: (user.tier || "Bronze") as "Bronze" | "Silver" | "Gold" | "Platinum",
       totalPoints: user.totalPoints ?? 0,
       isVerified: user.isVerified ?? false,
       role: finalRole,
@@ -168,7 +196,7 @@ export const awardPoints = mutation({
     }
 
     const newPoints = (user.totalPoints ?? 0) + args.pointsEarned;
-    const newTier = calculateTier(newPoints);
+    const newTier = await calculateUserTier(ctx.db, userId);
 
     // Update user profile
     await ctx.db.patch(userId, {
@@ -241,7 +269,7 @@ export const getLeaderboard = query({
       rank: index + 1,
       id: u._id,
       name: u.name || u.email?.split("@")[0] || "Anonymous",
-      tier: (u.tier || "Bronze") as "Bronze" | "Silver" | "Gold",
+      tier: (u.tier || "Bronze") as "Bronze" | "Silver" | "Gold" | "Platinum",
       points: u.totalPoints ?? 0,
       isVerified: u.isVerified ?? false,
     }));
@@ -267,6 +295,23 @@ export const resetAdminAccount = mutation({
       }
     }
     return { success: true };
+  }
+});
+
+// Admin/System utility to recalculate all user tiers
+export const recalculateAllUserTiers = mutation({
+  args: {},
+  handler: async (ctx) => {
+    const users = await ctx.db.query("users").collect();
+    let count = 0;
+    for (const u of users) {
+      const newTier = await calculateUserTier(ctx.db, u._id);
+      if (u.tier !== newTier) {
+        await ctx.db.patch(u._id, { tier: newTier });
+        count++;
+      }
+    }
+    return { updatedCount: count };
   }
 });
 
