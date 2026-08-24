@@ -238,7 +238,7 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
   };
 
   return (
-    <section id="stories" className="bg-earth-sand py-24 border-t border-earth-clay/10 scroll-mt-24">
+    <section id="traveler-stories" className="bg-earth-sand py-24 border-t border-earth-clay/10 scroll-mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {isLandingPage ? (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12 items-start">

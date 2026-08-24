@@ -50,7 +50,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
 
   // Sort curated destinations by rating descending
   const sortedDestinations = [...filteredDestinations].sort((a, b) => b.rating - a.rating);
-  const landingDestinations = sortedDestinations.slice(0, 3);
+  const landingDestinations = searchQuery ? sortedDestinations : sortedDestinations.slice(0, 3);
 
   // Filter and sort hidden gems
   // 1. Only show approved ones in the public feed
@@ -77,7 +77,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
     return prioB - prioA; // Higher tier first
   });
 
-  const landingGems = prioritizedGems.slice(0, 3);
+  const landingGems = searchQuery ? prioritizedGems : prioritizedGems.slice(0, 3);
 
   const spotlightGem = approvedGems[0];
 

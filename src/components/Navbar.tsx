@@ -121,11 +121,22 @@ export default function Navbar() {
   const isHome = pathname === "/";
 
   const navItems = [
-    { name: "Destinations", href: isHome ? "#destinations" : "/destinations" },
-    { name: "Hidden Gems", href: isHome ? "#hidden-gems" : "/hidden-gems" },
-    { name: "Traveler Stories", href: "/traveler-stories" },
-    { name: "Leader Board", href: "/leaderboard" },
+    { name: "Destinations", sectionId: "destinations", pagePath: "/destinations" },
+    { name: "Hidden Gems", sectionId: "hidden-gems", pagePath: "/hidden-gems" },
+    { name: "Traveler Stories", sectionId: "traveler-stories", pagePath: "/traveler-stories" },
+    { name: "Leader Board", sectionId: "leaderboard", pagePath: "/leaderboard" },
   ];
+
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
+    if (isHome) {
+      e.preventDefault();
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth" });
+        window.history.pushState(null, "", `#${sectionId}`);
+      }
+    }
+  };
 
   // Helper to render mini tier badge
   const renderMiniTierBadge = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
@@ -148,15 +159,25 @@ export default function Navbar() {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
-            {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                className="font-sans text-xs font-bold text-earth-charcoal/80 hover:text-earth-terracotta tracking-widest transition-colors duration-200 uppercase"
-              >
-                {item.name}
-              </a>
-            ))}
+            {navItems.map((item) => {
+              const targetHref = isHome ? `#${item.sectionId}` : `/#${item.sectionId}`;
+              const isActive = !isHome && pathname === item.pagePath;
+
+              return (
+                <a
+                  key={item.name}
+                  href={targetHref}
+                  onClick={(e) => handleNavClick(e, item.sectionId)}
+                  className={`font-sans text-xs font-bold tracking-widest transition-colors duration-200 uppercase cursor-pointer ${
+                    isActive
+                      ? "text-earth-terracotta underline decoration-2 underline-offset-4"
+                      : "text-earth-charcoal/80 hover:text-earth-terracotta"
+                  }`}
+                >
+                  {item.name}
+                </a>
+              );
+            })}
             <div className="h-4 w-[1px] bg-earth-clay/25 mx-2" />
             
             {isLoading ? (
@@ -229,7 +250,7 @@ export default function Navbar() {
             )}
             <button
               onClick={() => setIsOpen(!isOpen)}
-              className="text-earth-charcoal hover:text-earth-terracotta p-2 focus:outline-none"
+              className="text-earth-charcoal hover:text-earth-terracotta p-2 focus:outline-none cursor-pointer"
               aria-label="Toggle Menu"
             >
               {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -242,16 +263,28 @@ export default function Navbar() {
       {isOpen && (
         <div className="md:hidden border-b border-earth-clay/10 bg-earth-sand/98 transition-all duration-300">
           <div className="px-2 pt-2 pb-4 space-y-1 sm:px-3">
-            {navItems.map((item) => (
-              <a
-                key={item.name}
-                href={item.href}
-                onClick={() => setIsOpen(false)}
-                className="block px-3 py-3 rounded-none font-sans text-xs font-bold text-earth-charcoal hover:bg-earth-clay/5 hover:text-earth-terracotta tracking-widest uppercase"
-              >
-                {item.name}
-              </a>
-            ))}
+            {navItems.map((item) => {
+              const targetHref = isHome ? `#${item.sectionId}` : `/#${item.sectionId}`;
+              const isActive = !isHome && pathname === item.pagePath;
+
+              return (
+                <a
+                  key={item.name}
+                  href={targetHref}
+                  onClick={(e) => {
+                    setIsOpen(false);
+                    handleNavClick(e, item.sectionId);
+                  }}
+                  className={`block px-3 py-3 rounded-none font-sans text-xs font-bold tracking-widest uppercase cursor-pointer ${
+                    isActive
+                      ? "text-earth-terracotta bg-earth-clay/10"
+                      : "text-earth-charcoal hover:bg-earth-clay/5 hover:text-earth-terracotta"
+                  }`}
+                >
+                  {item.name}
+                </a>
+              );
+            })}
              <div className="px-3 pt-4 border-t border-earth-clay/10 space-y-3">
               {isLoading ? (
                 <div className="h-8 w-full bg-earth-clay/10 animate-pulse rounded-none" />

@@ -9,6 +9,8 @@ import { useUser } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
 import dynamic from "next/dynamic";
 
+import CategoryFilter from "@/components/CategoryFilter";
+
 const DestinationMap = dynamic(() => import("@/components/DestinationMap"), {
   ssr: false,
   loading: () => (
@@ -59,26 +61,19 @@ export default function DestinationsPage() {
           </div>
 
           {/* Search and Filter Section */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-earth-clay/10">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 pb-6 border-b border-earth-clay/10">
             {/* Category Tabs */}
-            <div className="flex flex-wrap items-center gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-5 py-2 font-sans text-xs font-semibold uppercase tracking-widest border transition-all duration-200 rounded-none cursor-pointer ${
-                    activeCategory === cat
-                      ? "bg-earth-forest border-earth-forest text-earth-sand shadow-sm"
-                      : "border-earth-clay/20 text-earth-charcoal/70 hover:border-earth-charcoal hover:text-earth-charcoal"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="flex-1 min-w-0">
+              <CategoryFilter
+                categories={CATEGORIES}
+                activeCategory={activeCategory}
+                onSelectCategory={setActiveCategory}
+                variant="light"
+              />
             </div>
 
             {/* Search Input */}
-            <div className="w-full md:w-80 flex items-center bg-white border border-earth-clay/20 px-3.5 py-2 shadow-sm focus-within:border-earth-terracotta transition-colors">
+            <div className="w-full lg:w-72 flex items-center bg-white border border-earth-clay/20 px-3.5 py-2 shadow-sm focus-within:border-earth-terracotta transition-colors shrink-0">
               <Search className="h-4 w-4 text-earth-clay/60 mr-2 shrink-0" />
               <input
                 type="text"

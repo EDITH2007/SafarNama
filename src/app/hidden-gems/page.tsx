@@ -9,6 +9,8 @@ import { CATEGORIES } from "@/app/data/mockData";
 import Link from "next/link";
 import ExplorerBadge from "@/components/badges/ExplorerBadge";
 
+import CategoryFilter from "@/components/CategoryFilter";
+
 export default function HiddenGemsPage() {
   const { hiddenGems, toggleWishlist, isWishlisted } = useUser();
   const [activeCategory, setActiveCategory] = useState("All");
@@ -73,26 +75,19 @@ export default function HiddenGemsPage() {
           </div>
 
           {/* Search and Filter Section */}
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6 pb-6 border-b border-white/10">
+          <div className="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-6 pb-6 border-b border-white/10">
             {/* Category Tabs */}
-            <div className="flex flex-wrap items-center gap-2">
-              {CATEGORIES.map((cat) => (
-                <button
-                  key={cat}
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-5 py-2 font-sans text-xs font-semibold uppercase tracking-widest border transition-all duration-200 rounded-none cursor-pointer ${
-                    activeCategory === cat
-                      ? "bg-earth-terracotta border-earth-terracotta text-white shadow-sm"
-                      : "border-white/20 text-earth-sand/75 hover:border-white hover:text-white"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
+            <div className="flex-1 min-w-0">
+              <CategoryFilter
+                categories={CATEGORIES}
+                activeCategory={activeCategory}
+                onSelectCategory={setActiveCategory}
+                variant="dark"
+              />
             </div>
 
             {/* Search Input */}
-            <div className="w-full md:w-80 flex items-center bg-[#142B1B] border border-white/10 px-3.5 py-2 shadow-sm focus-within:border-earth-saffron transition-colors">
+            <div className="w-full lg:w-72 flex items-center bg-[#142B1B] border border-white/10 px-3.5 py-2 shadow-sm focus-within:border-earth-saffron transition-colors shrink-0">
               <Search className="h-4 w-4 text-earth-sand/40 mr-2 shrink-0" />
               <input
                 type="text"
