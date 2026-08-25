@@ -120,7 +120,14 @@ export default function Navbar() {
 
   const isHome = pathname === "/";
 
-  const navItems = [
+  interface NavItem {
+    name: string;
+    sectionId: string;
+    pagePath: string;
+    directLink?: boolean;
+  }
+
+  const navItems: NavItem[] = [
     { name: "Destinations", sectionId: "destinations", pagePath: "/destinations" },
     { name: "Hidden Gems", sectionId: "hidden-gems", pagePath: "/hidden-gems" },
     { name: "Traveler Stories", sectionId: "traveler-stories", pagePath: "/traveler-stories" },
