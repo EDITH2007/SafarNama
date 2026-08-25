@@ -33,6 +33,31 @@ export function calculateTier(points: number): "Bronze" | "Silver" | "Gold" | "P
   return "Bronze";
 }
 
+// Server-side helper to strictly check and enforce admin authorization
+export async function requireAdmin(ctx: any) {
+  const userId = await getAuthUserId(ctx);
+  if (!userId) {
+    throw new Error("Unauthorized: Authentication required");
+  }
+  const user = await ctx.db.get(userId);
+  if (!user) {
+    throw new Error("Unauthorized: User not found");
+  }
+  const isAdminEmail = user.email?.trim().toLowerCase() === "230107anu@gmail.com";
+  const isRoleAdmin = user.role === "admin";
+
+  if (!isAdminEmail && !isRoleAdmin) {
+    throw new Error("Unauthorized: Admin privileges required");
+  }
+
+  // Auto-promote admin email account if role is not set to admin in DB
+  if (isAdminEmail && user.role !== "admin" && ctx.db.patch) {
+    await ctx.db.patch(userId, { role: "admin" });
+  }
+
+  return { userId, user };
+}
+
 // Data-driven tier calculation based on approved submissions
 export async function calculateUserTier(db: any, userId: any): Promise<"Bronze" | "Silver" | "Gold" | "Platinum"> {
   const approvedGems = await db

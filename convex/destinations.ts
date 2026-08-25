@@ -1,6 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { requireAdmin } from "./users";
 
 // Seed official destinations helper
 export async function ensureDestinationsSeeded(db: any) {
@@ -209,14 +210,7 @@ export const addDestination = mutation({
     photoGallery: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Unauthorized: Not authenticated");
-    }
-    const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin") {
-      throw new Error("Unauthorized: Admin privileges required");
-    }
+    const { userId } = await requireAdmin(ctx);
 
     const destinationId = await ctx.db.insert("destinations", {
       ...args,
@@ -248,14 +242,7 @@ export const editDestination = mutation({
     photoGallery: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Unauthorized: Not authenticated");
-    }
-    const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin") {
-      throw new Error("Unauthorized: Admin privileges required");
-    }
+    await requireAdmin(ctx);
 
     const { id, ...fields } = args;
     await ctx.db.patch(id, fields);
@@ -267,14 +254,7 @@ export const editDestination = mutation({
 export const deleteDestination = mutation({
   args: { id: v.id("destinations") },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Unauthorized: Not authenticated");
-    }
-    const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin") {
-      throw new Error("Unauthorized: Admin privileges required");
-    }
+    await requireAdmin(ctx);
 
     // 1. Clean up associated reviews
     const reviews = await ctx.db

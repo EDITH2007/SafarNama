@@ -1,13 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-
-// Helper to check if a user is an admin
-async function checkAdmin(db: any, userId: any) {
-  const user = await db.get(userId);
-  if (!user || user.role !== "admin") {
-    throw new Error("Unauthorized: Admin privileges required");
-  }
-}
+import { requireAdmin } from "./users";
 
 // Get reviews
 export const getReviews = query({
@@ -43,12 +36,12 @@ export const addReview = mutation({
 // Flag/Unflag a review (admin only)
 export const flagReview = mutation({
   args: {
-    adminUserId: v.id("users"),
+    adminUserId: v.optional(v.id("users")),
     reviewId: v.id("reviews"),
     flagged: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await checkAdmin(ctx.db, args.adminUserId);
+    await requireAdmin(ctx);
 
     await ctx.db.patch(args.reviewId, {
       flagged: args.flagged,
@@ -58,14 +51,31 @@ export const flagReview = mutation({
   },
 });
 
+// Edit a review (admin only)
+export const editReview = mutation({
+  args: {
+    reviewId: v.id("reviews"),
+    rating: v.optional(v.number()),
+    text: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const patch: { rating?: number; text?: string } = {};
+    if (args.rating !== undefined) patch.rating = args.rating;
+    if (args.text !== undefined) patch.text = args.text;
+    await ctx.db.patch(args.reviewId, patch);
+    return { success: true };
+  },
+});
+
 // Delete a review (admin only)
 export const deleteReview = mutation({
   args: {
-    adminUserId: v.id("users"),
+    adminUserId: v.optional(v.id("users")),
     reviewId: v.id("reviews"),
   },
   handler: async (ctx, args) => {
-    await checkAdmin(ctx.db, args.adminUserId);
+    await requireAdmin(ctx);
 
     await ctx.db.delete(args.reviewId);
 

@@ -1,13 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-
-// Helper to check if a user is an admin
-async function checkAdmin(db: any, userId: any) {
-  const user = await db.get(userId);
-  if (!user || user.role !== "admin") {
-    throw new Error("Unauthorized: Admin privileges required");
-  }
-}
+import { requireAdmin } from "./users";
 
 // Get blogs
 export const getBlogs = query({
@@ -23,7 +16,7 @@ export const addBlog = mutation({
     content: v.string(),
     coverImage: v.optional(v.string()),
     author: v.id("users"),
-    status: v.string(), // "draft" | "published"
+    status: v.string(), // "draft" | "published" | "pending"
   },
   handler: async (ctx, args) => {
     return await ctx.db.insert("blogs", {
@@ -41,12 +34,12 @@ export const addBlog = mutation({
 // Flag/Unflag a blog (admin only)
 export const flagBlog = mutation({
   args: {
-    adminUserId: v.id("users"),
+    adminUserId: v.optional(v.id("users")),
     blogId: v.id("blogs"),
     flagged: v.boolean(),
   },
   handler: async (ctx, args) => {
-    await checkAdmin(ctx.db, args.adminUserId);
+    await requireAdmin(ctx);
 
     await ctx.db.patch(args.blogId, {
       flagged: args.flagged,
@@ -56,14 +49,60 @@ export const flagBlog = mutation({
   },
 });
 
-// Delete a blog (admin only)
-export const deleteBlog = mutation({
+// Approve/Publish a blog (admin only)
+export const approveBlog = mutation({
   args: {
-    adminUserId: v.id("users"),
     blogId: v.id("blogs"),
   },
   handler: async (ctx, args) => {
-    await checkAdmin(ctx.db, args.adminUserId);
+    await requireAdmin(ctx);
+    await ctx.db.patch(args.blogId, {
+      status: "published",
+    });
+    return { success: true };
+  },
+});
+
+// Reject/Unpublish a blog (admin only)
+export const rejectBlog = mutation({
+  args: {
+    blogId: v.id("blogs"),
+    reason: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    await ctx.db.patch(args.blogId, {
+      status: "rejected",
+    });
+    return { success: true };
+  },
+});
+
+// Edit a blog (admin only)
+export const editBlog = mutation({
+  args: {
+    blogId: v.id("blogs"),
+    title: v.optional(v.string()),
+    content: v.optional(v.string()),
+    coverImage: v.optional(v.string()),
+    category: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const { blogId, ...fields } = args;
+    await ctx.db.patch(blogId, fields);
+    return { success: true };
+  },
+});
+
+// Delete a blog (admin only)
+export const deleteBlog = mutation({
+  args: {
+    adminUserId: v.optional(v.id("users")),
+    blogId: v.id("blogs"),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
 
     await ctx.db.delete(args.blogId);
 

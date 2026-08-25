@@ -14,6 +14,7 @@ import { CategoryDonutChart } from "@/components/ExpenseCharts";
 import { useUser, PlanDay } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
 import VerificationStepper from "@/components/VerificationStepper";
+import AdminModerationConsole from "@/components/AdminModerationConsole";
 import {
   Compass,
   Gift,
@@ -2911,79 +2912,9 @@ Ensure costs are in INR numbers.`;
                   )}
                 </div>
 
-                {/* Admin Moderation Console (Gated for admin users) */}
-                {(currentUser?.email?.trim().toLowerCase() === "230107anu@gmail.com" || currentUser?.role === "admin") && (
-                  <div className="space-y-6 font-sans text-xs border-t-2 border-earth-terracotta/30 pt-8 mt-8">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-earth-clay/10 pb-4 gap-4">
-                      <div className="space-y-1">
-                        <div className="flex items-center space-x-2 text-earth-forest">
-                          <Sparkles className="h-5 w-5 text-earth-terracotta shrink-0" />
-                          <h3 className="font-serif text-lg font-bold uppercase tracking-wider">
-                            Admin Moderation Console
-                          </h3>
-                        </div>
-                        <p className="text-[11px] text-earth-charcoal/60">
-                          Active Role: <span className="font-bold text-earth-forest uppercase">Convex Admin ({currentUser.name})</span>
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex space-x-2 border-b border-earth-clay/10 pb-1 flex-wrap gap-y-2">
-                      {[
-                        { id: "spots" as const, name: `Spot Discoveries (${pendingGems.length})` },
-                        { id: "journeys" as const, name: `Journeys (${pendingJourneys.length})` },
-                        { id: "reviews" as const, name: `Reviews (${reviews.length})` },
-                        { id: "blogs" as const, name: `Traveler Stories (${blogs.length})` },
-                      ].map((sub) => (
-                        <button
-                          key={sub.id}
-                          onClick={() => setAdminSubTab(sub.id)}
-                          className={`px-3 py-2 font-sans font-bold uppercase tracking-wider border-b-2 -mb-[3px] transition-all cursor-pointer ${
-                            adminSubTab === sub.id
-                              ? "border-earth-forest text-earth-forest text-[11px]"
-                              : "border-transparent text-earth-charcoal/50 hover:text-earth-charcoal text-[11px]"
-                          }`}
-                        >
-                          {sub.name}
-                        </button>
-                      ))}
-                    </div>
-
-                    {adminSubTab === "spots" && (
-                      <div className="space-y-4">
-                        {pendingGems.length > 0 ? (
-                          <div className="space-y-4">
-                            {pendingGems.map((g) => (
-                              <div key={g.id} className="p-4 bg-earth-sand/10 border border-earth-clay/10 flex justify-between items-center">
-                                <div className="space-y-1">
-                                  <div className="font-serif font-bold text-sm text-earth-charcoal">{g.title}</div>
-                                  <div className="text-[10px] text-earth-clay">{g.location}, {g.state} • Submitter: {g.submittedBy}</div>
-                                </div>
-                                <div className="flex space-x-2">
-                                  <button
-                                    onClick={() => rejectGem(g.id)}
-                                    className="px-3 py-1 bg-red-600 text-white text-[10px] font-bold uppercase cursor-pointer"
-                                  >
-                                    Reject
-                                  </button>
-                                  <button
-                                    onClick={() => approveGem(g.id)}
-                                    className="px-3 py-1 bg-earth-forest text-white text-[10px] font-bold uppercase cursor-pointer"
-                                  >
-                                    Approve (+100 PTS)
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        ) : (
-                          <div className="text-center py-8 text-earth-clay text-xs bg-earth-sand/5">
-                            No pending hidden gem submissions in queue.
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
+                {/* Admin Moderation Console (Gated for admin user 230107anu@gmail.com / admin role) */}
+                {currentUser && (currentUser.email?.trim().toLowerCase() === "230107anu@gmail.com" || currentUser.role === "admin") && (
+                  <AdminModerationConsole currentUser={currentUser} />
                 )}
               </div>
             )}

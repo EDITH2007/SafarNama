@@ -1,6 +1,6 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
-import { ensureUsersSeeded, calculateUserTier } from "./users";
+import { ensureUsersSeeded, calculateUserTier, requireAdmin } from "./users";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 export async function ensureGemsSeeded(db: any) {
@@ -97,12 +97,9 @@ export const submitGem = mutation({
 export const getPendingGems = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      return [];
-    }
-    const user = await ctx.db.get(userId);
-    if (!user || user.role !== "admin" || user.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
+    try {
+      await requireAdmin(ctx);
+    } catch {
       return [];
     }
     
@@ -190,21 +187,11 @@ export const approveGem = mutation({
     gemId: v.id("hiddenGems"),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Unauthorized: Not authenticated");
-    }
-    const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
-      throw new Error("Unauthorized: Admin privileges required");
-    }
+    const { userId } = await requireAdmin(ctx);
 
     const gem = await ctx.db.get(args.gemId);
     if (!gem) {
       throw new Error("Gem not found");
-    }
-    if (gem.status !== "pending" && gem.status !== "submitted" && gem.status !== "in_review") {
-      throw new Error("Gem is already processed");
     }
 
     const pointsToAward = 100; // Standard gem approval points
@@ -212,7 +199,7 @@ export const approveGem = mutation({
     // Update gem status to verified
     await ctx.db.patch(args.gemId, {
       status: "verified",
-      approvedBy: admin._id,
+      approvedBy: userId,
       pointsAwarded: pointsToAward,
       approvedAt: Date.now(),
     });
@@ -258,21 +245,11 @@ export const rejectGem = mutation({
     rejectionReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Unauthorized: Not authenticated");
-    }
-    const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
-      throw new Error("Unauthorized: Admin privileges required");
-    }
+    const { userId } = await requireAdmin(ctx);
 
     const gem = await ctx.db.get(args.gemId);
     if (!gem) {
       throw new Error("Gem not found");
-    }
-    if (gem.status !== "pending" && gem.status !== "submitted" && gem.status !== "in_review") {
-      throw new Error("Gem is already processed");
     }
 
     const rejectionReason = args.rejectionReason || "Did not meet submission guidelines";
@@ -280,7 +257,7 @@ export const rejectGem = mutation({
     // Update gem status to rejected
     await ctx.db.patch(args.gemId, {
       status: "rejected",
-      approvedBy: admin._id,
+      approvedBy: userId,
       rejectionReason: rejectionReason,
     });
 
@@ -319,14 +296,7 @@ export const editGem = mutation({
     photoGallery: v.optional(v.array(v.string())),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Unauthorized: Not authenticated");
-    }
-    const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
-      throw new Error("Unauthorized: Admin privileges required");
-    }
+    await requireAdmin(ctx);
 
     const { id, ...data } = args;
     await ctx.db.patch(id, data);
@@ -386,14 +356,7 @@ export const getMySubmissions = query({
 export const markGemsInReview = mutation({
   args: { ids: v.array(v.id("hiddenGems")) },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Unauthorized: Not authenticated");
-    }
-    const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
-      throw new Error("Unauthorized: Admin privileges required");
-    }
+    await requireAdmin(ctx);
 
     for (const id of args.ids) {
       const gem = await ctx.db.get(id);
@@ -411,17 +374,43 @@ export const deleteGem = mutation({
     id: v.id("hiddenGems"),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Unauthorized: Not authenticated");
-    }
-    const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
-      throw new Error("Unauthorized: Admin privileges required");
-    }
+    await requireAdmin(ctx);
 
     await ctx.db.delete(args.id);
     return { success: true };
+  },
+});
+
+// Query all gems for admin management console (admin only)
+export const getAllGemsAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      await requireAdmin(ctx);
+    } catch {
+      return [];
+    }
+
+    const gems = await ctx.db.query("hiddenGems").collect();
+    gems.sort((a, b) => b.createdAt - a.createdAt);
+
+    const results = [];
+    for (const gem of gems) {
+      const submitter = await ctx.db.get(gem.submittedBy);
+      results.push({
+        id: gem._id,
+        ...gem,
+        submittedBy: submitter?.name || submitter?.email?.split("@")[0] || "Anonymous",
+        submitterTier: submitter?.tier || "Bronze",
+        submitterVerified: submitter?.isVerified || false,
+        createdAtFormatted: new Date(gem.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          year: "numeric",
+        }),
+      });
+    }
+    return results;
   },
 });
 

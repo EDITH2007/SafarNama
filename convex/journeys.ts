@@ -1,7 +1,7 @@
 import { query, mutation } from "./_generated/server";
 import { v } from "convex/values";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { calculateUserTier } from "./users";
+import { calculateUserTier, requireAdmin } from "./users";
 
 // Submit a new journey (pending by default)
 export const submitJourney = mutation({
@@ -31,12 +31,9 @@ export const submitJourney = mutation({
 export const getPendingJourneys = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      return [];
-    }
-    const user = await ctx.db.get(userId);
-    if (!user || user.role !== "admin" || user.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
+    try {
+      await requireAdmin(ctx);
+    } catch {
       return [];
     }
     
@@ -56,6 +53,39 @@ export const getPendingJourneys = query({
         authorVerified: authorUser?.isVerified || false,
         createdAtFormatted: new Date(journey.createdAt).toLocaleDateString("en-US", {
           month: "long",
+          year: "numeric",
+        }),
+      });
+    }
+    return results;
+  },
+});
+
+// Query all journeys for admin (admin only)
+export const getAllJourneysAdmin = query({
+  args: {},
+  handler: async (ctx) => {
+    try {
+      await requireAdmin(ctx);
+    } catch {
+      return [];
+    }
+
+    const journeys = await ctx.db.query("journeys").collect();
+    journeys.sort((a, b) => b.createdAt - a.createdAt);
+
+    const results = [];
+    for (const journey of journeys) {
+      const authorUser = await ctx.db.get(journey.author);
+      results.push({
+        id: journey._id,
+        ...journey,
+        author: authorUser?.name || authorUser?.email?.split("@")[0] || "Anonymous",
+        authorTier: authorUser?.tier || "Bronze",
+        authorVerified: authorUser?.isVerified || false,
+        createdAtFormatted: new Date(journey.createdAt).toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
           year: "numeric",
         }),
       });
@@ -105,21 +135,11 @@ export const approveJourney = mutation({
     journeyId: v.id("journeys"),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Unauthorized: Not authenticated");
-    }
-    const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
-      throw new Error("Unauthorized: Admin privileges required");
-    }
+    const { userId } = await requireAdmin(ctx);
 
     const journey = await ctx.db.get(args.journeyId);
     if (!journey) {
       throw new Error("Journey not found");
-    }
-    if (journey.status !== "pending") {
-      throw new Error("Journey is already processed");
     }
 
     const pointsToAward = 100; // Standard journey approval points
@@ -127,7 +147,7 @@ export const approveJourney = mutation({
     // Update status to approved
     await ctx.db.patch(args.journeyId, {
       status: "approved",
-      approvedBy: admin._id,
+      approvedBy: userId,
       pointsAwarded: pointsToAward,
       approvedAt: Date.now(),
     });
@@ -172,21 +192,11 @@ export const rejectJourney = mutation({
     rejectionReason: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
-    const userId = await getAuthUserId(ctx);
-    if (!userId) {
-      throw new Error("Unauthorized: Not authenticated");
-    }
-    const admin = await ctx.db.get(userId);
-    if (!admin || admin.role !== "admin" || admin.email?.trim().toLowerCase() !== "230107anu@gmail.com") {
-      throw new Error("Unauthorized: Admin privileges required");
-    }
+    await requireAdmin(ctx);
 
     const journey = await ctx.db.get(args.journeyId);
     if (!journey) {
       throw new Error("Journey not found");
-    }
-    if (journey.status !== "pending") {
-      throw new Error("Journey is already processed");
     }
 
     // Update status to rejected
@@ -203,6 +213,35 @@ export const rejectJourney = mutation({
       createdAt: Date.now(),
     });
 
+    return { success: true };
+  },
+});
+
+// Edit a journey (admin only)
+export const editJourney = mutation({
+  args: {
+    journeyId: v.id("journeys"),
+    title: v.optional(v.string()),
+    description: v.optional(v.string()),
+    duration: v.optional(v.string()),
+    stops: v.optional(v.array(v.string())),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    const { journeyId, ...fields } = args;
+    await ctx.db.patch(journeyId, fields);
+    return { success: true };
+  },
+});
+
+// Delete a journey (admin only)
+export const deleteJourney = mutation({
+  args: {
+    journeyId: v.id("journeys"),
+  },
+  handler: async (ctx, args) => {
+    await requireAdmin(ctx);
+    await ctx.db.delete(args.journeyId);
     return { success: true };
   },
 });
