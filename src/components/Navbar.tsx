@@ -77,9 +77,8 @@ function NotificationBell() {
               notifications.map((notif) => (
                 <div
                   key={notif._id}
-                  className={`p-4 transition-colors hover:bg-earth-sand/20 ${
-                    !notif.read ? "bg-earth-sand/10 font-medium" : ""
-                  }`}
+                  className={`p-4 transition-colors hover:bg-earth-sand/20 ${!notif.read ? "bg-earth-sand/10 font-medium" : ""
+                    }`}
                 >
                   <div className="flex items-start gap-2.5">
                     {!notif.read && (
@@ -188,18 +187,17 @@ export default function Navbar() {
                   key={item.name}
                   href={targetHref}
                   onClick={(e) => handleNavClick(e, item.sectionId)}
-                  className={`font-sans text-xs font-bold tracking-widest transition-colors duration-200 uppercase cursor-pointer ${
-                    isActive
+                  className={`font-sans text-xs font-bold tracking-widest transition-colors duration-200 uppercase cursor-pointer ${isActive
                       ? "text-earth-terracotta underline decoration-2 underline-offset-4"
                       : "text-earth-charcoal/80 hover:text-earth-terracotta"
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </a>
               );
             })}
             <div className="h-4 w-[1px] bg-earth-clay/25 mx-2" />
-            
+
             {isLoading ? (
               <div className="h-8 w-24 bg-earth-clay/10 animate-pulse rounded-none" />
             ) : isAuthenticated && currentUser ? (
@@ -215,7 +213,7 @@ export default function Navbar() {
                   <div className="h-8 w-8 rounded-full bg-earth-terracotta/10 flex items-center justify-center font-bold text-xs text-earth-terracotta font-sans border border-earth-terracotta/20 shrink-0">
                     {currentUser.avatar}
                   </div>
-                  
+
                   <div className="flex flex-col">
                     <div className="flex items-center space-x-1">
                       <span className="font-sans text-xs font-bold text-earth-charcoal">
@@ -295,17 +293,16 @@ export default function Navbar() {
                     setIsOpen(false);
                     handleNavClick(e, item.sectionId);
                   }}
-                  className={`block px-3 py-3 rounded-none font-sans text-xs font-bold tracking-widest uppercase cursor-pointer ${
-                    isActive
+                  className={`block px-3 py-3 rounded-none font-sans text-xs font-bold tracking-widest uppercase cursor-pointer ${isActive
                       ? "text-earth-terracotta bg-earth-clay/10"
                       : "text-earth-charcoal hover:bg-earth-clay/5 hover:text-earth-terracotta"
-                  }`}
+                    }`}
                 >
                   {item.name}
                 </a>
               );
             })}
-             <div className="px-3 pt-4 border-t border-earth-clay/10 space-y-3">
+            <div className="px-3 pt-4 border-t border-earth-clay/10 space-y-3">
               {isLoading ? (
                 <div className="h-8 w-full bg-earth-clay/10 animate-pulse rounded-none" />
               ) : isAuthenticated && currentUser ? (

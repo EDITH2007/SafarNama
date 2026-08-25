@@ -133,47 +133,86 @@ export function CategoryDonutChart({ expenses }: DonutChartProps) {
 }
 
 export function TripExpensesBarChart({ journeys, expenses }: BarChartProps) {
-  // Compute total expenses per trip
-  const tripTotals = journeys.map((j) => {
-    const tripExpenses = expenses.filter((e) => e.tripId === j.id);
-    const total = tripExpenses.reduce((sum, curr) => sum + curr.amount, 0);
-    return {
-      id: j.id,
-      title: j.title.split("Itinerary")[0].split("Trek")[0].trim(),
-      total,
-    };
+  // Map journeys and aggregate expenses
+  const journeyMap = new Map<string, string>();
+  journeys.forEach((j) => {
+    journeyMap.set(j.id, j.title.replace(/Itinerary/gi, "").replace(/Trek/gi, "").trim() || "Trip");
   });
 
-  const maxExpense = Math.max(...tripTotals.map((t) => t.total), 1);
+  // Calculate totals per trip
+  const tripTotalsMap = new Map<string, { title: string; total: number }>();
 
-  // If there are zero logged expenses across all trips
-  const overallTotal = tripTotals.reduce((sum, curr) => sum + curr.total, 0);
+  // Add all journeys to map
+  journeys.forEach((j) => {
+    const title = j.title.replace(/Itinerary/gi, "").replace(/Trek/gi, "").trim() || "Trip";
+    tripTotalsMap.set(j.id, { title, total: 0 });
+  });
+
+  // Aggregate expenses
+  expenses.forEach((e) => {
+    const existing = tripTotalsMap.get(e.tripId);
+    if (existing) {
+      existing.total += e.amount;
+    } else {
+      tripTotalsMap.set(e.tripId, {
+        title: `Trip (${e.tripId.slice(0, 6)})`,
+        total: e.amount,
+      });
+    }
+  });
+
+  let tripTotals = Array.from(tripTotalsMap.entries()).map(([id, val]) => ({
+    id,
+    title: val.title,
+    total: val.total,
+  }));
+
+  // Filter to trips with expenses if available, or keep top journeys
+  const activeTripTotals = tripTotals.filter((t) => t.total > 0);
+  const displayTrips = (activeTripTotals.length > 0 ? activeTripTotals : tripTotals).slice(0, 8);
+
+  const overallTotal = displayTrips.reduce((sum, curr) => sum + curr.total, 0);
+  const maxExpense = Math.max(...displayTrips.map((t) => t.total), 1);
+
   if (overallTotal === 0) {
-    return null;
+    return (
+      <div className="bg-earth-sand/20 border border-earth-clay/10 p-6 text-center space-y-2">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest border-b border-earth-clay/5 pb-1 font-sans">
+          Combined Spending Comparison
+        </h4>
+        <p className="font-sans text-xs text-earth-charcoal/60 font-light">
+          No expenses recorded across trips yet. Select a trip or add expenses to compare trip spending.
+        </p>
+      </div>
+    );
   }
 
   return (
     <div className="bg-earth-sand/20 border border-earth-clay/10 p-6 space-y-4">
-      <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest border-b border-earth-clay/5 pb-1 font-sans">
-        Cost Comparison across Trips (INR)
-      </h4>
+      <div className="flex items-center justify-between border-b border-earth-clay/10 pb-2">
+        <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest font-sans">
+          Cost Comparison Across Trips (INR)
+        </h4>
+        <span className="text-[10px] font-bold text-earth-terracotta bg-white px-2 py-0.5 border border-earth-clay/15">
+          {displayTrips.length} Active Trips
+        </span>
+      </div>
 
-      <div className="flex items-end justify-around h-44 pt-6 pb-2 border-b border-earth-clay/10 font-sans">
-        {tripTotals.map((trip) => {
-          // Normalize height relative to maximum cost (max height 120px)
+      <div className="flex items-end justify-around h-48 pt-8 pb-3 border-b border-earth-clay/10 font-sans gap-2 overflow-x-auto">
+        {displayTrips.map((trip) => {
           const barHeight = Math.max((trip.total / maxExpense) * 120, 8);
 
           return (
-            <div key={trip.id} className="flex flex-col items-center group w-1/3 max-w-[100px] space-y-2">
-              <div className="relative w-full flex justify-center">
+            <div key={trip.id} className="flex flex-col items-center group flex-1 min-w-[60px] max-w-[120px] space-y-2">
+              <div className="relative w-full flex justify-center items-end">
                 {/* Cost bubble indicator */}
-                <span className="absolute -top-6 text-[9px] font-bold text-earth-terracotta bg-white px-1.5 py-0.5 border border-earth-clay/15 opacity-80 font-mono">
-                  ₹{trip.total >= 1000 ? `${(trip.total / 1000).toFixed(1)}k` : trip.total}
+                <span className="absolute -top-7 text-[9px] font-bold text-earth-terracotta bg-white px-1.5 py-0.5 border border-earth-clay/15 shadow-sm font-mono whitespace-nowrap">
+                  ₹{trip.total >= 1000 ? `${(trip.total / 1000).toFixed(1)}k` : trip.total.toLocaleString("en-IN")}
                 </span>
 
                 {/* Vertical bar */}
                 <div
-                  className="w-8 bg-earth-forest hover:bg-earth-terracotta transition-all duration-300 shadow-sm"
+                  className="w-7 sm:w-10 bg-earth-forest hover:bg-earth-terracotta transition-all duration-300 shadow-md rounded-t-sm"
                   style={{ height: `${barHeight}px` }}
                 />
               </div>

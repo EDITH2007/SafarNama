@@ -29,7 +29,7 @@ export default function Hero({ onSearch }: HeroProps) {
       ...destinations.map((d: any) => ({ title: d.title, time: d._creationTime || d.createdAt || 0 })),
       ...approvedGems.map((g: any) => ({ title: g.title, time: g.approvedAt || g._creationTime || 0 }))
     ];
-    
+
     // Sort by creation date descending (newest first)
     all.sort((a, b) => b.time - a.time);
 
@@ -129,7 +129,7 @@ export default function Hero({ onSearch }: HeroProps) {
     setQuery(tag);
     onSearch(tag);
     setIsFocused(false);
-    
+
     const q = tag.toLowerCase();
     const matchesOfficial = destinations.some((d: any) =>
       d.title.toLowerCase().includes(q) || d.location.toLowerCase().includes(q) || d.category.toLowerCase().includes(q)
@@ -159,12 +159,12 @@ export default function Hero({ onSearch }: HeroProps) {
         <span className="font-sans text-xs font-semibold uppercase tracking-widest text-earth-saffron bg-earth-sand/10 px-4 py-1.5 border border-earth-saffron/20 inline-block">
           India's Premier Discovery Network
         </span>
-        
+
         <h1 className="font-serif text-5xl md:text-7xl font-bold tracking-tight text-earth-sand leading-tight">
           Discover the Unseen <br />
           <span className="text-earth-saffron">Subcontinent</span>
         </h1>
-        
+
         <p className="font-sans text-lg md:text-xl text-earth-sand/80 max-w-2xl mx-auto font-light leading-relaxed">
           A community-driven chronicle of hidden gems, regional cultures, and authentic itineraries curated by local explorers.
         </p>

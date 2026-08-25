@@ -48,6 +48,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { CurrencyProvider } from "@/components/CurrencyContext";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -58,12 +60,18 @@ export default function RootLayout({
       <html
         lang="en"
         className={`${geistSans.variable} ${geistMono.variable} ${playfair.variable} h-full antialiased`}
+        suppressHydrationWarning
       >
-        <body className="min-h-full flex flex-col bg-earth-sand text-earth-charcoal font-sans">
+        <body
+          className="min-h-full flex flex-col bg-earth-sand text-earth-charcoal font-sans"
+          suppressHydrationWarning
+        >
           <Script src="https://js.puter.com/v2/" strategy="beforeInteractive" />
           <ConvexClientProvider>
             <UserProvider>
-              {children}
+              <CurrencyProvider>
+                {children}
+              </CurrencyProvider>
             </UserProvider>
           </ConvexClientProvider>
         </body>

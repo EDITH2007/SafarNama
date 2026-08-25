@@ -10,8 +10,11 @@ import ExplorerBadge from "@/components/badges/ExplorerBadge";
 import Footer from "@/components/Footer";
 import Leaderboard from "@/components/Leaderboard";
 import MapPicker from "@/components/MapPicker";
-import { CategoryDonutChart } from "@/components/ExpenseCharts";
+import { CategoryDonutChart, TripExpensesBarChart } from "@/components/ExpenseCharts";
 import { useUser, PlanDay } from "@/components/UserContext";
+import { useCurrency, SupportedCurrency } from "@/components/CurrencyContext";
+import GoogleTranslateWidget from "@/components/GoogleTranslateWidget";
+import CurrencyConverterCard from "@/components/CurrencyConverterCard";
 import { CATEGORIES } from "@/app/data/mockData";
 import VerificationStepper from "@/components/VerificationStepper";
 import AdminModerationConsole from "@/components/AdminModerationConsole";
@@ -301,6 +304,8 @@ function Dashboard() {
   const [newTripDest, setNewTripDest] = useState("");
   const [newTripTitle, setNewTripTitle] = useState("");
   const [newTripDesc, setNewTripDesc] = useState("");
+  const [newTripStartDate, setNewTripStartDate] = useState("");
+  const [newTripEndDate, setNewTripEndDate] = useState("");
   const [isSubmittingTrip, setIsSubmittingTrip] = useState(false);
 
   // Expense Tracker Item Form State
@@ -309,6 +314,7 @@ function Dashboard() {
     "Food" | "Stay" | "Transport" | "Tickets" | "Shopping" | "Other"
   >("Food");
   const [expDesc, setExpDesc] = useState("");
+  const [expDate, setExpDate] = useState("");
 
   const handleAddJourneySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -375,9 +381,10 @@ function Dashboard() {
     e.preventDefault();
     const tripToUse = selectedTripId === "all" ? targetTripForForm : selectedTripId;
     if (!tripToUse || !expAmount || !expDesc) return;
-    await addExpense(tripToUse, Number(expAmount), expCategory, expDesc);
+    await addExpense(tripToUse, Number(expAmount), expCategory, expDesc, expDate || undefined);
     setExpAmount("");
     setExpDesc("");
+    setExpDate("");
   };
 
   const handleCreateCustomTrip = async (e: React.FormEvent) => {
@@ -390,12 +397,16 @@ function Dashboard() {
         title: newTripTitle.trim() || `Trip to ${newTripDest.trim()}`,
         description:
           newTripDesc.trim() || `Travel expenses and details for ${newTripDest.trim()}`,
+        startDate: newTripStartDate.trim() || undefined,
+        endDate: newTripEndDate.trim() || undefined,
       });
       setSelectedTripId(createdId);
       setTargetTripForForm(createdId);
       setNewTripDest("");
       setNewTripTitle("");
       setNewTripDesc("");
+      setNewTripStartDate("");
+      setNewTripEndDate("");
       setShowAddTripModal(false);
     } catch (err) {
       console.error("Failed to create custom trip:", err);
@@ -618,28 +629,28 @@ Ensure costs are in INR numbers.`;
           title: `Exploring ${planRegion} - Day ${dayNum}`,
           activities: dayItems.length > 0
             ? dayItems.map((item, iIdx) => ({
-                time: iIdx === 0 ? "Morning" : iIdx === 1 ? "Afternoon" : "Evening",
-                title: item.title,
-                description: item.description,
-                location: item.location,
-                cost: Math.round(planBudget / (planDays * 2)),
-              }))
+              time: iIdx === 0 ? "Morning" : iIdx === 1 ? "Afternoon" : "Evening",
+              title: item.title,
+              description: item.description,
+              location: item.location,
+              cost: Math.round(planBudget / (planDays * 2)),
+            }))
             : [
-                {
-                  time: "Morning",
-                  title: `Sightseeing in ${planRegion}`,
-                  description: `Explore the top local landmarks, markets, and scenic viewpoints in ${planRegion}.`,
-                  location: planRegion,
-                  cost: Math.round(planBudget / (planDays * 3)),
-                },
-                {
-                  time: "Afternoon",
-                  title: `Local Cuisine & Cultural Walk`,
-                  description: `Sample traditional dishes and visit heritage markets around ${planRegion}.`,
-                  location: planRegion,
-                  cost: Math.round(planBudget / (planDays * 4)),
-                },
-              ],
+              {
+                time: "Morning",
+                title: `Sightseeing in ${planRegion}`,
+                description: `Explore the top local landmarks, markets, and scenic viewpoints in ${planRegion}.`,
+                location: planRegion,
+                cost: Math.round(planBudget / (planDays * 3)),
+              },
+              {
+                time: "Afternoon",
+                title: `Local Cuisine & Cultural Walk`,
+                description: `Sample traditional dishes and visit heritage markets around ${planRegion}.`,
+                location: planRegion,
+                cost: Math.round(planBudget / (planDays * 4)),
+              },
+            ],
           approximateCosts: {
             transport: Math.round((planBudget * 0.25) / planDays),
             food: Math.round((planBudget * 0.35) / planDays),
@@ -731,7 +742,7 @@ Ensure costs are in INR numbers.`;
             status: "planning",
           },
         });
-        
+
         setRichPlan((prev: any) => ({ ...prev, id: localId }));
       }
 
@@ -979,11 +990,10 @@ Ensure costs are in INR numbers.`;
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-6 py-4 font-sans text-xs font-bold uppercase tracking-widest border-b-2 -mb-[1px] transition-all duration-200 cursor-pointer ${
-                    isActive
+                  className={`flex items-center space-x-2 px-6 py-4 font-sans text-xs font-bold uppercase tracking-widest border-b-2 -mb-[1px] transition-all duration-200 cursor-pointer ${isActive
                       ? "border-earth-terracotta text-earth-terracotta bg-white shadow-sm"
                       : "border-transparent text-earth-charcoal/60 hover:text-earth-charcoal hover:bg-earth-sand/40"
-                  }`}
+                    }`}
                 >
                   <Icon className={`h-4 w-4 shrink-0 ${isActive ? "text-earth-terracotta" : ""}`} />
                   <span>{tab.name}</span>
@@ -1012,53 +1022,48 @@ Ensure costs are in INR numbers.`;
                   <div className="flex flex-wrap items-center gap-2">
                     <button
                       onClick={() => setExploreSubView("browse")}
-                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer ${
-                        exploreSubView === "browse"
+                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer ${exploreSubView === "browse"
                           ? "bg-earth-forest text-white border-earth-forest"
                           : "bg-white text-earth-charcoal border-earth-clay/20 hover:border-earth-forest"
-                      }`}
+                        }`}
                     >
                       🗺️ Catalog
                     </button>
                     <button
                       onClick={() => setExploreSubView("planner")}
-                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer flex items-center space-x-1 ${
-                        exploreSubView === "planner"
+                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer flex items-center space-x-1 ${exploreSubView === "planner"
                           ? "bg-earth-terracotta text-white border-earth-terracotta"
                           : "bg-white text-earth-charcoal border-earth-clay/20 hover:border-earth-terracotta"
-                      }`}
+                        }`}
                     >
                       <Sparkles className="h-3.5 w-3.5" />
                       <span>AI Planner</span>
                     </button>
                     <button
                       onClick={() => setExploreSubView("addgem")}
-                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer flex items-center space-x-1 ${
-                        exploreSubView === "addgem"
+                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer flex items-center space-x-1 ${exploreSubView === "addgem"
                           ? "bg-earth-terracotta text-white border-earth-terracotta"
                           : "bg-white text-earth-charcoal border-earth-clay/20 hover:border-earth-terracotta"
-                      }`}
+                        }`}
                     >
                       <Plus className="h-3.5 w-3.5" />
                       <span>Add Spot</span>
                     </button>
                     <button
                       onClick={() => setExploreSubView("addjourney")}
-                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer ${
-                        exploreSubView === "addjourney"
+                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer ${exploreSubView === "addjourney"
                           ? "bg-earth-forest text-white border-earth-forest"
                           : "bg-white text-earth-charcoal border-earth-clay/20 hover:border-earth-forest"
-                      }`}
+                        }`}
                     >
                       Share Route
                     </button>
                     <button
                       onClick={() => setExploreSubView("writeblog")}
-                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer ${
-                        exploreSubView === "writeblog"
+                      className={`px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer ${exploreSubView === "writeblog"
                           ? "bg-earth-forest text-white border-earth-forest"
                           : "bg-white text-earth-charcoal border-earth-clay/20 hover:border-earth-forest"
-                      }`}
+                        }`}
                     >
                       Write Story
                     </button>
@@ -1111,11 +1116,10 @@ Ensure costs are in INR numbers.`;
                           <button
                             key={cat}
                             onClick={() => setExploreCategory(cat)}
-                            className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors border cursor-pointer ${
-                              exploreCategory === cat
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors border cursor-pointer ${exploreCategory === cat
                                 ? "bg-earth-terracotta text-white border-earth-terracotta"
                                 : "bg-white text-earth-charcoal/80 border-earth-clay/15 hover:border-earth-terracotta"
-                            }`}
+                              }`}
                           >
                             {cat}
                           </button>
@@ -1177,17 +1181,15 @@ Ensure costs are in INR numbers.`;
                                 </div>
                                 <button
                                   onClick={() => toggleWishlist(item.id)}
-                                  className={`absolute top-3 right-3 p-2 rounded-full transition-all cursor-pointer shadow-md ${
-                                    wishlist.includes(item.id)
+                                  className={`absolute top-3 right-3 p-2 rounded-full transition-all cursor-pointer shadow-md ${wishlist.includes(item.id)
                                       ? "bg-red-500 text-white"
                                       : "bg-white/80 text-earth-charcoal hover:bg-white"
-                                  }`}
+                                    }`}
                                   title={wishlist.includes(item.id) ? "Remove from wishlist" : "Save to wishlist"}
                                 >
                                   <Heart
-                                    className={`h-4 w-4 ${
-                                      wishlist.includes(item.id) ? "fill-current text-white" : ""
-                                    }`}
+                                    className={`h-4 w-4 ${wishlist.includes(item.id) ? "fill-current text-white" : ""
+                                      }`}
                                   />
                                 </button>
                               </div>
@@ -1284,17 +1286,15 @@ Ensure costs are in INR numbers.`;
                                 </div>
                                 <button
                                   onClick={() => toggleWishlist(item.id)}
-                                  className={`absolute top-3 right-3 p-2 rounded-full transition-all cursor-pointer shadow-md ${
-                                    wishlist.includes(item.id)
+                                  className={`absolute top-3 right-3 p-2 rounded-full transition-all cursor-pointer shadow-md ${wishlist.includes(item.id)
                                       ? "bg-red-500 text-white"
                                       : "bg-white/80 text-earth-charcoal hover:bg-white"
-                                  }`}
+                                    }`}
                                   title={wishlist.includes(item.id) ? "Remove from wishlist" : "Save to wishlist"}
                                 >
                                   <Heart
-                                    className={`h-4 w-4 ${
-                                      wishlist.includes(item.id) ? "fill-current text-white" : ""
-                                    }`}
+                                    className={`h-4 w-4 ${wishlist.includes(item.id) ? "fill-current text-white" : ""
+                                      }`}
                                   />
                                 </button>
                               </div>
@@ -1359,21 +1359,19 @@ Ensure costs are in INR numbers.`;
                       <div className="bg-earth-sand/15 border border-earth-clay/10 p-6 space-y-6 font-sans">
                         <div className="flex items-center space-x-2 text-xs border-b border-earth-clay/5 pb-3">
                           <span
-                            className={`px-2 py-0.5 font-bold ${
-                              plannerStep === 1
+                            className={`px-2 py-0.5 font-bold ${plannerStep === 1
                                 ? "bg-earth-terracotta text-white"
                                 : "bg-earth-clay/10 text-earth-charcoal/60"
-                            }`}
+                              }`}
                           >
                             Step 1: Destination & Budget
                           </span>
                           <span className="text-earth-clay/35">→</span>
                           <span
-                            className={`px-2 py-0.5 font-bold ${
-                              plannerStep === 2
+                            className={`px-2 py-0.5 font-bold ${plannerStep === 2
                                 ? "bg-earth-terracotta text-white"
                                 : "bg-earth-clay/10 text-earth-charcoal/60"
-                            }`}
+                              }`}
                           >
                             Step 2: Category Vibes
                           </span>
@@ -1506,11 +1504,10 @@ Ensure costs are in INR numbers.`;
                                           setPlanCategories([...planCategories, cat.value]);
                                         }
                                       }}
-                                      className={`px-3 py-2 text-xs border cursor-pointer font-medium ${
-                                        isSelected
+                                      className={`px-3 py-2 text-xs border cursor-pointer font-medium ${isSelected
                                           ? "bg-earth-forest border-earth-forest text-white"
                                           : "bg-white border-earth-clay/20 text-earth-charcoal/80"
-                                      }`}
+                                        }`}
                                     >
                                       {cat.label}
                                     </button>
@@ -2043,11 +2040,10 @@ Ensure costs are in INR numbers.`;
                       <button
                         key={sub.id}
                         onClick={() => setTripsSubTab(sub.id)}
-                        className={`flex items-center space-x-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider border-b-2 -mb-[10px] transition-all cursor-pointer ${
-                          isActive
+                        className={`flex items-center space-x-1.5 px-3 py-2 text-xs font-bold uppercase tracking-wider border-b-2 -mb-[10px] transition-all cursor-pointer ${isActive
                             ? "border-earth-terracotta text-earth-terracotta"
                             : "border-transparent text-earth-charcoal/60 hover:text-earth-charcoal"
-                        }`}
+                          }`}
                       >
                         <Icon className="h-4 w-4 shrink-0" />
                         <span>{sub.name}</span>
@@ -2075,11 +2071,10 @@ Ensure costs are in INR numbers.`;
                           <button
                             key={filter}
                             onClick={() => setSavedFilter(filter)}
-                            className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors border cursor-pointer ${
-                              savedFilter === filter
+                            className={`px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider whitespace-nowrap transition-colors border cursor-pointer ${savedFilter === filter
                                 ? "bg-earth-terracotta text-white border-earth-terracotta"
                                 : "bg-white text-earth-charcoal/80 border-earth-clay/15 hover:border-earth-terracotta"
-                            }`}
+                              }`}
                           >
                             {filter}
                           </button>
@@ -2186,11 +2181,20 @@ Ensure costs are in INR numbers.`;
                   <div className="space-y-8">
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 border-b border-earth-clay/10 pb-4">
                       <div className="space-y-1">
-                        <h3 className="font-serif text-xl font-bold text-earth-forest">
-                          Flexible Trip Expense Tracker
-                        </h3>
+                        <div className="flex items-center space-x-2">
+                          <h3 className="font-serif text-xl font-bold text-earth-forest">
+                            Flexible Trip Expense Tracker
+                          </h3>
+                          <span className={`px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider ${
+                            selectedTripId === "all"
+                              ? "bg-earth-forest text-earth-saffron"
+                              : "bg-earth-terracotta text-white"
+                          }`}>
+                            {selectedTripId === "all" ? "Combined Trips Mode" : "Single Trip Mode"}
+                          </span>
+                        </div>
                         <p className="font-sans text-xs font-light text-earth-charcoal/70">
-                          Track expenditure for any trip or destination worldwide.
+                          Track, categorize, and visualize expenditure for any trip or destination worldwide.
                         </p>
                       </div>
 
@@ -2198,10 +2202,10 @@ Ensure costs are in INR numbers.`;
                         <select
                           value={selectedTripId}
                           onChange={(e) => setSelectedTripId(e.target.value)}
-                          className="p-2 bg-white border border-earth-clay/20 text-xs font-medium focus:outline-none focus:border-earth-terracotta"
+                          className="p-2 bg-white border border-earth-clay/20 text-xs font-medium focus:outline-none focus:border-earth-terracotta shadow-sm"
                         >
                           <option value="all">🌐 All Trips (Combined)</option>
-                          {savedJourneys.map((j) => (
+                          {journeys.map((j) => (
                             <option key={j.id} value={j.id}>
                               📍 {j.title}
                             </option>
@@ -2210,7 +2214,7 @@ Ensure costs are in INR numbers.`;
 
                         <button
                           onClick={() => setShowAddTripModal(true)}
-                          className="px-3.5 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-wider cursor-pointer"
+                          className="px-3.5 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-wider cursor-pointer transition-colors shadow-sm"
                         >
                           + Track New Trip
                         </button>
@@ -2218,21 +2222,34 @@ Ensure costs are in INR numbers.`;
                     </div>
 
                     {showAddTripModal && (
-                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                        <div className="bg-white border border-earth-clay/20 shadow-2xl max-w-md w-full p-6 space-y-4">
+                      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+                        <div className="bg-white border border-earth-clay/20 shadow-2xl max-w-lg w-full p-6 space-y-4">
                           <div className="flex items-center justify-between border-b border-earth-clay/10 pb-2">
                             <h4 className="font-serif text-base font-bold text-earth-forest">
                               Track Expenses for New Trip
                             </h4>
                             <button
                               onClick={() => setShowAddTripModal(false)}
-                              className="text-earth-clay font-bold text-sm"
+                              className="text-earth-clay hover:text-earth-terracotta font-bold text-sm cursor-pointer"
                             >
                               ✕
                             </button>
                           </div>
 
                           <form onSubmit={handleCreateCustomTrip} className="space-y-4 font-sans text-xs">
+                            <div className="space-y-1">
+                              <label className="block text-[10px] font-bold uppercase text-earth-charcoal">
+                                Trip Name / Title
+                              </label>
+                              <input
+                                type="text"
+                                value={newTripTitle}
+                                onChange={(e) => setNewTripTitle(e.target.value)}
+                                placeholder="e.g. Summer Goa Getaway"
+                                className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
+                              />
+                            </div>
+
                             <div className="space-y-1">
                               <label className="block text-[10px] font-bold uppercase text-earth-charcoal">
                                 Destination Name *
@@ -2242,25 +2259,64 @@ Ensure costs are in INR numbers.`;
                                 required
                                 value={newTripDest}
                                 onChange={(e) => setNewTripDest(e.target.value)}
-                                placeholder="e.g. Goa Beach Trip"
-                                className="w-full p-2 bg-white border border-earth-clay/20 text-xs"
+                                placeholder="e.g. Goa, India"
+                                className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
                               />
                             </div>
 
-                            <div className="flex justify-end space-x-2 pt-2">
+                            <div className="grid grid-cols-2 gap-3">
+                              <div className="space-y-1">
+                                <label className="block text-[10px] font-bold uppercase text-earth-charcoal">
+                                  Start Date
+                                </label>
+                                <input
+                                  type="date"
+                                  value={newTripStartDate}
+                                  onChange={(e) => setNewTripStartDate(e.target.value)}
+                                  className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
+                                />
+                              </div>
+
+                              <div className="space-y-1">
+                                <label className="block text-[10px] font-bold uppercase text-earth-charcoal">
+                                  End Date
+                                </label>
+                                <input
+                                  type="date"
+                                  value={newTripEndDate}
+                                  onChange={(e) => setNewTripEndDate(e.target.value)}
+                                  className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
+                                />
+                              </div>
+                            </div>
+
+                            <div className="space-y-1">
+                              <label className="block text-[10px] font-bold uppercase text-earth-charcoal">
+                                Trip Notes / Description
+                              </label>
+                              <textarea
+                                rows={2}
+                                value={newTripDesc}
+                                onChange={(e) => setNewTripDesc(e.target.value)}
+                                placeholder="e.g. Budget trip for beach food, scooty rental and homestay"
+                                className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
+                              />
+                            </div>
+
+                            <div className="flex justify-end space-x-2 pt-2 border-t border-earth-clay/10">
                               <button
                                 type="button"
                                 onClick={() => setShowAddTripModal(false)}
-                                className="px-4 py-2 border border-earth-clay/20 text-xs font-bold uppercase"
+                                className="px-4 py-2 border border-earth-clay/20 text-xs font-bold uppercase hover:bg-earth-sand/20 cursor-pointer"
                               >
                                 Cancel
                               </button>
                               <button
                                 type="submit"
                                 disabled={isSubmittingTrip}
-                                className="px-4 py-2 bg-earth-forest text-white text-xs font-bold uppercase"
+                                className="px-4 py-2 bg-earth-forest hover:bg-earth-terracotta text-white text-xs font-bold uppercase cursor-pointer transition-colors"
                               >
-                                {isSubmittingTrip ? "Creating..." : "Save Trip"}
+                                {isSubmittingTrip ? "Creating..." : "Save & Start Tracking"}
                               </button>
                             </div>
                           </form>
@@ -2268,19 +2324,25 @@ Ensure costs are in INR numbers.`;
                       </div>
                     )}
 
+                    {/* Stat Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
                       <div className="bg-earth-sand/30 border border-earth-clay/15 p-4">
                         <span className="text-[9px] uppercase font-bold text-earth-clay tracking-wider">
-                          Selected View
+                          Selected View Mode
                         </span>
                         <span className="font-serif text-lg font-bold text-earth-forest block mt-1 truncate">
-                          {selectedTripId === "all" ? "All Trips Combined" : activeJourney?.title}
+                          {selectedTripId === "all" ? "🌐 All Trips Combined" : activeJourney?.title}
                         </span>
+                        {activeJourney?.rawPlan?.startDate && (
+                          <span className="text-[10px] text-earth-clay/80 block mt-0.5 font-mono">
+                            {activeJourney.rawPlan.startDate} {activeJourney.rawPlan.endDate ? `to ${activeJourney.rawPlan.endDate}` : ""}
+                          </span>
+                        )}
                       </div>
 
                       <div className="bg-earth-sand/30 border border-earth-clay/15 p-4">
                         <span className="text-[9px] uppercase font-bold text-earth-clay tracking-wider">
-                          Total Cost
+                          Total Expenditure
                         </span>
                         <span className="font-serif text-xl font-bold text-earth-terracotta block mt-1 font-mono">
                           ₹{tripRunningTotal.toLocaleString("en-IN")}
@@ -2289,106 +2351,173 @@ Ensure costs are in INR numbers.`;
 
                       <div className="bg-earth-sand/30 border border-earth-clay/15 p-4">
                         <span className="text-[9px] uppercase font-bold text-earth-clay tracking-wider">
-                          Entries
+                          Logged Items
                         </span>
                         <span className="font-serif text-lg font-bold text-earth-charcoal block mt-1">
-                          {selectedTripExpenses.length} Items Logged
+                          {selectedTripExpenses.length} Expense {selectedTripExpenses.length === 1 ? "Record" : "Records"}
                         </span>
                       </div>
                     </div>
 
-                    <div className="max-w-xl mx-auto w-full">
-                      <CategoryDonutChart expenses={selectedTripExpenses} />
-                    </div>
+                    {/* Visualizer Mode Graphs */}
+                    {selectedTripId === "all" ? (
+                      /* Combined Trips Mode: Donut Chart + Multi-Trip Bar Chart */
+                      <div className="space-y-6">
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+                          <CategoryDonutChart expenses={selectedTripExpenses} />
+                          <TripExpensesBarChart journeys={journeys} expenses={expenses} />
+                        </div>
+                      </div>
+                    ) : (
+                      /* Single Trip Mode: Donut Chart Breakdown */
+                      <div className="max-w-xl mx-auto w-full">
+                        <CategoryDonutChart expenses={selectedTripExpenses} />
+                      </div>
+                    )}
 
+                    {/* Expense Logs & Log Expense Form */}
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start">
+                      {/* Logged Expense Items */}
                       <div className="space-y-3 font-sans">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest border-b border-earth-clay/10 pb-1">
-                          Logged Expense Items
-                        </h4>
+                        <div className="flex items-center justify-between border-b border-earth-clay/10 pb-1">
+                          <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest">
+                            {selectedTripId === "all" ? "All Logged Expenses" : "Trip Expenses Log"}
+                          </h4>
+                          <span className="text-[10px] text-earth-clay font-mono">
+                            {selectedTripExpenses.length} entries
+                          </span>
+                        </div>
                         {selectedTripExpenses.length > 0 ? (
-                          <div className="divide-y divide-earth-clay/10 max-h-[300px] overflow-y-auto border border-earth-clay/10 p-2 bg-white">
-                            {selectedTripExpenses.map((exp) => (
-                              <div key={exp.id} className="py-2 px-2 flex justify-between items-center text-xs">
-                                <div className="space-y-0.5">
-                                  <div className="font-semibold text-earth-charcoal">{exp.description}</div>
-                                  <div className="text-[9px] text-earth-clay">{exp.category} • {exp.date}</div>
+                          <div className="divide-y divide-earth-clay/10 max-h-[360px] overflow-y-auto border border-earth-clay/10 p-2 bg-white shadow-sm">
+                            {selectedTripExpenses.map((exp) => {
+                              const tripForExp = journeys.find((j) => j.id === exp.tripId);
+                              return (
+                                <div key={exp.id} className="py-2.5 px-2 flex justify-between items-center text-xs hover:bg-earth-sand/10 transition-colors">
+                                  <div className="space-y-0.5 pr-2">
+                                    <div className="font-semibold text-earth-charcoal">{exp.description}</div>
+                                    <div className="flex flex-wrap items-center gap-1.5 text-[9px] text-earth-clay">
+                                      <span className="font-medium bg-earth-sand/40 px-1.5 py-0.5 border border-earth-clay/10">
+                                        {exp.category}
+                                      </span>
+                                      <span>• {exp.date}</span>
+                                      {selectedTripId === "all" && tripForExp && (
+                                        <span className="text-earth-forest font-bold bg-earth-forest/5 px-1.5 py-0.5 border border-earth-forest/10 truncate max-w-[120px]">
+                                          📍 {tripForExp.title}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center space-x-3 shrink-0">
+                                    <span className="font-mono font-bold text-earth-terracotta">₹{exp.amount.toLocaleString("en-IN")}</span>
+                                    <button
+                                      onClick={() => deleteExpense(exp.id)}
+                                      className="text-red-500 hover:text-red-700 p-1 hover:bg-red-50 transition-colors rounded-none font-bold text-[10px] cursor-pointer"
+                                      title="Delete Expense"
+                                    >
+                                      ✕
+                                    </button>
+                                  </div>
                                 </div>
-                                <div className="flex items-center space-x-2">
-                                  <span className="font-mono font-bold text-earth-terracotta">₹{exp.amount}</span>
-                                  <button
-                                    onClick={() => deleteExpense(exp.id)}
-                                    className="text-red-500 hover:text-red-700 text-[10px] font-bold"
-                                  >
-                                    ✕
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         ) : (
-                          <div className="text-center py-8 text-earth-clay/60 border border-dashed border-earth-clay/15 text-xs">
-                            No expenses logged yet.
+                          <div className="text-center py-12 text-earth-clay/60 border border-dashed border-earth-clay/15 text-xs bg-earth-sand/5">
+                            No expenses logged yet for this trip view. Use the form to record expenses.
                           </div>
                         )}
                       </div>
 
-                      <form onSubmit={handleAddExpense} className="bg-earth-sand/10 border border-earth-clay/10 p-4 space-y-4 font-sans text-xs">
-                        <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest border-b border-earth-clay/10 pb-1">
+                      {/* Add Expense Form */}
+                      <form onSubmit={handleAddExpense} className="bg-earth-sand/10 border border-earth-clay/10 p-5 space-y-4 font-sans text-xs shadow-sm">
+                        <h4 className="text-xs font-bold uppercase tracking-wider text-earth-forest border-b border-earth-clay/10 pb-1.5">
                           Log Categorized Expense
                         </h4>
 
+                        {selectedTripId === "all" && (
+                          <div className="space-y-1">
+                            <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
+                              Select Target Trip *
+                            </label>
+                            <select
+                              value={targetTripForForm}
+                              onChange={(e) => setTargetTripForForm(e.target.value)}
+                              className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
+                            >
+                              {journeys.map((j) => (
+                                <option key={j.id} value={j.id}>
+                                  📍 {j.title}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        )}
+
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="space-y-1">
+                            <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
+                              Amount (₹ INR) *
+                            </label>
+                            <input
+                              type="number"
+                              required
+                              min={1}
+                              value={expAmount}
+                              onChange={(e) => setExpAmount(e.target.value)}
+                              placeholder="1200"
+                              className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
+                            />
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
+                              Category *
+                            </label>
+                            <select
+                              value={expCategory}
+                              onChange={(e) => setExpCategory(e.target.value as any)}
+                              className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
+                            >
+                              {["Food", "Stay", "Transport", "Tickets", "Shopping", "Other"].map((c) => (
+                                <option key={c} value={c}>
+                                  {c}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                        </div>
+
                         <div className="space-y-1">
                           <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
-                            Amount (₹ INR) *
+                            Expense Date
                           </label>
                           <input
-                            type="number"
-                            required
-                            min={1}
-                            value={expAmount}
-                            onChange={(e) => setExpAmount(e.target.value)}
-                            placeholder="1200"
-                            className="w-full p-2 bg-white border border-earth-clay/20 text-xs"
+                            type="date"
+                            value={expDate}
+                            onChange={(e) => setExpDate(e.target.value)}
+                            className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
                           />
                         </div>
 
                         <div className="space-y-1">
                           <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
-                            Category *
-                          </label>
-                          <select
-                            value={expCategory}
-                            onChange={(e) => setExpCategory(e.target.value as any)}
-                            className="w-full p-2 bg-white border border-earth-clay/20 text-xs"
-                          >
-                            {["Food", "Stay", "Transport", "Tickets", "Shopping", "Other"].map((c) => (
-                              <option key={c} value={c}>
-                                {c}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
-                            Description *
+                            Description / Note *
                           </label>
                           <input
                             type="text"
                             required
                             value={expDesc}
                             onChange={(e) => setExpDesc(e.target.value)}
-                            placeholder="Dinner at beach shack"
-                            className="w-full p-2 bg-white border border-earth-clay/20 text-xs"
+                            placeholder="e.g. Dinner at beach shack / Taxi fare"
+                            className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
                           />
                         </div>
 
                         <button
                           type="submit"
-                          className="w-full py-2.5 bg-earth-forest text-white font-sans text-xs font-bold uppercase tracking-widest cursor-pointer"
+                          className="w-full py-2.5 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest cursor-pointer transition-colors"
                         >
-                          Log Expense
+                          Log Expense Item
                         </button>
                       </form>
                     </div>
@@ -2734,38 +2863,18 @@ Ensure costs are in INR numbers.`;
                       </div>
                     </div>
 
-                    {/* NEW Preferences Rows: Language & Currency */}
+                    {/* Preferences Block: Google Translate & Currency Display */}
                     <div className="space-y-4 bg-white p-4 border border-earth-clay/10">
                       <div className="font-bold uppercase tracking-wider text-earth-forest text-[10px] flex items-center justify-between">
                         <span>Regional Preferences</span>
                         <span className="text-[9px] text-earth-terracotta font-mono">Convex Backed</span>
                       </div>
 
-                      {/* Language Preference Row */}
-                      <div className="space-y-1">
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay flex items-center space-x-1">
-                          <Globe className="h-3.5 w-3.5 text-earth-terracotta" />
-                          <span>Language Preference</span>
-                        </label>
-                        <select
-                          value={currentUser.language || "en"}
-                          disabled={isUpdatingPrefs}
-                          onChange={(e) => handlePreferenceChange("language", e.target.value)}
-                          className="w-full p-2 bg-white border border-earth-clay/20 text-xs font-semibold text-earth-charcoal focus:outline-none focus:border-earth-terracotta cursor-pointer"
-                        >
-                          <option value="en">English (en)</option>
-                          <option value="hi">Hindi (hi)</option>
-                          <option value="es">Spanish (es)</option>
-                          <option value="fr">French (fr)</option>
-                          <option value="de">German (de)</option>
-                        </select>
-                      </div>
-
-                      {/* Currency Preference Row */}
+                      {/* Currency Display Preference Row (Task 3) */}
                       <div className="space-y-1">
                         <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay flex items-center space-x-1">
                           <DollarSign className="h-3.5 w-3.5 text-earth-terracotta" />
-                          <span>Currency Display</span>
+                          <span>Site-wide Display Currency</span>
                         </label>
                         <select
                           value={currentUser.currency || "INR"}
@@ -2779,9 +2888,18 @@ Ensure costs are in INR numbers.`;
                           <option value="GBP">GBP (£ British Pound)</option>
                           <option value="AED">AED (د.إ UAE Dirham)</option>
                         </select>
+                        <p className="text-[9px] text-earth-clay/60 font-light">
+                          Sets the default currency used to format prices across SafarNama features.
+                        </p>
                       </div>
+
+                      {/* Google Translate Integration Widget (Task 4) */}
+                      <GoogleTranslateWidget />
                     </div>
                   </div>
+
+                  {/* Standalone Live Currency Converter Tool (Task 2) */}
+                  <CurrencyConverterCard />
                 </div>
 
                 {/* Badges Drawer */}
@@ -2792,44 +2910,40 @@ Ensure costs are in INR numbers.`;
 
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div
-                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${
-                        currentUser.isVerified
+                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${currentUser.isVerified
                           ? "bg-blue-50/50 border-blue-200 text-blue-800"
                           : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
-                      }`}
+                        }`}
                     >
                       <ShieldCheck className={`h-8 w-8 ${currentUser.isVerified ? "text-blue-500" : ""}`} />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Verified Identity</span>
                     </div>
 
                     <div
-                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${
-                        hasSubmittedGem
+                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${hasSubmittedGem
                           ? "bg-amber-50/50 border-amber-200 text-amber-800"
                           : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
-                      }`}
+                        }`}
                     >
                       <Compass className="h-8 w-8 text-earth-saffron" />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Spot Discoverer</span>
                     </div>
 
                     <div
-                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${
-                        hasWrittenReview
+                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${hasWrittenReview
                           ? "bg-orange-50/50 border-orange-200 text-orange-800"
                           : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
-                      }`}
+                        }`}
                     >
                       <BookOpen className="h-8 w-8" />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Logbook Writer</span>
                     </div>
 
                     <div
-                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${
-                        isGoldOrSilver
+                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${isGoldOrSilver
                           ? "bg-earth-sand border-earth-clay/20 text-earth-clay"
                           : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
-                      }`}
+                        }`}
                     >
                       <Award className="h-8 w-8 text-earth-terracotta" />
                       <span className="text-[10px] font-bold uppercase tracking-wider">Elite Guide</span>
@@ -2938,9 +3052,8 @@ Ensure costs are in INR numbers.`;
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-center justify-center py-1 px-2.5 transition-colors cursor-pointer ${
-                isActive ? "text-earth-terracotta" : "text-earth-charcoal/60 hover:text-earth-charcoal"
-              }`}
+              className={`flex flex-col items-center justify-center py-1 px-2.5 transition-colors cursor-pointer ${isActive ? "text-earth-terracotta" : "text-earth-charcoal/60 hover:text-earth-charcoal"
+                }`}
             >
               <Icon className={`h-5 w-5 ${isActive ? "text-earth-terracotta stroke-[2.5]" : "stroke-[1.5]"}`} />
               <span className="text-[9px] font-bold uppercase tracking-wider mt-1">{tab.name}</span>

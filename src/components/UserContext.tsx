@@ -84,7 +84,7 @@ interface UserContextType {
   toggleSaveItinerary: (id: string) => void;
   isItinerarySaved: (id: string) => boolean;
   expenses: Expense[];
-  addExpense: (tripId: string, amount: number, category: Expense["category"], description: string) => Promise<void> | void;
+  addExpense: (tripId: string, amount: number, category: Expense["category"], description: string, date?: string) => Promise<void> | void;
   deleteExpense: (expenseId: string) => Promise<void>;
   createCustomTrip: (trip: { title?: string; destination: string; description?: string; startDate?: string; endDate?: string }) => Promise<string>;
   generateAILocalPlan: (location: string, categories: string[], days: number) => PlanDay[];
@@ -681,8 +681,10 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     tripId: string,
     amount: number,
     category: Expense["category"],
-    description: string
+    description: string,
+    date?: string
   ) => {
+    const expenseDate = date || new Date().toISOString().split("T")[0];
     if (isAuthenticated) {
       try {
         const newId = await addExpenseMutation({
@@ -690,14 +692,14 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           amount,
           category,
           description,
-          date: new Date().toISOString().split("T")[0],
+          date: expenseDate,
         });
         const newExpense: Expense = {
           id: newId,
           tripId,
           amount,
           category,
-          date: new Date().toISOString().split("T")[0],
+          date: expenseDate,
           description,
         };
         setExpenses((prev) => [newExpense, ...prev.filter((e) => e.id !== newId)]);
@@ -710,7 +712,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         tripId,
         amount,
         category,
-        date: new Date().toISOString().split("T")[0],
+        date: expenseDate,
         description,
       };
       setExpenses((prev) => [newExpense, ...prev]);
