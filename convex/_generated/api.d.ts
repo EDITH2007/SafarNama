@@ -17,6 +17,7 @@ import type * as http from "../http.js";
 import type * as journeys from "../journeys.js";
 import type * as notifications from "../notifications.js";
 import type * as reviews from "../reviews.js";
+import type * as savedItineraries from "../savedItineraries.js";
 import type * as seed from "../seed.js";
 import type * as trips from "../trips.js";
 import type * as users from "../users.js";
@@ -38,6 +39,7 @@ declare const fullApi: ApiFromModules<{
   journeys: typeof journeys;
   notifications: typeof notifications;
   reviews: typeof reviews;
+  savedItineraries: typeof savedItineraries;
   seed: typeof seed;
   trips: typeof trips;
   users: typeof users;

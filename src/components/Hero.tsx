@@ -263,8 +263,15 @@ export default function Hero({ onSearch }: HeroProps) {
           )}
         </div>
 
-        {/* Short suggestion pills */}
+        {/* Short suggestion pills & AI Planner Quick CTA */}
         <div className="flex flex-wrap items-center justify-center gap-3 text-earth-sand/70 text-xs font-sans tracking-wide">
+          <Link
+            href="/dashboard?tab=planner"
+            className="px-3.5 py-1 bg-earth-terracotta hover:bg-earth-saffron hover:text-earth-forest text-white font-bold transition-all duration-200 cursor-pointer flex items-center space-x-1.5 shadow-md border border-earth-terracotta"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Craft Custom Itinerary</span>
+          </Link>
           <span className="flex items-center space-x-1"><MapPin className="h-3 w-3 text-earth-saffron" /> <span>Trending:</span></span>
           {trendingTags.map((tag) => (
             <button

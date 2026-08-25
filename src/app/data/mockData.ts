@@ -70,7 +70,7 @@ export interface Journey {
   id: string;
   title: string;
   duration: string;
-  type: "AI-Generated" | "Manual";
+  type: "Custom Plan" | "Official Guide" | "Community Route" | "AI-Generated" | "Manual";
   description: string;
   stops: string[];
   author: string;
@@ -266,17 +266,17 @@ export const mockJourneys: Journey[] = [
     id: "journey-1",
     title: "5 Days in Mystical Ladakh Itinerary",
     duration: "5 Days",
-    type: "AI-Generated",
+    type: "Official Guide",
     description: "A tailored, high-altitude acclimatization itinerary visiting Leh monasteries, Pangong Lake, and Nubra Valley.",
     stops: ["Leh Palace", "Hemis Monastery", "Khardung La Pass", "Hunder Dunes", "Pangong Lake"],
-    author: "AI Travel Assistant",
+    author: "SafarNama Official",
     completed: false
   },
   {
     id: "journey-2",
     title: "Weekend Coastal Trek in Gokarna",
     duration: "3 Days",
-    type: "Manual",
+    type: "Community Route",
     description: "A scenic beach-hopping trek passing through Kudle Beach, Om Beach, Half Moon Beach, and Paradise Beach.",
     stops: ["Kudle Beach", "Om Beach Hike", "Half Moon Cove", "Paradise Beach Camping"],
     author: "Sneha Gupta",

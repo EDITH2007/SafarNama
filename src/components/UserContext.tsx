@@ -35,6 +35,8 @@ export interface UserProfile {
   bio: string;
   homeTown: string;
   role?: "user" | "admin";
+  language?: string;
+  currency?: string;
 }
 
 export interface Expense {
@@ -78,6 +80,9 @@ interface UserContextType {
   wishlist: string[];
   toggleWishlist: (id: string) => void;
   isWishlisted: (id: string) => boolean;
+  savedItineraries: string[];
+  toggleSaveItinerary: (id: string) => void;
+  isItinerarySaved: (id: string) => boolean;
   expenses: Expense[];
   addExpense: (tripId: string, amount: number, category: Expense["category"], description: string) => Promise<void> | void;
   deleteExpense: (expenseId: string) => Promise<void>;
@@ -103,7 +108,7 @@ interface UserContextType {
   addReview: (review: Omit<Review, "id" | "author" | "authorTier" | "authorVerified" | "date"> & { destinationId?: string; gemId?: string }) => Promise<void> | void;
   addBlog: (blog: Omit<Blog, "id" | "author" | "authorTier" | "authorVerified" | "date">) => Promise<void> | void;
   completeTrip: (journeyId: string) => void;
-  addTrip: (trip: Omit<Journey, "id" | "author" | "completed">) => void;
+  addTrip: (trip: Omit<Journey, "id" | "author" | "completed">) => string;
   toggleUserVerification: () => void;
   flagReview: (reviewId: string) => void;
   deleteReview: (reviewId: string) => void;
@@ -119,6 +124,7 @@ interface UserContextType {
   submitJourney: (journey: { title: string; description: string; duration: string; stops: string[] }) => Promise<string>;
   approveJourney: (journeyId: string) => Promise<void>;
   rejectJourney: (journeyId: string, reason?: string) => Promise<void>;
+  updateUserPreferences: (prefs: { language?: string; currency?: string }) => Promise<void>;
 }
 
 const PLACEHOLDER_USER: UserProfile = {
@@ -131,6 +137,8 @@ const PLACEHOLDER_USER: UserProfile = {
   bio: "Loading user profile...",
   homeTown: "SafarNama",
   role: "user",
+  language: "en",
+  currency: "INR",
 };
 
 const EMPTY_ARRAY: never[] = [];
@@ -215,6 +223,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const dbWishlist = useQuery(api.wishlist.getWishlist);
   const toggleWishlistMutation = useMutation(api.wishlist.toggleWishlist);
   const syncWishlistMutation = useMutation(api.wishlist.syncWishlist);
+
+  // Saved Itineraries Queries and Mutations
+  const dbSavedItineraries = useQuery(api.savedItineraries.getSavedItineraries);
+  const toggleSaveItineraryMutation = useMutation(api.savedItineraries.toggleSaveItinerary);
+  const syncSavedItinerariesMutation = useMutation(api.savedItineraries.syncSavedItineraries);
   const markNotificationsAsRead = async () => {
     try {
       await markNotificationsAsReadMutation();
@@ -258,6 +271,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           bio: viewer.bio || "Wanderer",
           homeTown: viewer.homeTown || "Unknown",
           role: (viewer.role || "user") as "user" | "admin",
+          language: viewer.language || "en",
+          currency: viewer.currency || "INR",
         }
       : isLoading
       ? PLACEHOLDER_USER
@@ -297,7 +312,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       id: j.id || j._id,
       title: j.title,
       duration: j.duration,
-      type: "Manual" as const,
+      type: "Community Route" as const,
       description: j.description,
       stops: j.stops,
       author: j.author,
@@ -323,6 +338,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const [localJourneys, setLocalJourneys] = useState<Journey[]>(mockJourneys);
   const [wishlist, setWishlist] = useState<string[]>([]);
+  const [savedItineraries, setSavedItineraries] = useState<string[]>([]);
 
   // 1. Load wishlist from localStorage on mount (for guest/anonymous users)
   useEffect(() => {
@@ -338,12 +354,32 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  // Load savedItineraries from localStorage on mount
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const local = localStorage.getItem("safarnama_saved_itineraries");
+      if (local) {
+        try {
+          setSavedItineraries(JSON.parse(local));
+        } catch (e) {
+          console.error("Failed to parse local saved itineraries:", e);
+        }
+      }
+    }
+  }, []);
+
   // 2. Synchronize React state with Convex database when authenticated
   useEffect(() => {
     if (isAuthenticated && dbWishlist !== undefined) {
       setWishlist(dbWishlist);
     }
   }, [isAuthenticated, dbWishlist]);
+
+  useEffect(() => {
+    if (isAuthenticated && dbSavedItineraries !== undefined) {
+      setSavedItineraries(dbSavedItineraries);
+    }
+  }, [isAuthenticated, dbSavedItineraries]);
 
   // 3. Clear or restore wishlist state upon logout
   useEffect(() => {
@@ -360,6 +396,23 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         }
       }
       setWishlist([]);
+    }
+  }, [isAuthenticated, isLoading]);
+
+  useEffect(() => {
+    if (!isAuthenticated && !isLoading) {
+      if (typeof window !== "undefined") {
+        const local = localStorage.getItem("safarnama_saved_itineraries");
+        if (local) {
+          try {
+            setSavedItineraries(JSON.parse(local));
+            return;
+          } catch (e) {
+            // ignore
+          }
+        }
+      }
+      setSavedItineraries([]);
     }
   }, [isAuthenticated, isLoading]);
 
@@ -391,6 +444,33 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   }, [isAuthenticated, syncWishlistMutation]);
 
+  useEffect(() => {
+    if (isAuthenticated) {
+      if (typeof window !== "undefined") {
+        const local = localStorage.getItem("safarnama_saved_itineraries");
+        if (local) {
+          try {
+            const ids = JSON.parse(local) as string[];
+            // Filter out mock / local guest journey IDs before syncing
+            const realIds = ids.filter(id => !id.startsWith("journey-") && !id.startsWith("trip-"));
+            if (realIds.length > 0) {
+              syncSavedItinerariesMutation({ ids: realIds })
+                .then(() => {
+                  localStorage.removeItem("safarnama_saved_itineraries");
+                })
+                .catch((err) => console.error("Failed to sync saved itineraries on login:", err));
+            } else {
+              localStorage.removeItem("safarnama_saved_itineraries");
+            }
+          } catch (e) {
+            console.error("Failed to parse/sync local saved itineraries:", e);
+            localStorage.removeItem("safarnama_saved_itineraries");
+          }
+        }
+      }
+    }
+  }, [isAuthenticated, syncSavedItinerariesMutation]);
+
   const mappedDbTripPlans = useMemo(() => {
     if (!dbTripPlans) return [];
     return dbTripPlans.map((tp: any) => {
@@ -415,7 +495,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         id: tp._id,
         title: tp.title || `Trip to ${tp.destination || "Unknown Destination"}`,
         duration: `${durationDays} ${durationDays === 1 ? "Day" : "Days"}`,
-        type: (tp.isAI ? "AI-Generated" : "Manual") as "AI-Generated" | "Manual",
+        type: "Custom Plan" as const,
         description: tp.description || tp.summary || `A travel plan for ${tp.destination}.`,
         stops: stops,
         author: currentUser ? (currentUser.name || "You") : "You",
@@ -574,6 +654,28 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
 
   const isWishlisted = (id: string) => wishlist.includes(id);
 
+  // Saved Itineraries Actions
+  const toggleSaveItinerary = async (id: string) => {
+    if (isAuthenticated) {
+      try {
+        await toggleSaveItineraryMutation({ id });
+      } catch (err) {
+        console.error("Failed to toggle saved itinerary on Convex:", err);
+      }
+    } else {
+      // Offline fallback for guest/anonymous users
+      setSavedItineraries((prev) => {
+        const next = prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id];
+        if (typeof window !== "undefined") {
+          localStorage.setItem("safarnama_saved_itineraries", JSON.stringify(next));
+        }
+        return next;
+      });
+    }
+  };
+
+  const isItinerarySaved = (id: string) => savedItineraries.includes(id);
+
   // Expense Tracker Actions
   const addExpense = async (
     tripId: string,
@@ -658,6 +760,16 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         completed: false,
       };
       setLocalJourneys((prev) => [newJourney, ...prev]);
+      
+      // Auto-bookmark the guest custom trip so it appears in saved list
+      setSavedItineraries((prev) => {
+        const next = [...prev, newJourney.id];
+        if (typeof window !== "undefined") {
+          localStorage.setItem("safarnama_saved_itineraries", JSON.stringify(next));
+        }
+        return next;
+      });
+
       return newJourney.id;
     }
   };
@@ -1029,14 +1141,26 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Add a Trip
-  const addTrip = (trip: Omit<Journey, "id" | "author" | "completed">) => {
+  const addTrip = (trip: Omit<Journey, "id" | "author" | "completed">): string => {
+    const tripId = `journey-${Math.random().toString().slice(2, 10)}`;
     const newTrip: Journey = {
       ...trip,
-      id: `journey-${Math.random().toString()}`,
+      id: tripId,
       author: currentUser?.name || "Guest",
       completed: false,
     };
+    if (newTrip.rawPlan) {
+      newTrip.rawPlan._id = tripId;
+    }
     setLocalJourneys((prev) => [newTrip, ...prev]);
+    setSavedItineraries((prev) => {
+      const next = prev.includes(tripId) ? prev : [...prev, tripId];
+      if (typeof window !== "undefined") {
+        localStorage.setItem("safarnama_saved_itineraries", JSON.stringify(next));
+      }
+      return next;
+    });
+    return tripId;
   };
 
   // Toggle Verification status for the logged in user
@@ -1111,6 +1235,11 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     await rejectJourneyMutation({ journeyId: journeyId as any, rejectionReason: reason });
   };
 
+  const updateUserPreferencesMutation = useMutation(api.users.updateUserPreferences);
+  const updateUserPreferences = async (prefs: { language?: string; currency?: string }) => {
+    await updateUserPreferencesMutation(prefs);
+  };
+
   return (
     <UserContext.Provider
       value={{
@@ -1127,6 +1256,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         wishlist,
         toggleWishlist,
         isWishlisted,
+        savedItineraries,
+        toggleSaveItinerary,
+        isItinerarySaved,
         expenses,
         addExpense,
         deleteExpense,
@@ -1155,6 +1287,7 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         submitJourney,
         approveJourney,
         rejectJourney,
+        updateUserPreferences,
       }}
     >
       {children}

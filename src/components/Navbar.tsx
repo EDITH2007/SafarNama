@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Menu, X, Compass, User, ShieldCheck, Bell } from "lucide-react";
+import { Menu, X, Compass, User, ShieldCheck, Bell, Sparkles } from "lucide-react";
 import { useUser } from "./UserContext";
 import ExplorerBadge from "./badges/ExplorerBadge";
 
@@ -127,8 +127,8 @@ export default function Navbar() {
     { name: "Leader Board", sectionId: "leaderboard", pagePath: "/leaderboard" },
   ];
 
-  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, sectionId: string) => {
-    if (isHome) {
+  const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, sectionId?: string) => {
+    if (isHome && sectionId) {
       e.preventDefault();
       const element = document.getElementById(sectionId);
       if (element) {
@@ -160,6 +160,19 @@ export default function Navbar() {
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-6">
             {navItems.map((item) => {
+              if (item.directLink) {
+                return (
+                  <Link
+                    key={item.name}
+                    href={item.pagePath}
+                    className="font-sans text-xs font-bold tracking-widest text-earth-terracotta hover:text-earth-forest transition-colors duration-200 uppercase cursor-pointer flex items-center space-x-1"
+                  >
+                    <Sparkles className="h-3.5 w-3.5" />
+                    <span>{item.name}</span>
+                  </Link>
+                );
+              }
+
               const targetHref = isHome ? `#${item.sectionId}` : `/#${item.sectionId}`;
               const isActive = !isHome && pathname === item.pagePath;
 

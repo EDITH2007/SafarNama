@@ -24,6 +24,7 @@ export const saveTripPlan = mutation({
     startDate: v.optional(v.string()),
     endDate: v.optional(v.string()),
     isAI: v.optional(v.boolean()),
+    isCustom: v.optional(v.boolean()),
     status: v.optional(v.string()),
     itinerary: v.optional(v.array(
       v.object({
@@ -85,12 +86,19 @@ export const saveTripPlan = mutation({
       startDate: args.startDate,
       endDate: args.endDate,
       isAI: args.isAI ?? true,
+      isCustom: args.isCustom ?? true,
       status: args.status ?? "planning",
       createdAt: Date.now(),
       itinerary: sanitizedItinerary,
       destination: args.destination,
       summary: args.summary,
       travelers: args.travelers ?? 1,
+    });
+
+    await ctx.db.insert("savedItineraries", {
+      userId,
+      tripPlanId: newTripId,
+      createdAt: Date.now(),
     });
 
     return newTripId;

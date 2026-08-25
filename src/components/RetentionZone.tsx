@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Star, BookOpen, MessageSquare, Route, ChevronRight, ShieldCheck, CheckCircle } from "lucide-react";
+import { Star, BookOpen, MessageSquare, Route, ChevronRight, ShieldCheck, CheckCircle, Bookmark } from "lucide-react";
 import { useUser } from "./UserContext";
 import Leaderboard from "./Leaderboard";
 import Link from "next/link";
@@ -15,7 +15,7 @@ interface RetentionZoneProps {
 export default function RetentionZone({ onViewPlan, isLandingPage = false }: RetentionZoneProps) {
   const [activeStoryTab, setActiveStoryTab] = useState<"Journeys" | "Reviews" | "Blogs">("Journeys");
   const [selectedReadBlog, setSelectedReadBlog] = useState<any | null>(null);
-  const { journeys, reviews, blogs } = useUser();
+  const { journeys, reviews, blogs, toggleSaveItinerary, isItinerarySaved } = useUser();
 
   // Filter out flagged reviews and blogs from public view
   const visibleReviews = reviews.filter((r) => !r.flagged);
@@ -64,12 +64,14 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
                 )}
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
-                    <span className={`px-2.5 py-1 text-[10px] font-sans font-bold uppercase tracking-wider ${
-                      j.type === "AI-Generated" 
-                        ? "bg-earth-saffron/15 text-earth-clay" 
-                        : "bg-earth-terracotta/15 text-earth-terracotta"
+                    <span className={`px-2.5 py-1 text-[9px] font-sans font-bold uppercase tracking-wider ${
+                      j.type === "Custom Plan" || j.type === "AI-Generated"
+                        ? "bg-earth-terracotta text-white border border-earth-terracotta shadow-sm"
+                        : j.type === "Official Guide"
+                        ? "bg-earth-forest text-earth-saffron border border-earth-forest shadow-sm"
+                        : "bg-slate-800 text-slate-100 border border-slate-700 shadow-sm"
                     }`}>
-                      {j.type}
+                      {j.type === "AI-Generated" ? "Custom Plan" : j.type}
                     </span>
                     <span className="font-sans text-xs text-earth-clay/70 font-medium">
                       {j.duration}
@@ -98,13 +100,28 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
 
                 <div className="pt-4 mt-4 border-t border-earth-clay/5 flex items-center justify-between text-xs text-earth-clay">
                   <span>Curated by {j.author}</span>
-                  <button 
-                    onClick={() => onViewPlan && onViewPlan(j.id)}
-                    className="text-earth-terracotta font-semibold hover:underline flex items-center space-x-0.5 cursor-pointer bg-transparent border-0"
-                  >
-                    <span>View Plan</span>
-                    <span>→</span>
-                  </button>
+                  <div className="flex items-center space-x-4">
+                    <button
+                      onClick={() => toggleSaveItinerary(j.id)}
+                      className={`flex items-center space-x-1 font-semibold transition-colors cursor-pointer bg-transparent border-0 ${
+                        isItinerarySaved(j.id)
+                          ? "text-earth-terracotta hover:text-earth-charcoal"
+                          : "text-earth-clay hover:text-earth-terracotta"
+                      }`}
+                      title={isItinerarySaved(j.id) ? "Unsave Route" : "Save Route"}
+                    >
+                      <Bookmark className={`h-3.5 w-3.5 ${isItinerarySaved(j.id) ? "fill-current" : ""}`} />
+                      <span>{isItinerarySaved(j.id) ? "Saved" : "Save"}</span>
+                    </button>
+
+                    <button 
+                      onClick={() => onViewPlan && onViewPlan(j.id)}
+                      className="text-earth-terracotta font-semibold hover:underline flex items-center space-x-0.5 cursor-pointer bg-transparent border-0"
+                    >
+                      <span>View Plan</span>
+                      <span>→</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}

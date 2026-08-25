@@ -86,6 +86,15 @@ export const viewer = query({
     const isAdminEmail = user.email?.trim().toLowerCase() === "230107anu@gmail.com";
     const finalRole = isAdminEmail ? "admin" : (user.role || "user");
 
+    // Fetch preferences from userPreferences table if present
+    const pref = await ctx.db
+      .query("userPreferences")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    const userLang = user.language || pref?.language || "en";
+    const userCurr = user.currency || pref?.currency || "INR";
+
     return {
       ...user,
       name: user.name || user.email?.split("@")[0] || "Traveler",
@@ -93,7 +102,53 @@ export const viewer = query({
       totalPoints: user.totalPoints ?? 0,
       isVerified: user.isVerified ?? false,
       role: finalRole,
+      language: userLang,
+      currency: userCurr,
     };
+  },
+});
+
+// Update user preferences (Language and Currency)
+export const updateUserPreferences = mutation({
+  args: {
+    language: v.optional(v.string()),
+    currency: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Not authenticated");
+    }
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    const patch: { language?: string; currency?: string } = {};
+    if (args.language !== undefined) patch.language = args.language;
+    if (args.currency !== undefined) patch.currency = args.currency;
+
+    await ctx.db.patch(userId, patch);
+
+    const pref = await ctx.db
+      .query("userPreferences")
+      .withIndex("by_user", (q) => q.eq("userId", userId))
+      .first();
+
+    const lang = args.language ?? user.language ?? pref?.language ?? "en";
+    const curr = args.currency ?? user.currency ?? pref?.currency ?? "INR";
+
+    if (pref) {
+      await ctx.db.patch(pref._id, { language: lang, currency: curr });
+    } else {
+      await ctx.db.insert("userPreferences", {
+        userId,
+        language: lang,
+        currency: curr,
+      });
+    }
+
+    return { success: true, language: lang, currency: curr };
   },
 });
 
