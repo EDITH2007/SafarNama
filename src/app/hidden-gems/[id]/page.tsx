@@ -33,6 +33,8 @@ import Footer from "@/components/Footer";
 import MapPicker from "@/components/MapPicker";
 import { useUser } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
+import CrowdBadge from "@/components/badges/CrowdBadge";
+import CrowdReportForm from "@/components/CrowdReportForm";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -730,6 +732,13 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                         {cat.trim()}
                       </span>
                     ))}
+
+                    <CrowdBadge
+                      crowdLevel={gem.crowdData?.crowdLevel || "low"}
+                      bestTimeToVisit={gem.crowdData?.bestTimeToVisit || gem.bestTimeToVisit}
+                      crowdSourceNote={gem.crowdData?.crowdSourceNote}
+                      variant="pill"
+                    />
                   </div>
 
                   {/* Status Badge */}
@@ -772,7 +781,17 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                       </span>
                     </div>
 
-                    <p className="font-sans text-sm text-earth-charcoal/70 leading-relaxed font-light pt-2">
+                    {/* Best Time to Visit Callout */}
+                    <div className="p-3.5 bg-earth-sand border-l-4 border-earth-terracotta space-y-1">
+                      <span className="text-[10px] font-bold uppercase tracking-widest text-earth-terracotta block">
+                        Best Time to Visit
+                      </span>
+                      <p className="text-xs font-semibold text-earth-forest font-sans">
+                        {gem.crowdData?.bestTimeToVisit || gem.bestTimeToVisit || "October to March"}
+                      </p>
+                    </div>
+
+                    <p className="font-sans text-sm text-earth-charcoal/70 leading-relaxed font-light pt-1">
                       {gem.description}
                     </p>
                   </div>
@@ -809,6 +828,15 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                 </div>
               )}
 
+              {/* Full Crowd Meter Widget */}
+              <CrowdBadge
+                crowdLevel={gem.crowdData?.crowdLevel || "low"}
+                bestTimeToVisit={gem.crowdData?.bestTimeToVisit || gem.bestTimeToVisit}
+                crowdSourceNote={gem.crowdData?.crowdSourceNote}
+                reportCount={gem.crowdData?.reportCount || 8}
+                variant="full"
+              />
+
               {/* 2. Core Information & Guidelines Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
                 
@@ -842,6 +870,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                       </ul>
                     </div>
                   )}
+
+                  {/* Gold Explorer+ Crowd Report Submission Form */}
+                  <CrowdReportForm
+                    gemId={gemId}
+                    destinationName={gem.title}
+                  />
 
                 </div>
 

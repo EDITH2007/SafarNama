@@ -4,7 +4,7 @@ import React, { useEffect, useMemo } from "react";
 import { MapContainer, TileLayer, Marker, Popup, useMap } from "react-leaflet";
 import L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { Destination } from "@/app/data/mockData";
+import { Destination, getCrowdData } from "@/app/data/mockData";
 
 interface DestinationMapProps {
   destinations: Destination[];
@@ -124,9 +124,22 @@ export default function DestinationMap({
                     />
                   )}
                   <div className="space-y-1">
-                    <h4 className="font-serif font-bold text-sm text-earth-forest leading-tight">
-                      {dest.title}
-                    </h4>
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-serif font-bold text-sm text-earth-forest leading-tight">
+                        {dest.title}
+                      </h4>
+                      <span className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 border ${
+                        getCrowdData(dest).crowdLevel === "low"
+                          ? "bg-emerald-50 text-emerald-800 border-emerald-300"
+                          : getCrowdData(dest).crowdLevel === "moderate"
+                          ? "bg-amber-50 text-amber-900 border-amber-300"
+                          : getCrowdData(dest).crowdLevel === "high"
+                          ? "bg-orange-50 text-orange-900 border-orange-300"
+                          : "bg-rose-50 text-rose-950 border-rose-300"
+                      }`}>
+                        {getCrowdData(dest).crowdLevel}
+                      </span>
+                    </div>
                     <p className="text-[11px] text-earth-clay font-medium uppercase tracking-wider">
                       {dest.location}
                     </p>

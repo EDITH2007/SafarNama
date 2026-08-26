@@ -34,6 +34,13 @@ export async function ensureDestinationsSeeded(db: any) {
           "https://images.unsplash.com/photo-1597074866923-dc0589150358?auto=format&fit=crop&w=800&q=80"
         ],
         createdAt: Date.now(),
+        crowdData: {
+          crowdLevel: "moderate",
+          bestTimeToVisit: "Early morning (6:30–9:00 AM) or Nov–Feb",
+          crowdSourceNote: "Peak season sees 4x visitor volume vs shoulder months; early morning offers serene tea garden views.",
+          reportCount: 14,
+          updatedAt: Date.now(),
+        },
       },
       {
         title: "Ruins of Hampi",
@@ -56,6 +63,13 @@ export async function ensureDestinationsSeeded(db: any) {
           "https://images.unsplash.com/photo-1620311496331-50e58fa2f56f?auto=format&fit=crop&w=800&q=80"
         ],
         createdAt: Date.now(),
+        crowdData: {
+          crowdLevel: "high",
+          bestTimeToVisit: "Sunrise (5:30–7:30 AM) or Oct–Jan",
+          crowdSourceNote: "Vittala Temple complex gets heavily congested by noon; visit Anegundi side for quieter ruins.",
+          reportCount: 28,
+          updatedAt: Date.now(),
+        },
       },
       {
         title: "Radhanagar Beach",
@@ -78,6 +92,13 @@ export async function ensureDestinationsSeeded(db: any) {
           "https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=800&q=80"
         ],
         createdAt: Date.now(),
+        crowdData: {
+          crowdLevel: "overcrowded",
+          bestTimeToVisit: "Early morning (7:00–9:30 AM) or shoulder season",
+          crowdSourceNote: "Peak afternoon cruise ship arrivals cause 10x visitor volume; check out Kalapathar Beach for tranquility.",
+          reportCount: 42,
+          updatedAt: Date.now(),
+        },
       },
       {
         title: "Kaziranga Forest",
@@ -100,6 +121,13 @@ export async function ensureDestinationsSeeded(db: any) {
           "https://images.unsplash.com/photo-1588714013470-3d77ad85e3c7?auto=format&fit=crop&w=800&q=80"
         ],
         createdAt: Date.now(),
+        crowdData: {
+          crowdLevel: "low",
+          bestTimeToVisit: "First slot morning safari (6:00 AM), Nov–Apr",
+          crowdSourceNote: "Daily safari entry caps keep crowds low and wildlife experiences intimate.",
+          reportCount: 19,
+          updatedAt: Date.now(),
+        },
       },
       {
         title: "Gokarna Cliffs",
@@ -122,6 +150,42 @@ export async function ensureDestinationsSeeded(db: any) {
           "https://images.unsplash.com/photo-1590523277543-a94d2e4eb00b?auto=format&fit=crop&w=800&q=80"
         ],
         createdAt: Date.now(),
+        crowdData: {
+          crowdLevel: "low",
+          bestTimeToVisit: "Late afternoon for cliff trek, Oct–Mar",
+          crowdSourceNote: "Far less commercialized than North Goa; secluded coves maintain a calm vibe year-round.",
+          reportCount: 22,
+          updatedAt: Date.now(),
+        },
+      },
+      {
+        title: "Gateway of India & Marine Drive",
+        description: "Historic waterfront monument and iconic coastal promenade in South Mumbai facing the Arabian Sea.",
+        location: "Mumbai, Maharashtra",
+        state: "Maharashtra",
+        geo: { lat: 18.9220, lng: 72.8347 },
+        photos: ["https://images.unsplash.com/photo-1570168007204-dfb528c6958f?auto=format&fit=crop&w=800&q=80"],
+        category: "Heritage",
+        bestTimeToVisit: "November to February",
+        howToReach: "Fly to Chhatrapati Shivaji Maharaj International Airport (BOM), take a cab or local train to Churchgate/CST station, then a short taxi ride.",
+        nearbyAttractions: ["Elephanta Caves Ferry", "Taj Mahal Palace", "Colaba Causeway", "Marine Drive Promenade"],
+        tips: [
+          "Visit early in the morning before 8 AM for peaceful ocean views and sunrise photo opportunities.",
+          "Take the morning boat ferry from Gateway to Elephanta Island for UNESCO rock-cut cave temples.",
+          "Beware of crowded tourist traps and unauthorized photo vendors around the plaza."
+        ],
+        photoGallery: [
+          "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?auto=format&fit=crop&w=800&q=80",
+          "https://images.unsplash.com/photo-1595658658421-a9ac457190ae?auto=format&fit=crop&w=800&q=80"
+        ],
+        createdAt: Date.now(),
+        crowdData: {
+          crowdLevel: "overcrowded",
+          bestTimeToVisit: "Sunrise (6:00–7:30 AM) or late night weekdays",
+          crowdSourceNote: "Peak weekend footfalls at Gateway & Promenade cause extreme congestion.",
+          reportCount: 38,
+          updatedAt: Date.now(),
+        },
       }
     ];
 
@@ -132,6 +196,94 @@ export async function ensureDestinationsSeeded(db: any) {
       });
     }
   }
+}
+
+// Helper to guarantee valid crowdData for any destination
+export function resolveCrowdData(dest: any) {
+  if (dest.crowdData && dest.crowdData.crowdLevel) {
+    return dest.crowdData;
+  }
+
+  const title = (dest.title || "").toLowerCase();
+  const location = (dest.location || "").toLowerCase();
+
+  if (title.includes("amritsar") || location.includes("amritsar")) {
+    return {
+      crowdLevel: "high",
+      bestTimeToVisit: "Early morning (4:00–6:00 AM) or Oct–Mar",
+      crowdSourceNote: "Golden Temple complex experiences heavy footfall from mid-morning to evening.",
+      reportCount: 35,
+      updatedAt: Date.now(),
+    };
+  }
+
+  if (title.includes("mumbai") || location.includes("mumbai")) {
+    return {
+      crowdLevel: "high",
+      bestTimeToVisit: "Sunrise or late night, Oct–Mar",
+      crowdSourceNote: "Gateway of India & Marine Drive experience high footfall during peak weekend hours.",
+      reportCount: 30,
+      updatedAt: Date.now(),
+    };
+  }
+
+  if (title.includes("radhanagar") || location.includes("havelock")) {
+    return {
+      crowdLevel: "overcrowded",
+      bestTimeToVisit: "Early morning (7:00–9:30 AM) or shoulder season",
+      crowdSourceNote: "Peak afternoon cruise ship arrivals cause 10x visitor volume.",
+      reportCount: 42,
+      updatedAt: Date.now(),
+    };
+  }
+
+  if (title.includes("hampi") || location.includes("hampi")) {
+    return {
+      crowdLevel: "high",
+      bestTimeToVisit: "Sunrise (5:30–7:30 AM) or Oct–Jan",
+      crowdSourceNote: "Vittala Temple complex gets heavily congested by noon.",
+      reportCount: 28,
+      updatedAt: Date.now(),
+    };
+  }
+
+  if (title.includes("munnar") || location.includes("munnar")) {
+    return {
+      crowdLevel: "moderate",
+      bestTimeToVisit: "Early morning (6:30–9:00 AM) or Nov–Feb",
+      crowdSourceNote: "Peak season sees 4x visitor volume vs shoulder months.",
+      reportCount: 14,
+      updatedAt: Date.now(),
+    };
+  }
+
+  if (title.includes("kaziranga") || location.includes("kaziranga")) {
+    return {
+      crowdLevel: "low",
+      bestTimeToVisit: "First slot morning safari (6:00 AM), Nov–Apr",
+      crowdSourceNote: "Daily safari entry caps keep crowds low and wildlife experiences intimate.",
+      reportCount: 19,
+      updatedAt: Date.now(),
+    };
+  }
+
+  if (title.includes("gokarna") || location.includes("gokarna")) {
+    return {
+      crowdLevel: "low",
+      bestTimeToVisit: "Late afternoon for cliff trek, Oct–Mar",
+      crowdSourceNote: "Far less commercialized than North Goa; secluded coves maintain a calm vibe.",
+      reportCount: 22,
+      updatedAt: Date.now(),
+    };
+  }
+
+  return {
+    crowdLevel: "moderate",
+    bestTimeToVisit: dest.bestTimeToVisit || "October to March",
+    crowdSourceNote: "Community & seasonal baseline crowd rating.",
+    reportCount: 10,
+    updatedAt: Date.now(),
+  };
 }
 
 // Query all official destinations
@@ -151,11 +303,14 @@ export const getDestinations = query({
         ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1))
         : 4.8; // Default rating fallback
 
+      const crowdData = resolveCrowdData(dest);
+
       results.push({
         id: dest._id,
         ...dest,
         addedBy: creator?.name || "Admin",
         rating,
+        crowdData,
       });
     }
     return results;
@@ -180,12 +335,15 @@ export const getDestinationById = query({
       ? Number((reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length).toFixed(1))
       : 4.8; // Default rating fallback
 
+    const crowdData = resolveCrowdData(dest);
+
     return {
       id: dest._id,
       ...dest,
       addedBy: creator?.name || "Admin",
       rating,
       reviewCount: reviews.length,
+      crowdData,
     };
   },
 });
@@ -208,6 +366,15 @@ export const addDestination = mutation({
     nearbyAttractions: v.optional(v.array(v.string())),
     tips: v.optional(v.array(v.string())),
     photoGallery: v.optional(v.array(v.string())),
+    crowdData: v.optional(
+      v.object({
+        crowdLevel: v.string(),
+        bestTimeToVisit: v.optional(v.string()),
+        crowdSourceNote: v.optional(v.string()),
+        reportCount: v.optional(v.number()),
+        updatedAt: v.optional(v.number()),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     const { userId } = await requireAdmin(ctx);
@@ -240,6 +407,15 @@ export const editDestination = mutation({
     nearbyAttractions: v.optional(v.array(v.string())),
     tips: v.optional(v.array(v.string())),
     photoGallery: v.optional(v.array(v.string())),
+    crowdData: v.optional(
+      v.object({
+        crowdLevel: v.string(),
+        bestTimeToVisit: v.optional(v.string()),
+        crowdSourceNote: v.optional(v.string()),
+        reportCount: v.optional(v.number()),
+        updatedAt: v.optional(v.number()),
+      })
+    ),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
@@ -271,5 +447,100 @@ export const deleteDestination = mutation({
     return { success: true };
   },
 });
+
+// Submit a crowd report (Gold Explorer+ users)
+export const submitCrowdReport = mutation({
+  args: {
+    destinationId: v.optional(v.id("destinations")),
+    gemId: v.optional(v.id("hiddenGems")),
+    crowdLevel: v.string(), // "low" | "moderate" | "high" | "overcrowded"
+    note: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("Unauthorized: You must be logged in to submit a crowd report.");
+    }
+
+    const user = await ctx.db.get(userId);
+    if (!user) {
+      throw new Error("User record not found.");
+    }
+
+    // Check Gold Explorer+ status (Gold/Platinum tier OR points >= 2500)
+    const points = user.totalPoints ?? 0;
+    const tier = (user.tier || "").toLowerCase();
+    const isGoldOrHigher = tier === "gold" || tier === "platinum" || points >= 2500;
+
+    if (!isGoldOrHigher) {
+      throw new Error("Crowd reports are reserved for Gold Explorer+ status (2,500+ PTS or Gold Tier). Earn points by sharing hidden gems and reviews!");
+    }
+
+    if (!args.destinationId && !args.gemId) {
+      throw new Error("Must specify a destinationId or gemId.");
+    }
+
+    // Insert crowd report
+    await ctx.db.insert("crowdReports", {
+      destinationId: args.destinationId,
+      gemId: args.gemId,
+      userId: userId,
+      crowdLevel: args.crowdLevel,
+      note: args.note,
+      createdAt: Date.now(),
+    });
+
+    // Update target target entity (destination or gem)
+    if (args.destinationId) {
+      const dest = await ctx.db.get(args.destinationId);
+      if (dest) {
+        const existingCount = dest.crowdData?.reportCount || 10;
+        const newCount = existingCount + 1;
+        
+        await ctx.db.patch(args.destinationId, {
+          crowdData: {
+            crowdLevel: args.crowdLevel,
+            bestTimeToVisit: dest.crowdData?.bestTimeToVisit || dest.bestTimeToVisit || "Early morning",
+            crowdSourceNote: args.note ? `Recent community report: "${args.note}"` : dest.crowdData?.crowdSourceNote || "Updated based on Gold Explorer community reports.",
+            reportCount: newCount,
+            updatedAt: Date.now(),
+          },
+        });
+      }
+    } else if (args.gemId) {
+      const gem = await ctx.db.get(args.gemId);
+      if (gem) {
+        const existingCount = gem.crowdData?.reportCount || 5;
+        const newCount = existingCount + 1;
+
+        await ctx.db.patch(args.gemId, {
+          crowdData: {
+            crowdLevel: args.crowdLevel,
+            bestTimeToVisit: gem.crowdData?.bestTimeToVisit || gem.bestTimeToVisit || "Early morning",
+            crowdSourceNote: args.note ? `Recent community report: "${args.note}"` : gem.crowdData?.crowdSourceNote || "Updated based on Gold Explorer community reports.",
+            reportCount: newCount,
+            updatedAt: Date.now(),
+          },
+        });
+      }
+    }
+
+    // Award +15 points to user for contributing verified crowd data
+    const pointsAwarded = 15;
+    const newTotalPoints = (user.totalPoints ?? 0) + pointsAwarded;
+    await ctx.db.patch(userId, { totalPoints: newTotalPoints });
+
+    await ctx.db.insert("pointsLedger", {
+      userId,
+      actionType: "crowd_report",
+      pointsEarned: pointsAwarded,
+      timestamp: Date.now(),
+      referenceId: args.destinationId || args.gemId,
+    });
+
+    return { success: true, pointsAwarded };
+  },
+});
+
 
 

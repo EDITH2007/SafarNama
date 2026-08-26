@@ -8,12 +8,14 @@ import { useUser } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
 import Link from "next/link";
 import ExplorerBadge from "@/components/badges/ExplorerBadge";
+import CrowdBadge from "@/components/badges/CrowdBadge";
 
 import CategoryFilter from "@/components/CategoryFilter";
 
 export default function HiddenGemsPage() {
   const { hiddenGems, toggleWishlist, isWishlisted } = useUser();
   const [activeCategory, setActiveCategory] = useState("All");
+  const [activeCrowdLevel, setActiveCrowdLevel] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
 
   // Only show approved/verified ones in the public feed
@@ -23,12 +25,18 @@ export default function HiddenGemsPage() {
     const gemCats = gem.category.split(",").map((c) => c.trim());
     const matchesCategory =
       activeCategory === "All" || gemCats.includes(activeCategory);
+    
+    const matchesCrowd =
+      activeCrowdLevel === "All" ||
+      (gem.crowdData?.crowdLevel || "low") === activeCrowdLevel;
+
     const matchesSearch =
       !searchQuery ||
       gem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gem.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gem.category.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    
+    return matchesCategory && matchesCrowd && matchesSearch;
   });
 
   const tierPriority = { Platinum: 4, Gold: 3, Silver: 2, Bronze: 1 };
@@ -70,7 +78,7 @@ export default function HiddenGemsPage() {
               Hidden Gems of the Subcontinent
             </h1>
             <p className="font-sans text-sm text-earth-sand/75 leading-relaxed font-light">
-              Secret spots submitted by real travelers and verified by local experts. Discover the trails untouched by commercial tourism.
+              Secret spots submitted by real travelers and verified by local experts — featuring crowd metrics for pristine explorations.
             </p>
           </div>
 
@@ -82,6 +90,8 @@ export default function HiddenGemsPage() {
                 categories={CATEGORIES}
                 activeCategory={activeCategory}
                 onSelectCategory={setActiveCategory}
+                activeCrowdLevel={activeCrowdLevel}
+                onSelectCrowdLevel={setActiveCrowdLevel}
                 variant="dark"
               />
             </div>
@@ -116,11 +126,23 @@ export default function HiddenGemsPage() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                       />
-                      {/* Points Tag */}
-                      <span className="absolute top-4 left-4 bg-earth-terracotta text-white px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider flex items-center space-x-1 shadow-md z-10">
-                        <Gift className="h-3 w-3 shrink-0" />
-                        <span>+{gem.pointsAwarded || 100} pts awarded</span>
-                      </span>
+                      
+                      {/* Top Badges overlay */}
+                      <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+                        {/* Points Tag */}
+                        <span className="bg-earth-terracotta text-white px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider flex items-center space-x-1 shadow-md">
+                          <Gift className="h-3 w-3 shrink-0" />
+                          <span>+{gem.pointsAwarded || 100} pts</span>
+                        </span>
+
+                        {/* Crowd Meter Badge */}
+                        <CrowdBadge
+                          crowdLevel={gem.crowdData?.crowdLevel || "low"}
+                          bestTimeToVisit={gem.crowdData?.bestTimeToVisit || gem.bestTimeToVisit}
+                          crowdSourceNote={gem.crowdData?.crowdSourceNote}
+                          variant="pill"
+                        />
+                      </div>
 
                       {/* Verified Safar Gem Badge */}
                       {(gem.status === "verified" || gem.status === "approved") && (

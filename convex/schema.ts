@@ -52,6 +52,15 @@ export default defineSchema({
     nearbyAttractions: v.optional(v.array(v.string())),
     tips: v.optional(v.array(v.string())),
     photoGallery: v.optional(v.array(v.string())),
+    crowdData: v.optional(
+      v.object({
+        crowdLevel: v.string(), // "low" | "moderate" | "high" | "overcrowded"
+        bestTimeToVisit: v.optional(v.string()),
+        crowdSourceNote: v.optional(v.string()),
+        reportCount: v.optional(v.number()),
+        updatedAt: v.optional(v.number()),
+      })
+    ),
   })
     .index("by_category", ["category"])
     .index("by_state", ["state"]),
@@ -81,10 +90,32 @@ export default defineSchema({
     nearbyAttractions: v.optional(v.array(v.string())),
     tips: v.optional(v.array(v.string())),
     photoGallery: v.optional(v.array(v.string())),
+    crowdData: v.optional(
+      v.object({
+        crowdLevel: v.string(), // "low" | "moderate" | "high" | "overcrowded"
+        bestTimeToVisit: v.optional(v.string()),
+        crowdSourceNote: v.optional(v.string()),
+        reportCount: v.optional(v.number()),
+        updatedAt: v.optional(v.number()),
+      })
+    ),
   })
     .index("by_status", ["status"])
     .index("by_submittedBy", ["submittedBy"])
     .index("by_category", ["category"]),
+
+  // Community-submitted crowd reports
+  crowdReports: defineTable({
+    destinationId: v.optional(v.id("destinations")),
+    gemId: v.optional(v.id("hiddenGems")),
+    userId: v.id("users"),
+    crowdLevel: v.string(), // "low" | "moderate" | "high" | "overcrowded"
+    note: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_destination", ["destinationId"])
+    .index("by_gem", ["gemId"])
+    .index("by_user", ["userId"]),
 
   // Reviews for both destinations and hidden gems
   reviews: defineTable({

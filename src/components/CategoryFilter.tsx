@@ -7,6 +7,8 @@ interface CategoryFilterProps {
   categories: string[];
   activeCategory: string;
   onSelectCategory: (category: string) => void;
+  activeCrowdLevel?: string;
+  onSelectCrowdLevel?: (crowdLevel: string) => void;
   variant?: "light" | "dark";
   defaultVisibleCount?: number;
 }
@@ -15,11 +17,21 @@ export default function CategoryFilter({
   categories,
   activeCategory,
   onSelectCategory,
+  activeCrowdLevel = "All",
+  onSelectCrowdLevel,
   variant = "light",
   defaultVisibleCount = 6,
 }: CategoryFilterProps) {
   const [isExpanded, setIsExpanded] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const CROWD_OPTIONS = [
+    { id: "All", label: "All Crowds" },
+    { id: "low", label: "🟢 Low Crowd" },
+    { id: "moderate", label: "🟡 Moderate" },
+    { id: "high", label: "🟠 High Crowd" },
+    { id: "overcrowded", label: "🔴 Overcrowded" },
+  ];
 
   // Filter out any duplicates while preserving order
   const uniqueCategories = useMemo(() => Array.from(new Set(categories)), [categories]);
@@ -70,7 +82,7 @@ export default function CategoryFilter({
     : "bg-earth-sand border-earth-clay/25 text-earth-terracotta hover:bg-earth-clay/10 hover:border-earth-terracotta";
 
   return (
-    <div className="w-full space-y-2 relative" ref={containerRef}>
+    <div className="w-full space-y-3 relative" ref={containerRef}>
       {/* Main Single Horizontal Row Bar */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar scroll-smooth">
         <div className="flex items-center gap-2 shrink-0">
@@ -113,6 +125,34 @@ export default function CategoryFilter({
           </button>
         )}
       </div>
+
+      {/* Optional Crowd Filter Row */}
+      {onSelectCrowdLevel && (
+        <div className="flex items-center gap-2 pt-1 border-t border-earth-clay/10 overflow-x-auto no-scrollbar">
+          <span className="font-sans text-[10px] font-bold uppercase tracking-widest text-earth-clay/70 shrink-0 mr-1">
+            Crowd Filter:
+          </span>
+          {CROWD_OPTIONS.map((opt) => {
+            const isActive = activeCrowdLevel === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                onClick={() => onSelectCrowdLevel(opt.id)}
+                className={`px-3 py-1 font-sans text-[11px] font-bold uppercase tracking-wider border transition-all duration-150 cursor-pointer whitespace-nowrap ${
+                  isActive
+                    ? "bg-earth-terracotta border-earth-terracotta text-white shadow-xs"
+                    : isDark
+                    ? "bg-white/5 border-white/10 text-earth-sand/70 hover:border-white/30"
+                    : "bg-white border-earth-clay/15 text-earth-charcoal/70 hover:border-earth-terracotta"
+                }`}
+              >
+                {opt.label}
+              </button>
+            );
+          })}
+        </div>
+      )}
 
       {/* Expanded categories drawer / panel */}
       {isExpanded && hiddenCategories.length > 0 && (

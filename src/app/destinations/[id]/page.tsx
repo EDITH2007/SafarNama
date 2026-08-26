@@ -28,6 +28,10 @@ import Link from "next/link";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { useUser } from "@/components/UserContext";
+import CrowdBadge from "@/components/badges/CrowdBadge";
+import TryThisInstead from "@/components/TryThisInstead";
+import CrowdReportForm from "@/components/CrowdReportForm";
+import { getCrowdData } from "@/app/data/mockData";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -38,7 +42,7 @@ export default function DestinationDetailPage({ params }: PageProps) {
   const destinationId = rawId as Id<"destinations">;
   const router = useRouter();
 
-  const { currentUser, isWishlisted, toggleWishlist } = useUser();
+  const { currentUser, isWishlisted, toggleWishlist, hiddenGems } = useUser();
   const [isPending, startTransition] = useTransition();
 
   // Queries
@@ -100,6 +104,10 @@ export default function DestinationDetailPage({ params }: PageProps) {
 
   // Combine main photo and gallery photos
   const allPhotos = [...(destination.photos || []), ...(destination.photoGallery || [])].filter(Boolean);
+
+  const crowdData = getCrowdData(destination);
+  const crowdLevel = crowdData.crowdLevel;
+  const isOvercrowded = crowdLevel === "overcrowded" || crowdLevel === "high";
 
   const handleReviewSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -208,9 +216,19 @@ export default function DestinationDetailPage({ params }: PageProps) {
                 </div>
               )}
               
-              <span className="absolute top-4 left-4 bg-earth-sand text-earth-forest px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border border-earth-clay/15 z-10">
-                {destination.category}
-              </span>
+              <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+                <span className="bg-earth-sand text-earth-forest px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border border-earth-clay/15">
+                  {destination.category}
+                </span>
+
+                {/* Crowd Meter Pill */}
+                <CrowdBadge
+                  crowdLevel={crowdLevel}
+                  bestTimeToVisit={destination.crowdData?.bestTimeToVisit || destination.bestTimeToVisit}
+                  crowdSourceNote={destination.crowdData?.crowdSourceNote}
+                  variant="pill"
+                />
+              </div>
             </div>
 
             {/* Quick Details Panel */}
@@ -225,7 +243,7 @@ export default function DestinationDetailPage({ params }: PageProps) {
                   {destination.title}
                 </h1>
 
-                <div className="flex items-center space-x-3 pt-2">
+                <div className="flex items-center space-x-3 pt-1">
                   <div className="flex items-center text-earth-saffron bg-earth-saffron/5 px-2.5 py-1 border border-earth-saffron/20 font-bold text-sm">
                     <Star className="h-4 w-4 fill-current mr-1 shrink-0" />
                     <span>{destination.rating}</span>
@@ -235,7 +253,17 @@ export default function DestinationDetailPage({ params }: PageProps) {
                   </span>
                 </div>
 
-                <p className="font-sans text-sm text-earth-charcoal/70 leading-relaxed font-light pt-2">
+                {/* Best Time to Visit Callout Banner */}
+                <div className="p-3.5 bg-earth-sand border-l-4 border-earth-terracotta space-y-1">
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-earth-terracotta block">
+                    Best Time to Visit
+                  </span>
+                  <p className="text-xs font-semibold text-earth-forest font-sans">
+                    {destination.crowdData?.bestTimeToVisit || destination.bestTimeToVisit || "October to March (Dry season)"}
+                  </p>
+                </div>
+
+                <p className="font-sans text-sm text-earth-charcoal/70 leading-relaxed font-light pt-1">
                   {destination.description}
                 </p>
               </div>
@@ -264,6 +292,28 @@ export default function DestinationDetailPage({ params }: PageProps) {
               ))}
             </div>
           )}
+
+          {/* Overcrowded Recommendation Feature: Try This Instead */}
+          {isOvercrowded && (
+            <div id="try-this-instead">
+              <TryThisInstead
+                currentDestinationName={destination.title}
+                currentDestinationGeo={destination.geo}
+                category={destination.category}
+                state={destination.state}
+                hiddenGems={hiddenGems}
+              />
+            </div>
+          )}
+
+          {/* Full Crowd Meter Widget */}
+          <CrowdBadge
+            crowdLevel={crowdLevel}
+            bestTimeToVisit={destination.crowdData?.bestTimeToVisit || destination.bestTimeToVisit}
+            crowdSourceNote={destination.crowdData?.crowdSourceNote}
+            reportCount={destination.crowdData?.reportCount || 15}
+            variant="full"
+          />
 
           {/* 2. Core Information & Guidelines Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
@@ -299,6 +349,12 @@ export default function DestinationDetailPage({ params }: PageProps) {
                 </div>
               )}
 
+              {/* Gold Explorer+ Crowd Report Submission Form */}
+              <CrowdReportForm
+                destinationId={destinationId}
+                destinationName={destination.title}
+              />
+
             </div>
 
             {/* RIGHT COLUMN: LOGISTICS & GEOGRAPHY */}
@@ -319,7 +375,7 @@ export default function DestinationDetailPage({ params }: PageProps) {
                     <span className="block font-sans text-xs font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Best Time to Visit
                     </span>
-                    <p className="font-sans text-xs text-earth-charcoal/70 font-light leading-relaxed">
+                    <p className="font-sans text-xs text-earth-charcoal/70 font-light leading-relaxed font-semibold text-earth-forest">
                       {destination.bestTimeToVisit || "October to March (Recommended dry season)"}
                     </p>
                   </div>

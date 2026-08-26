@@ -4,9 +4,10 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Star, MapPin, Compass, ShieldCheck, Gift, X, Heart, ShieldAlert, Check } from "lucide-react";
-import { CATEGORIES } from "../app/data/mockData";
+import { CATEGORIES, getCrowdData } from "../app/data/mockData";
 import { useUser } from "./UserContext";
 import ExplorerBadge from "./badges/ExplorerBadge";
+import CrowdBadge from "./badges/CrowdBadge";
 
 interface AcquisitionZoneProps {
   searchQuery: string;
@@ -181,6 +182,20 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                       loading="lazy"
                     />
                   </Link>
+
+                  <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
+                    <span className="bg-earth-sand text-earth-forest px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border border-earth-clay/15">
+                      {dest.category}
+                    </span>
+
+                    {/* Crowd Meter Badge */}
+                    <CrowdBadge
+                      crowdLevel={getCrowdData(dest).crowdLevel}
+                      bestTimeToVisit={getCrowdData(dest).bestTimeToVisit || dest.bestTimeToVisit}
+                      crowdSourceNote={getCrowdData(dest).crowdSourceNote}
+                      variant="pill"
+                    />
+                  </div>
                   
                   {/* Heart button for wishlist */}
                   <button
