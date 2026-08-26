@@ -31,7 +31,7 @@ import { useUser } from "@/components/UserContext";
 import CrowdBadge from "@/components/badges/CrowdBadge";
 import TryThisInstead from "@/components/TryThisInstead";
 import CrowdReportForm from "@/components/CrowdReportForm";
-import { getCrowdData } from "@/app/data/mockData";
+import { getCrowdData, mockDestinations } from "@/app/data/mockData";
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -42,12 +42,16 @@ export default function DestinationDetailPage({ params }: PageProps) {
   const destinationId = rawId as Id<"destinations">;
   const router = useRouter();
 
-  const { currentUser, isWishlisted, toggleWishlist, hiddenGems } = useUser();
+  const { currentUser, isWishlisted, toggleWishlist, hiddenGems, destinations } = useUser();
   const [isPending, startTransition] = useTransition();
 
   // Queries
-  const destination = useQuery(api.destinations.getDestinationById, { id: destinationId });
-  const reviews = useQuery(api.reviews.getReviewsForDestination, { destinationId });
+  const dbDestination = useQuery(api.destinations.getDestinationById, { id: destinationId });
+  const dbReviews = useQuery(api.reviews.getReviewsForDestination, { destinationId });
+  const reviews = dbReviews || [];
+
+  // Resolve active destination with fallback for mock IDs
+  const destination = dbDestination || destinations.find((d: any) => String(d.id || d._id) === String(rawId)) || mockDestinations.find((d: any) => String(d.id) === String(rawId));
 
   // Mutations
   const addReviewMutation = useMutation(api.reviews.addReview);
@@ -59,7 +63,7 @@ export default function DestinationDetailPage({ params }: PageProps) {
   const [reviewSuccess, setReviewSuccess] = useState(false);
   const [reviewError, setReviewError] = useState("");
 
-  if (destination === undefined || reviews === undefined) {
+  if (!destination && dbDestination === undefined) {
     return (
       <div className="flex flex-col min-h-screen bg-earth-sand text-earth-charcoal font-sans">
         <Navbar />
@@ -268,10 +272,23 @@ export default function DestinationDetailPage({ params }: PageProps) {
                 </p>
               </div>
 
-              {/* Author footer info */}
+              {/* Author footer info or Wikipedia attribution */}
               <div className="pt-6 border-t border-earth-clay/5 flex items-center justify-between text-[10px] font-sans uppercase tracking-wider text-earth-clay/60">
-                <span>Verified Official Guide</span>
-                <span>Curated by: <span className="font-bold text-earth-forest">{destination.addedBy}</span></span>
+                {destination.sourceName && destination.sourceUrl ? (
+                  <a
+                    href={destination.sourceUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-earth-forest underline transition-colors"
+                  >
+                    Description sourced from {destination.sourceName}
+                  </a>
+                ) : (
+                  <>
+                    <span>Verified Official Guide</span>
+                    <span>Curated by: <span className="font-bold text-earth-forest">{destination.addedBy}</span></span>
+                  </>
+                )}
               </div>
             </div>
           </section>

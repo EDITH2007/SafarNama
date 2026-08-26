@@ -48,9 +48,13 @@ export default function EditDestinationPage({ params }: PageProps) {
 
   const [bestTimeToVisit, setBestTimeToVisit] = useState("");
   const [howToReach, setHowToReach] = useState("");
+  const [sourceName, setSourceName] = useState("");
+  const [sourceUrl, setSourceUrl] = useState("");
   const [nearbyAttractionsRaw, setNearbyAttractionsRaw] = useState("");
   const [tipsRaw, setTipsRaw] = useState("");
   const [galleryRaw, setGalleryRaw] = useState("");
+  const [crowdLevel, setCrowdLevel] = useState("moderate");
+  const [crowdSourceNote, setCrowdSourceNote] = useState("");
 
   // Status State
   const [error, setError] = useState("");
@@ -69,9 +73,13 @@ export default function EditDestinationPage({ params }: PageProps) {
       setLng(String(destination.geo?.lng || ""));
       setBestTimeToVisit(destination.bestTimeToVisit || "");
       setHowToReach(destination.howToReach || "");
+      setSourceName(destination.sourceName || "");
+      setSourceUrl(destination.sourceUrl || "");
       setNearbyAttractionsRaw(destination.nearbyAttractions?.join("\n") || "");
       setTipsRaw(destination.tips?.join("\n") || "");
       setGalleryRaw(destination.photoGallery?.join("\n") || "");
+      setCrowdLevel(destination.crowdData?.crowdLevel || "moderate");
+      setCrowdSourceNote(destination.crowdData?.crowdSourceNote || "");
     }
   }, [destination]);
 
@@ -124,9 +132,18 @@ export default function EditDestinationPage({ params }: PageProps) {
           },
           bestTimeToVisit: bestTimeToVisit || undefined,
           howToReach: howToReach || undefined,
+          sourceName: sourceName || undefined,
+          sourceUrl: sourceUrl || undefined,
           nearbyAttractions: nearbyAttractions.length > 0 ? nearbyAttractions : undefined,
           tips: tips.length > 0 ? tips : undefined,
           photoGallery: photoGallery.length > 0 ? photoGallery : undefined,
+          crowdData: {
+            crowdLevel: crowdLevel || "moderate",
+            bestTimeToVisit: bestTimeToVisit || undefined,
+            crowdSourceNote: crowdSourceNote || undefined,
+            reportCount: destination?.crowdData?.reportCount || 10,
+            updatedAt: Date.now(),
+          },
         });
 
         setSuccess(true);
@@ -449,6 +466,36 @@ export default function EditDestinationPage({ params }: PageProps) {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
                     <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                      <span>Attribution Source Name</span>
+                      <span className="text-earth-clay/60 italic lowercase font-normal">(optional, e.g. Wikipedia)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={sourceName}
+                      onChange={(e) => setSourceName(e.target.value)}
+                      placeholder="e.g. Wikipedia"
+                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
+                    />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                      <span>Attribution Source URL</span>
+                      <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={sourceUrl}
+                      onChange={(e) => setSourceUrl(e.target.value)}
+                      placeholder="e.g. https://en.wikipedia.org/wiki/..."
+                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Nearby Attractions</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional, one per line)</span>
                     </label>
@@ -526,6 +573,45 @@ export default function EditDestinationPage({ params }: PageProps) {
                       onChange={(e) => setGalleryRaw(e.target.value)}
                       placeholder="e.g.&#10;https://images.unsplash.com/photo-1&#10;https://images.unsplash.com/photo-2"
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal resize-none"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* SECTION 5: CROWD INTELLIGENCE */}
+              <div className="space-y-4">
+                <h3 className="font-serif text-sm font-bold text-earth-forest uppercase tracking-wider pb-2 border-b border-earth-clay/5">
+                  5. Crowd Intelligence
+                </h3>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="space-y-1.5">
+                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                      Baseline Crowd Level *
+                    </label>
+                    <select
+                      value={crowdLevel}
+                      onChange={(e) => setCrowdLevel(e.target.value)}
+                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
+                    >
+                      <option value="low">Low Crowd</option>
+                      <option value="moderate">Moderate Crowd</option>
+                      <option value="high">High Crowd</option>
+                      <option value="overcrowded">Overcrowded</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                      <span>Crowd Advisory / Note</span>
+                      <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={crowdSourceNote}
+                      onChange={(e) => setCrowdSourceNote(e.target.value)}
+                      placeholder="e.g. Early morning 6:30-9:00 AM offers serene atmosphere with minimal congestion."
+                      className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
                   </div>
                 </div>

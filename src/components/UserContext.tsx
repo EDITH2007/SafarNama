@@ -104,6 +104,15 @@ interface UserContextType {
     nearbyAttractions?: string[];
     tips?: string[];
     photoGallery?: string[];
+    sourceName?: string;
+    sourceUrl?: string;
+    crowdData?: {
+      crowdLevel: string;
+      bestTimeToVisit?: string;
+      crowdSourceNote?: string;
+      reportCount?: number;
+      updatedAt?: number;
+    };
   }) => Promise<void>;
   addReview: (review: Omit<Review, "id" | "author" | "authorTier" | "authorVerified" | "date"> & { destinationId?: string; gemId?: string }) => Promise<void> | void;
   addBlog: (blog: Omit<Blog, "id" | "author" | "authorTier" | "authorVerified" | "date">) => Promise<void> | void;
@@ -236,6 +245,8 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  const patchWikipediaAttributionsMutation = useMutation(api.destinations.patchWikipediaAttributions);
+
   // Auto-seed if database is empty
   useEffect(() => {
     if (rawLeaderboard !== undefined && rawLeaderboard.length === 0) {
@@ -244,6 +255,13 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
       });
     }
   }, [rawLeaderboard, seedDatabase]);
+
+  // Ensure Wikipedia source attributions are patched on live DB records
+  useEffect(() => {
+    patchWikipediaAttributionsMutation().catch((err) => {
+      console.error("Failed to patch Wikipedia attributions:", err);
+    });
+  }, [patchWikipediaAttributionsMutation]);
 
   // Run admin promotion and fake user cleanup on login
   useEffect(() => {
@@ -1056,6 +1074,15 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
     nearbyAttractions?: string[];
     tips?: string[];
     photoGallery?: string[];
+    sourceName?: string;
+    sourceUrl?: string;
+    crowdData?: {
+      crowdLevel: string;
+      bestTimeToVisit?: string;
+      crowdSourceNote?: string;
+      reportCount?: number;
+      updatedAt?: number;
+    };
   }) => {
     await addDestinationMutation(dest);
   };

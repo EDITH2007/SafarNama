@@ -50,7 +50,8 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
   // Queries
   const gem = useQuery(api.gems.getGemById, { id: gemId });
-  const reviews = useQuery(api.reviews.getReviewsForGem, { gemId });
+  const dbReviews = useQuery(api.reviews.getReviewsForGem, { gemId });
+  const reviews = dbReviews || [];
 
   // Mutations
   const editGemMutation = useMutation(api.gems.editGem);

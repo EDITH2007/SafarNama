@@ -52,6 +52,8 @@ export default defineSchema({
     nearbyAttractions: v.optional(v.array(v.string())),
     tips: v.optional(v.array(v.string())),
     photoGallery: v.optional(v.array(v.string())),
+    sourceName: v.optional(v.string()),
+    sourceUrl: v.optional(v.string()),
     crowdData: v.optional(
       v.object({
         crowdLevel: v.string(), // "low" | "moderate" | "high" | "overcrowded"

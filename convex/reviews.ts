@@ -85,11 +85,17 @@ export const deleteReview = mutation({
 
 // Get enriched reviews for a specific destination
 export const getReviewsForDestination = query({
-  args: { destinationId: v.id("destinations") },
+  args: { destinationId: v.string() },
   handler: async (ctx, args) => {
+    let destId: any = null;
+    try {
+      destId = args.destinationId as any;
+    } catch {
+      return [];
+    }
     const reviews = await ctx.db
       .query("reviews")
-      .withIndex("by_destination", (q) => q.eq("destinationId", args.destinationId))
+      .withIndex("by_destination", (q: any) => q.eq("destinationId", destId))
       .collect();
 
     const results = [];

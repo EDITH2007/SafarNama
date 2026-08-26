@@ -131,6 +131,13 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
     lng: string;
     bestTimeToVisit: string;
     howToReach: string;
+    sourceName: string;
+    sourceUrl: string;
+    nearbyAttractions: string;
+    tips: string;
+    photoGallery: string;
+    crowdLevel: string;
+    crowdSourceNote: string;
   }>({
     isOpen: false,
     isEdit: false,
@@ -144,6 +151,13 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
     lng: "77.0595",
     bestTimeToVisit: "",
     howToReach: "",
+    sourceName: "",
+    sourceUrl: "",
+    nearbyAttractions: "",
+    tips: "",
+    photoGallery: "",
+    crowdLevel: "moderate",
+    crowdSourceNote: "",
   });
 
   // ---------------- Handlers ----------------
@@ -328,38 +342,58 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
           ? photoArr
           : ["https://images.unsplash.com/photo-1593693397690-362cb9666fc2?auto=format&fit=crop&w=800&q=80"];
 
+        const nearbyAttractions = destModal.nearbyAttractions
+          .split("\n")
+          .map((item) => item.trim())
+          .filter(Boolean);
+
+        const tips = destModal.tips
+          .split("\n")
+          .map((item) => item.trim())
+          .filter(Boolean);
+
+        const photoGallery = destModal.photoGallery
+          .split("\n")
+          .map((item) => item.trim())
+          .filter(Boolean);
+
+        const crowdDataObj = {
+          crowdLevel: destModal.crowdLevel || "moderate",
+          bestTimeToVisit: destModal.bestTimeToVisit || undefined,
+          crowdSourceNote: destModal.crowdSourceNote || undefined,
+          reportCount: 10,
+          updatedAt: Date.now(),
+        };
+
+        const destPayload = {
+          title: destModal.title,
+          description: destModal.description,
+          location: destModal.location,
+          state: destModal.state,
+          category: destModal.category,
+          photos: defaultPhoto,
+          geo: {
+            lat: parseFloat(destModal.lat) || 10.0889,
+            lng: parseFloat(destModal.lng) || 77.0595,
+          },
+          bestTimeToVisit: destModal.bestTimeToVisit || undefined,
+          howToReach: destModal.howToReach || undefined,
+          sourceName: destModal.sourceName || undefined,
+          sourceUrl: destModal.sourceUrl || undefined,
+          nearbyAttractions: nearbyAttractions.length > 0 ? nearbyAttractions : undefined,
+          tips: tips.length > 0 ? tips : undefined,
+          photoGallery: photoGallery.length > 0 ? photoGallery : undefined,
+          crowdData: crowdDataObj,
+        };
+
         if (destModal.isEdit && destModal.id) {
           await editDestinationMutation({
             id: destModal.id,
-            title: destModal.title,
-            description: destModal.description,
-            location: destModal.location,
-            state: destModal.state,
-            category: destModal.category,
-            photos: defaultPhoto,
-            geo: {
-              lat: parseFloat(destModal.lat) || 10.0889,
-              lng: parseFloat(destModal.lng) || 77.0595,
-            },
-            bestTimeToVisit: destModal.bestTimeToVisit || undefined,
-            howToReach: destModal.howToReach || undefined,
+            ...destPayload,
           });
           showNotification(`Chronicle "${destModal.title}" updated.`);
         } else {
-          await addDestinationMutation({
-            title: destModal.title,
-            description: destModal.description,
-            location: destModal.location,
-            state: destModal.state,
-            category: destModal.category,
-            photos: defaultPhoto,
-            geo: {
-              lat: parseFloat(destModal.lat) || 10.0889,
-              lng: parseFloat(destModal.lng) || 77.0595,
-            },
-            bestTimeToVisit: destModal.bestTimeToVisit || undefined,
-            howToReach: destModal.howToReach || undefined,
-          });
+          await addDestinationMutation(destPayload);
           showNotification(`Official Chronicle "${destModal.title}" created successfully!`);
         }
         setDestModal((prev) => ({ ...prev, isOpen: false }));
@@ -485,6 +519,13 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                   lng: "77.0595",
                   bestTimeToVisit: "",
                   howToReach: "",
+                  sourceName: "",
+                  sourceUrl: "",
+                  nearbyAttractions: "",
+                  tips: "",
+                  photoGallery: "",
+                  crowdLevel: "moderate",
+                  crowdSourceNote: "",
                 })
               }
               className="px-3 py-1.5 bg-earth-forest hover:bg-earth-terracotta text-white font-bold uppercase tracking-wider text-[10px] flex items-center space-x-1 cursor-pointer transition-colors"
@@ -524,16 +565,23 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                           isOpen: true,
                           isEdit: true,
                           id: d.id || d._id,
-                          title: d.title,
-                          description: d.description,
-                          location: d.location,
-                          state: d.state,
-                          category: d.category,
+                          title: d.title || "",
+                          description: d.description || "",
+                          location: d.location || "",
+                          state: d.state || "",
+                          category: d.category || "Hills",
                           photos: (d.photos || []).join(", "),
-                          lat: String(d.geo?.lat || 10.0889),
-                          lng: String(d.geo?.lng || 77.0595),
+                          lat: String(d.geo?.lat ?? 10.0889),
+                          lng: String(d.geo?.lng ?? 77.0595),
                           bestTimeToVisit: d.bestTimeToVisit || "",
                           howToReach: d.howToReach || "",
+                          sourceName: d.sourceName || "",
+                          sourceUrl: d.sourceUrl || "",
+                          nearbyAttractions: (d.nearbyAttractions || []).join("\n"),
+                          tips: (d.tips || []).join("\n"),
+                          photoGallery: (d.photoGallery || []).join("\n"),
+                          crowdLevel: d.crowdData?.crowdLevel || "moderate",
+                          crowdSourceNote: d.crowdData?.crowdSourceNote || "",
                         })
                       }
                       className="p-1.5 bg-earth-clay/10 hover:bg-earth-forest hover:text-white text-earth-charcoal text-[10px] transition-colors cursor-pointer"
@@ -1019,7 +1067,7 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
       {/* 3. Destination Add / Edit Modal */}
       {destModal.isOpen && (
         <div className="fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white max-w-lg w-full p-6 shadow-2xl space-y-4 animate-scale-in my-8">
+          <div className="bg-white max-w-2xl w-full p-6 shadow-2xl space-y-4 animate-scale-in my-8 max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center border-b border-earth-clay/10 pb-3">
               <h4 className="font-serif font-bold text-base text-earth-forest">
                 {destModal.isEdit ? "Edit Official Chronicle" : "Add Official Chronicle"}
@@ -1032,104 +1080,251 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
               </button>
             </div>
 
-            <form onSubmit={handleSaveDestination} className="space-y-3">
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-earth-clay">Title</label>
-                <input
-                  type="text"
-                  required
-                  value={destModal.title}
-                  onChange={(e) => setDestModal({ ...destModal, title: e.target.value })}
-                  placeholder="e.g. Munnar Tea Hills"
-                  className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
-                />
-              </div>
+            <form onSubmit={handleSaveDestination} className="space-y-4 text-xs font-sans">
+              
+              {/* Section 1: Basic Info */}
+              <div className="space-y-3">
+                <span className="font-serif text-xs font-bold text-earth-forest uppercase tracking-wider block border-b border-earth-clay/10 pb-1">
+                  1. Overview & Category
+                </span>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Destination Title *</label>
+                    <input
+                      type="text"
+                      required
+                      value={destModal.title}
+                      onChange={(e) => setDestModal({ ...destModal, title: e.target.value })}
+                      placeholder="e.g. Munnar Tea Hills"
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Category *</label>
+                    <select
+                      value={destModal.category}
+                      onChange={(e) => setDestModal({ ...destModal, category: e.target.value })}
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest bg-white"
+                    >
+                      <option value="Hills">Hills</option>
+                      <option value="Beaches">Beaches</option>
+                      <option value="Heritage">Heritage</option>
+                      <option value="Spiritual">Spiritual</option>
+                      <option value="Wildlife">Wildlife</option>
+                      <option value="Offbeat">Offbeat</option>
+                    </select>
+                  </div>
+                </div>
 
-              <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Location / District *</label>
+                    <input
+                      type="text"
+                      required
+                      value={destModal.location}
+                      onChange={(e) => setDestModal({ ...destModal, location: e.target.value })}
+                      placeholder="e.g. Munnar, Kerala"
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">State *</label>
+                    <input
+                      type="text"
+                      required
+                      value={destModal.state}
+                      onChange={(e) => setDestModal({ ...destModal, state: e.target.value })}
+                      placeholder="e.g. Kerala"
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                </div>
+
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-earth-clay">Location</label>
-                  <input
-                    type="text"
+                  <label className="text-[10px] font-bold uppercase text-earth-clay">Description *</label>
+                  <textarea
                     required
-                    value={destModal.location}
-                    onChange={(e) => setDestModal({ ...destModal, location: e.target.value })}
-                    placeholder="e.g. Munnar, Kerala"
-                    className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-earth-clay">State</label>
-                  <input
-                    type="text"
-                    required
-                    value={destModal.state}
-                    onChange={(e) => setDestModal({ ...destModal, state: e.target.value })}
-                    placeholder="e.g. Kerala"
+                    rows={3}
+                    value={destModal.description}
+                    onChange={(e) => setDestModal({ ...destModal, description: e.target.value })}
+                    placeholder="Provide a detailed overview of the destination..."
                     className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
                   />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-earth-clay">Category</label>
-                  <select
-                    value={destModal.category}
-                    onChange={(e) => setDestModal({ ...destModal, category: e.target.value })}
-                    className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest bg-white"
-                  >
-                    <option value="Hills">Hills</option>
-                    <option value="Beaches">Beaches</option>
-                    <option value="Heritage">Heritage</option>
-                    <option value="Spiritual">Spiritual</option>
-                    <option value="Wildlife">Wildlife</option>
-                    <option value="Offbeat">Offbeat</option>
-                  </select>
-                </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-earth-clay">Photos (Comma separated URLs)</label>
-                  <input
-                    type="text"
-                    value={destModal.photos}
-                    onChange={(e) => setDestModal({ ...destModal, photos: e.target.value })}
-                    placeholder="https://images.unsplash.com/..."
-                    className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
-                  />
+              {/* Section 2: Coordinates */}
+              <div className="space-y-3">
+                <span className="font-serif text-xs font-bold text-earth-forest uppercase tracking-wider block border-b border-earth-clay/10 pb-1">
+                  2. Geography & Coordinates
+                </span>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Latitude (Decimal) *</label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      value={destModal.lat}
+                      onChange={(e) => setDestModal({ ...destModal, lat: e.target.value })}
+                      placeholder="e.g. 10.0889"
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Longitude (Decimal) *</label>
+                    <input
+                      type="number"
+                      step="any"
+                      required
+                      value={destModal.lng}
+                      onChange={(e) => setDestModal({ ...destModal, lng: e.target.value })}
+                      placeholder="e.g. 77.0595"
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-1">
-                <label className="text-[10px] font-bold uppercase text-earth-clay">Description</label>
-                <textarea
-                  required
-                  rows={3}
-                  value={destModal.description}
-                  onChange={(e) => setDestModal({ ...destModal, description: e.target.value })}
-                  placeholder="Describe the destination in detail..."
-                  className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
-                />
+              {/* Section 3: Travel Details & Attribution */}
+              <div className="space-y-3">
+                <span className="font-serif text-xs font-bold text-earth-forest uppercase tracking-wider block border-b border-earth-clay/10 pb-1">
+                  3. Travel Details & Attribution Source
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Best Time to Visit (Optional)</label>
+                    <input
+                      type="text"
+                      value={destModal.bestTimeToVisit}
+                      onChange={(e) => setDestModal({ ...destModal, bestTimeToVisit: e.target.value })}
+                      placeholder="e.g. September to May"
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">How to Reach (Optional)</label>
+                    <input
+                      type="text"
+                      value={destModal.howToReach}
+                      onChange={(e) => setDestModal({ ...destModal, howToReach: e.target.value })}
+                      placeholder="e.g. Fly to Cochin (COK), 3 hour drive..."
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Attribution Source Name (Optional)</label>
+                    <input
+                      type="text"
+                      value={destModal.sourceName}
+                      onChange={(e) => setDestModal({ ...destModal, sourceName: e.target.value })}
+                      placeholder="e.g. Wikipedia"
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Attribution Source URL (Optional)</label>
+                    <input
+                      type="text"
+                      value={destModal.sourceUrl}
+                      onChange={(e) => setDestModal({ ...destModal, sourceUrl: e.target.value })}
+                      placeholder="e.g. https://en.wikipedia.org/wiki/..."
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Nearby Attractions (Optional, 1 per line)</label>
+                    <textarea
+                      rows={3}
+                      value={destModal.nearbyAttractions}
+                      onChange={(e) => setDestModal({ ...destModal, nearbyAttractions: e.target.value })}
+                      placeholder="e.g.&#10;Eravikulam National Park&#10;Mattupetty Dam"
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Admin Travel Tips (Optional, 1 per line)</label>
+                    <textarea
+                      rows={3}
+                      value={destModal.tips}
+                      onChange={(e) => setDestModal({ ...destModal, tips: e.target.value })}
+                      placeholder="e.g.&#10;Carry light jacket.&#10;Hire local jeep."
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-earth-clay">Best Time to Visit</label>
-                  <input
-                    type="text"
-                    value={destModal.bestTimeToVisit}
-                    onChange={(e) => setDestModal({ ...destModal, bestTimeToVisit: e.target.value })}
-                    placeholder="e.g. September to May"
-                    className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
-                  />
+              {/* Section 4: Imagery */}
+              <div className="space-y-3">
+                <span className="font-serif text-xs font-bold text-earth-forest uppercase tracking-wider block border-b border-earth-clay/10 pb-1">
+                  4. Media & Gallery
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Main Photos (Comma separated URLs)</label>
+                    <input
+                      type="text"
+                      value={destModal.photos}
+                      onChange={(e) => setDestModal({ ...destModal, photos: e.target.value })}
+                      placeholder="https://images.unsplash.com/..."
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Photo Gallery URLs (Optional, 1 per line)</label>
+                    <textarea
+                      rows={3}
+                      value={destModal.photoGallery}
+                      onChange={(e) => setDestModal({ ...destModal, photoGallery: e.target.value })}
+                      placeholder="https://images.unsplash.com/photo-1&#10;https://images.unsplash.com/photo-2"
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-earth-clay">How to Reach</label>
-                  <input
-                    type="text"
-                    value={destModal.howToReach}
-                    onChange={(e) => setDestModal({ ...destModal, howToReach: e.target.value })}
-                    placeholder="e.g. Fly to Cochin (COK), 3 hour drive..."
-                    className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
-                  />
+              </div>
+
+              {/* Section 5: Crowd Intelligence */}
+              <div className="space-y-3">
+                <span className="font-serif text-xs font-bold text-earth-forest uppercase tracking-wider block border-b border-earth-clay/10 pb-1">
+                  5. Crowd Intelligence
+                </span>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Crowd Level Rating</label>
+                    <select
+                      value={destModal.crowdLevel}
+                      onChange={(e) => setDestModal({ ...destModal, crowdLevel: e.target.value })}
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest bg-white"
+                    >
+                      <option value="low">Low Crowd</option>
+                      <option value="moderate">Moderate Crowd</option>
+                      <option value="high">High Crowd</option>
+                      <option value="overcrowded">Overcrowded</option>
+                    </select>
+                  </div>
+                  <div className="space-y-1">
+                    <label className="text-[10px] font-bold uppercase text-earth-clay">Crowd Advisory / Source Note (Optional)</label>
+                    <input
+                      type="text"
+                      value={destModal.crowdSourceNote}
+                      onChange={(e) => setDestModal({ ...destModal, crowdSourceNote: e.target.value })}
+                      placeholder="e.g. Peak morning slot sees heavy footfall."
+                      className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
+                    />
+                  </div>
                 </div>
               </div>
 

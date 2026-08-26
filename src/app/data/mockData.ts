@@ -100,6 +100,8 @@ export interface Destination {
   nearbyAttractions?: string[];
   tips?: string[];
   photoGallery?: string[];
+  sourceName?: string;
+  sourceUrl?: string;
   geo?: {
     lat: number;
     lng: number;
@@ -269,6 +271,8 @@ export const mockDestinations: Destination[] = [
     addedBy: "Admin",
     rating: 4.6,
     bestTimeToVisit: "November to April",
+    sourceName: "Wikipedia",
+    sourceUrl: "https://en.wikipedia.org/wiki/Kaziranga_National_Park",
     crowdData: {
       crowdLevel: "low",
       bestTimeToVisit: "First slot morning safari (6:00 AM), Nov–Apr",
@@ -312,6 +316,27 @@ export const mockDestinations: Destination[] = [
       bestTimeToVisit: "Sunrise (6:00–7:30 AM) or late night weekdays",
       crowdSourceNote: "Peak weekend footfalls at Gateway & Promenade cause extreme congestion.",
       reportCount: 38,
+    },
+  },
+  {
+    id: "dest-7",
+    title: "Golden Temple, Amritsar",
+    description: "The Golden Temple, also known as Sri Harmandir Sahib, is a gurdwara located in the city of Amritsar, Punjab, India. It is the central house of worship of Sikhism.",
+    location: "Amritsar, Punjab",
+    state: "Punjab",
+    geo: { lat: 31.6200, lng: 74.8765 },
+    photos: ["https://images.unsplash.com/photo-1514222134-b57cbb8ce073?auto=format&fit=crop&w=800&q=80"],
+    category: "Spiritual",
+    addedBy: "Admin",
+    rating: 4.9,
+    bestTimeToVisit: "October to March",
+    sourceName: "Wikipedia",
+    sourceUrl: "https://en.wikipedia.org/wiki/Golden_Temple",
+    crowdData: {
+      crowdLevel: "high",
+      bestTimeToVisit: "Early morning (4:00–6:00 AM) or Oct–Mar",
+      crowdSourceNote: "Golden Temple complex experiences heavy footfall from mid-morning to evening.",
+      reportCount: 35,
     },
   }
 ];
