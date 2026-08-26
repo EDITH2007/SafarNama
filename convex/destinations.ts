@@ -226,7 +226,7 @@ export async function ensureDestinationsSeeded(db: any) {
       });
     }
   } else {
-    // Ensure Amritsar destination exists and has Wikipedia attribution
+    // Patch Wikipedia attribution on Golden Temple if it exists in DB
     const amritsarDest = await db.query("destinations").filter((q: any) => 
       q.or(
         q.eq(q.field("title"), "Golden Temple, Amritsar"),
@@ -234,42 +234,7 @@ export async function ensureDestinationsSeeded(db: any) {
       )
     ).first();
 
-    const admin = await db.query("users").filter((q: any) => q.eq(q.field("role"), "admin")).first();
-    const adminId = admin?._id;
-
-    if (!amritsarDest) {
-      await db.insert("destinations", {
-        title: "Golden Temple, Amritsar",
-        description: "The Golden Temple, also known as Sri Harmandir Sahib, is a gurdwara located in the city of Amritsar, Punjab, India. It is the central house of worship of Sikhism.",
-        location: "Amritsar, Punjab",
-        state: "Punjab",
-        geo: { lat: 31.6200, lng: 74.8765 },
-        photos: ["https://images.unsplash.com/photo-1514222134-b57cbb8ce073?auto=format&fit=crop&w=800&q=80"],
-        category: "Spiritual",
-        bestTimeToVisit: "October to March",
-        howToReach: "Fly to Sri Guru Ram Dass Jee International Airport in Amritsar (11 km away) or take a direct train to Amritsar Junction.",
-        nearbyAttractions: ["Jallianwala Bagh", "Wagah Border", "Partition Museum", "Gobindgarh Fort"],
-        tips: [
-          "Cover your head before entering the temple complex.",
-          "Remove your shoes and wash your feet at the entrance pool.",
-          "Experience the world's largest free community kitchen (Langar)."
-        ],
-        photoGallery: [
-          "https://images.unsplash.com/photo-1514222134-b57cbb8ce073?auto=format&fit=crop&w=800&q=80"
-        ],
-        sourceName: "Wikipedia",
-        sourceUrl: "https://en.wikipedia.org/wiki/Golden_Temple",
-        createdAt: Date.now(),
-        addedBy: adminId,
-        crowdData: {
-          crowdLevel: "high",
-          bestTimeToVisit: "Early morning (4:00–6:00 AM) or Oct–Mar",
-          crowdSourceNote: "Golden Temple complex experiences heavy footfall from mid-morning to evening.",
-          reportCount: 35,
-          updatedAt: Date.now(),
-        },
-      });
-    } else if (!amritsarDest.sourceName || !amritsarDest.sourceUrl) {
+    if (amritsarDest && (!amritsarDest.sourceName || !amritsarDest.sourceUrl)) {
       await db.patch(amritsarDest._id, {
         sourceName: "Wikipedia",
         sourceUrl: "https://en.wikipedia.org/wiki/Golden_Temple",
@@ -457,39 +422,7 @@ export const patchWikipediaAttributions = mutation({
       )
       .first();
 
-    if (!amritsarDest) {
-      await ctx.db.insert("destinations", {
-        title: "Golden Temple, Amritsar",
-        description: "The Golden Temple, also known as Sri Harmandir Sahib, is a gurdwara located in the city of Amritsar, Punjab, India. It is the central house of worship of Sikhism.",
-        location: "Amritsar, Punjab",
-        state: "Punjab",
-        geo: { lat: 31.6200, lng: 74.8765 },
-        photos: ["https://images.unsplash.com/photo-1514222134-b57cbb8ce073?auto=format&fit=crop&w=800&q=80"],
-        category: "Spiritual",
-        bestTimeToVisit: "October to March",
-        howToReach: "Fly to Sri Guru Ram Dass Jee International Airport in Amritsar (11 km away) or take a direct train to Amritsar Junction.",
-        nearbyAttractions: ["Jallianwala Bagh", "Wagah Border", "Partition Museum", "Gobindgarh Fort"],
-        tips: [
-          "Cover your head before entering the temple complex.",
-          "Remove your shoes and wash your feet at the entrance pool.",
-          "Experience the world's largest free community kitchen (Langar)."
-        ],
-        photoGallery: [
-          "https://images.unsplash.com/photo-1514222134-b57cbb8ce073?auto=format&fit=crop&w=800&q=80"
-        ],
-        sourceName: "Wikipedia",
-        sourceUrl: "https://en.wikipedia.org/wiki/Golden_Temple",
-        createdAt: Date.now(),
-        addedBy: adminId,
-        crowdData: {
-          crowdLevel: "high",
-          bestTimeToVisit: "Early morning (4:00–6:00 AM) or Oct–Mar",
-          crowdSourceNote: "Golden Temple complex experiences heavy footfall from mid-morning to evening.",
-          reportCount: 35,
-          updatedAt: Date.now(),
-        },
-      });
-    } else if (!amritsarDest.sourceName || !amritsarDest.sourceUrl) {
+    if (amritsarDest && (!amritsarDest.sourceName || !amritsarDest.sourceUrl)) {
       await ctx.db.patch(amritsarDest._id, {
         sourceName: "Wikipedia",
         sourceUrl: "https://en.wikipedia.org/wiki/Golden_Temple",
@@ -622,7 +555,27 @@ export const deleteDestination = mutation({
       await ctx.db.delete(review._id);
     }
 
-    // 2. Delete the destination record itself
+    // 2. Clean up associated crowdReports
+    const crowdReports = await ctx.db
+      .query("crowdReports")
+      .withIndex("by_destination", (q) => q.eq("destinationId", args.id))
+      .collect();
+
+    for (const report of crowdReports) {
+      await ctx.db.delete(report._id);
+    }
+
+    // 3. Clean up associated wishlists
+    const wishlists = await ctx.db
+      .query("wishlists")
+      .filter((q) => q.eq(q.field("destinationId"), args.id))
+      .collect();
+
+    for (const item of wishlists) {
+      await ctx.db.delete(item._id);
+    }
+
+    // 4. Delete the destination record itself
     await ctx.db.delete(args.id);
     return { success: true };
   },
