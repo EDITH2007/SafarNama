@@ -271,5 +271,51 @@ export default defineSchema({
     .index("by_user", ["userId"])
     .index("by_user_trip", ["userId", "tripPlanId"])
     .index("by_user_journey", ["userId", "journeyId"]),
+
+  // Stays marketplace table
+  stays: defineTable({
+    destinationId: v.string(), // Reference to destination or hidden-gem ID string
+    type: v.string(), // "hotel" | "homestay" | "airbnb-style"
+    name: v.string(),
+    description: v.string(),
+    images: v.array(v.string()),
+    pricePerNightINR: v.number(),
+    maxGuests: v.number(),
+    amenities: v.array(v.string()),
+    hostName: v.string(),
+    hostVerified: v.boolean(),
+    rating: v.number(),
+    reviewCount: v.number(),
+    availabilityCalendar: v.optional(
+      v.array(
+        v.object({
+          startDate: v.string(),
+          endDate: v.string(),
+          isBlocked: v.boolean(),
+        })
+      )
+    ),
+    latitude: v.number(),
+    longitude: v.number(),
+    createdAt: v.optional(v.number()),
+  })
+    .index("by_destination", ["destinationId"])
+    .index("by_type", ["type"]),
+
+  // Bookings made for stays
+  stayBookings: defineTable({
+    stayId: v.union(v.id("stays"), v.string()),
+    userId: v.id("users"),
+    checkIn: v.string(),
+    checkOut: v.string(),
+    guests: v.number(),
+    totalPriceINR: v.number(),
+    status: v.string(), // "confirmed" | "cancelled" | "completed"
+    pointsEarned: v.number(),
+    createdAt: v.number(),
+  })
+    .index("by_user", ["userId"])
+    .index("by_stay", ["stayId"]),
 });
+
 

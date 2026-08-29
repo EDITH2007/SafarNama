@@ -31,7 +31,9 @@ import { useUser } from "@/components/UserContext";
 import CrowdBadge from "@/components/badges/CrowdBadge";
 import TryThisInstead from "@/components/TryThisInstead";
 import CrowdReportForm from "@/components/CrowdReportForm";
+import WhereToStaySection from "@/components/WhereToStaySection";
 import { getCrowdData, mockDestinations } from "@/app/data/mockData";
+
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -649,6 +651,13 @@ export default function DestinationDetailPage({ params }: PageProps) {
 
             </div>
           </section>
+
+          {/* WHERE TO STAY IN THIS DESTINATION */}
+          <WhereToStaySection
+            destinationId={destination.id || rawId}
+            destinationName={destination.title}
+            location={destination.location}
+          />
 
         </div>
       </main>

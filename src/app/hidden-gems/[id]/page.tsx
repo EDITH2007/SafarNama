@@ -35,6 +35,8 @@ import { useUser } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
 import CrowdBadge from "@/components/badges/CrowdBadge";
 import CrowdReportForm from "@/components/CrowdReportForm";
+import WhereToStaySection from "@/components/WhereToStaySection";
+
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -1158,8 +1160,18 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
             </>
           )}
 
+          {/* WHERE TO STAY IN THIS HIDDEN GEM */}
+          {gem && (
+            <WhereToStaySection
+              destinationId={(gem._id || gem.id || rawId) as string}
+              destinationName={gem.title}
+              location={gem.location}
+            />
+          )}
+
         </div>
       </main>
+
 
       {/* Delete Confirmation Dialog */}
       {isDeleteConfirmOpen && (

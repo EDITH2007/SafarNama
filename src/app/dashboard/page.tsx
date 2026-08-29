@@ -50,8 +50,10 @@ import {
   Wallet as WalletIcon,
   BookMarked,
   ArrowUpRight,
+  Users,
   Check,
 } from "lucide-react";
+
 
 export default function DashboardPage() {
   return (
@@ -115,7 +117,13 @@ function Dashboard() {
     approveJourney,
     rejectJourney,
     updateUserPreferences,
+    stays,
+    stayBookings,
+    cancelBooking,
   } = useUser();
+
+  const { formatPrice } = useCurrency();
+
 
   const savedJourneys = useMemo(() => {
     return journeys.filter((j) => isItinerarySaved(j.id));
@@ -999,8 +1007,16 @@ Ensure costs are in INR numbers.`;
                     >
                       Write Story
                     </button>
+                    <Link
+                      href="/stays"
+                      className="px-3 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border bg-earth-terracotta text-white border-earth-terracotta hover:bg-earth-forest flex items-center space-x-1 shadow-sm"
+                    >
+                      <Hotel className="h-3.5 w-3.5" />
+                      <span>Stays Marketplace</span>
+                    </Link>
                   </div>
                 </div>
+
 
                 {/* Sub-view: Catalog Browsing */}
                 {exploreSubView === "browse" && (
@@ -2403,26 +2419,128 @@ Ensure costs are in INR numbers.`;
                   </div>
                 )}
 
-                {/* Sub-tab: Stays Placeholder */}
+                {/* Sub-tab: Stays */}
                 {tripsSubTab === "stays" && (
                   <div className="space-y-6">
-                    <h3 className="font-serif text-lg font-bold text-earth-forest">
-                      Upcoming Stays Bookings
-                    </h3>
-
-                    <div className="text-center py-16 border border-dashed border-earth-clay/20 bg-earth-sand/5 space-y-4 p-6">
-                      <Hotel className="h-14 w-14 text-earth-clay/30 mx-auto" />
-                      <div className="space-y-1">
-                        <h4 className="font-serif text-base font-bold text-earth-forest">
-                          No Active Stay Bookings Found
-                        </h4>
-                        <p className="font-sans text-xs text-earth-charcoal/60 font-light max-w-md mx-auto">
-                          Hotel and homestay reservation management will be integrated in an upcoming feature update.
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-earth-clay/10 pb-4">
+                      <div>
+                        <h3 className="font-serif text-lg font-bold text-earth-forest">
+                          My Booked Stays & Accommodations
+                        </h3>
+                        <p className="text-xs text-earth-charcoal/70 font-light">
+                          Manage your active hotel, homestay, and eco-lodge reservations.
                         </p>
                       </div>
+
+                      <Link
+                        href="/stays"
+                        className="px-3.5 py-2 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-wider transition-colors shadow-sm self-start sm:self-auto"
+                      >
+                        + Book New Stay
+                      </Link>
                     </div>
+
+                    {stayBookings && stayBookings.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {stayBookings.map((booking) => {
+                          const stayDetail = stays.find((s) => String(s.id) === String(booking.stayId));
+                          return (
+                            <div
+                              key={booking.id}
+                              className="bg-white border border-earth-clay/15 p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between space-y-4"
+                            >
+                              <div className="flex space-x-4">
+                                <img
+                                  src={stayDetail?.images[0] || "https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80"}
+                                  alt={stayDetail?.name || "Stay"}
+                                  className="w-24 h-24 object-cover shrink-0 border border-earth-clay/10"
+                                />
+                                <div className="space-y-1.5 flex-grow">
+                                  <div className="flex items-center justify-between">
+                                    <span className="text-[9px] font-bold uppercase tracking-wider bg-earth-terracotta/10 text-earth-terracotta px-2 py-0.5 rounded-full">
+                                      {stayDetail?.type || "Homestay"}
+                                    </span>
+                                    <span
+                                      className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
+                                        booking.status === "confirmed"
+                                          ? "bg-emerald-50 text-emerald-800 border-emerald-200"
+                                          : "bg-red-50 text-red-700 border-red-200"
+                                      }`}
+                                    >
+                                      {booking.status}
+                                    </span>
+                                  </div>
+
+                                  <h4 className="font-serif text-base font-bold text-earth-forest line-clamp-1">
+                                    {stayDetail?.name || "Booked Stay"}
+                                  </h4>
+
+                                  <div className="text-xs text-earth-charcoal/80 space-y-0.5 font-light">
+                                    <div className="flex items-center space-x-1.5">
+                                      <Calendar className="w-3.5 h-3.5 text-earth-clay shrink-0" />
+                                      <span>{booking.checkIn} to {booking.checkOut}</span>
+                                    </div>
+                                    <div className="flex items-center space-x-1.5">
+                                      <Users className="w-3.5 h-3.5 text-earth-clay shrink-0" />
+                                      <span>{booking.guests} {booking.guests === 1 ? "Guest" : "Guests"}</span>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center justify-between pt-3 border-t border-earth-clay/10 text-xs">
+                                <div>
+                                  <span className="text-[9px] text-earth-clay uppercase font-bold block">Total Amount</span>
+                                  <span className="font-serif text-base font-bold text-earth-terracotta font-mono">
+                                    {formatPrice(booking.totalPriceINR)}
+                                  </span>
+                                </div>
+
+                                <div className="flex items-center space-x-2">
+                                  <span className="text-[10px] font-bold bg-amber-50 text-amber-800 px-2 py-1 border border-amber-200">
+                                    +{booking.pointsEarned || 500} PTS
+                                  </span>
+
+                                  {booking.status === "confirmed" && (
+                                    <button
+                                      onClick={() => {
+                                        if (confirm("Are you sure you want to cancel this stay reservation?")) {
+                                          cancelBooking(booking.id);
+                                        }
+                                      }}
+                                      className="px-2.5 py-1 text-red-650 hover:text-red-800 hover:bg-red-50 border border-red-200 text-[10px] font-bold uppercase transition-colors cursor-pointer"
+                                    >
+                                      Cancel
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    ) : (
+                      <div className="text-center py-16 border border-dashed border-earth-clay/20 bg-earth-sand/5 space-y-4 p-6">
+                        <Hotel className="h-14 w-14 text-earth-clay/30 mx-auto" />
+                        <div className="space-y-1">
+                          <h4 className="font-serif text-base font-bold text-earth-forest">
+                            No Active Stay Bookings Found
+                          </h4>
+                          <p className="font-sans text-xs text-earth-charcoal/60 font-light max-w-md mx-auto">
+                            Browse destination-native stays and book homestays or eco-lodges directly tied to your travel chronicles.
+                          </p>
+                        </div>
+                        <Link
+                          href="/stays"
+                          className="inline-block px-5 py-2.5 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-wider transition-colors shadow-sm"
+                        >
+                          Explore Stays Marketplace
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 )}
+
 
                 {/* Sub-tab: Cancellations Placeholder */}
                 {tripsSubTab === "cancellations" && (

@@ -19,6 +19,7 @@ import type * as notifications from "../notifications.js";
 import type * as reviews from "../reviews.js";
 import type * as savedItineraries from "../savedItineraries.js";
 import type * as seed from "../seed.js";
+import type * as stays from "../stays.js";
 import type * as trips from "../trips.js";
 import type * as users from "../users.js";
 import type * as wishlist from "../wishlist.js";
@@ -41,6 +42,7 @@ declare const fullApi: ApiFromModules<{
   reviews: typeof reviews;
   savedItineraries: typeof savedItineraries;
   seed: typeof seed;
+  stays: typeof stays;
   trips: typeof trips;
   users: typeof users;
   wishlist: typeof wishlist;

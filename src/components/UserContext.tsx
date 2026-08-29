@@ -15,7 +15,11 @@ import {
   mockReviews,
   mockJourneys,
   Destination,
+  Stay,
+  StayBooking,
+  mockStays,
 } from "../app/data/mockData";
+
 
 export interface PointsLedgerEntry {
   id: string;
@@ -134,7 +138,12 @@ interface UserContextType {
   approveJourney: (journeyId: string) => Promise<void>;
   rejectJourney: (journeyId: string, reason?: string) => Promise<void>;
   updateUserPreferences: (prefs: { language?: string; currency?: string }) => Promise<void>;
+  stays: Stay[];
+  stayBookings: StayBooking[];
+  bookStay: (booking: { stayId: string; checkIn: string; checkOut: string; guests: number; totalPriceINR: number }) => Promise<string>;
+  cancelBooking: (bookingId: string) => Promise<void>;
 }
+
 
 const PLACEHOLDER_USER: UserProfile = {
   id: "loading",
@@ -180,6 +189,129 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
   const isLocalAdmin = viewer?.role === "admin";
   const dbPendingGems = useQuery(api.gems.getPendingGems, isLocalAdmin ? {} : "skip");
   const pendingGems = dbPendingGems || EMPTY_ARRAY;
+
+  // Stays Queries & Mutations
+  const dbStays = useQuery(api.stays.getStays, {});
+  const dbUserStayBookings = useQuery(api.stays.getUserStayBookings, isAuthenticated ? {} : "skip");
+  const createStayBookingMutation = useMutation(api.stays.createStayBooking);
+  const cancelStayBookingMutation = useMutation(api.stays.cancelStayBooking);
+
+  const [localStayBookings, setLocalStayBookings] = useState<StayBooking[]>([]);
+
+  const stays: Stay[] = useMemo(() => {
+    if (dbStays && dbStays.length > 0 && (dbStays[0] as any)?.pricePerNightINR !== undefined) {
+      return dbStays.map((s: any) => ({
+        id: s.id || s._id,
+        destinationId: s.destinationId,
+        type: s.type,
+        name: s.name,
+        description: s.description,
+        images: s.images,
+        pricePerNightINR: s.pricePerNightINR,
+        maxGuests: s.maxGuests,
+        amenities: s.amenities,
+        hostName: s.hostName,
+        hostVerified: s.hostVerified,
+        rating: s.rating,
+        reviewCount: s.reviewCount,
+        availabilityCalendar: s.availabilityCalendar,
+        latitude: s.latitude,
+        longitude: s.longitude,
+        createdAt: s.createdAt,
+      }));
+    }
+    return mockStays;
+  }, [dbStays]);
+
+  const stayBookings: StayBooking[] = useMemo(() => {
+    const serverBookings = (dbUserStayBookings || []).map((b: any) => ({
+      id: b.id || b._id,
+      stayId: b.stayId,
+      userId: b.userId,
+      checkIn: b.checkIn,
+      checkOut: b.checkOut,
+      guests: b.guests,
+      totalPriceINR: b.totalPriceINR,
+      status: b.status,
+      pointsEarned: b.pointsEarned,
+      createdAt: b.createdAt,
+    }));
+    const existingIds = new Set(serverBookings.map((b: any) => b.id));
+    const uniqueLocal = localStayBookings.filter((b) => !existingIds.has(b.id));
+    return [...serverBookings, ...uniqueLocal];
+  }, [dbUserStayBookings, localStayBookings]);
+
+
+  const bookStay = async (bookingData: {
+    stayId: string;
+    checkIn: string;
+    checkOut: string;
+    guests: number;
+    totalPriceINR: number;
+  }) => {
+    let bookingId = "";
+    try {
+      if (isAuthenticated) {
+        bookingId = await createStayBookingMutation({
+          stayId: bookingData.stayId as any,
+          checkIn: bookingData.checkIn,
+          checkOut: bookingData.checkOut,
+          guests: bookingData.guests,
+          totalPriceINR: bookingData.totalPriceINR,
+        });
+      } else {
+        bookingId = `booking-${Date.now()}`;
+        const newBooking: StayBooking = {
+          id: bookingId,
+          stayId: bookingData.stayId,
+          userId: currentUser?.id || "guest",
+          checkIn: bookingData.checkIn,
+          checkOut: bookingData.checkOut,
+          guests: bookingData.guests,
+          totalPriceINR: bookingData.totalPriceINR,
+          status: "confirmed",
+          pointsEarned: 500,
+          createdAt: Date.now(),
+        };
+        setLocalStayBookings((prev) => [newBooking, ...prev]);
+      }
+    } catch (err) {
+      console.warn("Server booking failed or offline fallback used:", err);
+      bookingId = `booking-${Date.now()}`;
+      const newBooking: StayBooking = {
+        id: bookingId,
+        stayId: bookingData.stayId,
+        userId: currentUser?.id || "guest",
+        checkIn: bookingData.checkIn,
+        checkOut: bookingData.checkOut,
+        guests: bookingData.guests,
+        totalPriceINR: bookingData.totalPriceINR,
+        status: "confirmed",
+        pointsEarned: 500,
+        createdAt: Date.now(),
+      };
+      setLocalStayBookings((prev) => [newBooking, ...prev]);
+    }
+    return bookingId;
+  };
+
+  const cancelBooking = async (bookingId: string) => {
+    try {
+      if (isAuthenticated && bookingId.length > 20 && !bookingId.startsWith("booking-")) {
+        await cancelStayBookingMutation({ bookingId: bookingId as any });
+      } else {
+        setLocalStayBookings((prev) =>
+          prev.map((b) => (b.id === bookingId ? { ...b, status: "cancelled" } : b))
+        );
+      }
+    } catch (err) {
+      console.error("Failed to cancel stay booking:", err);
+      setLocalStayBookings((prev) =>
+        prev.map((b) => (b.id === bookingId ? { ...b, status: "cancelled" } : b))
+      );
+    }
+  };
+
 
   // Mutations
   const awardPointsMutation = useMutation(api.users.awardPoints);
@@ -1317,7 +1449,12 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
         approveJourney,
         rejectJourney,
         updateUserPreferences,
+        stays,
+        stayBookings,
+        bookStay,
+        cancelBooking,
       }}
+
     >
       {children}
     </UserContext.Provider>
