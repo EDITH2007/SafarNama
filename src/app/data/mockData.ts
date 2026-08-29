@@ -216,6 +216,68 @@ export interface StayBooking {
   createdAt: number;
 }
 
+export interface GuideProfile {
+  bio: string;
+  languagesSpoken: string[];
+  destinationsCovered: string[];
+  yearsExperience: number;
+  pricePerDayINR: number;
+  isActiveGuide: boolean;
+  createdAt?: number;
+}
+
+export interface GuidePackage {
+  _id?: string;
+  id?: string;
+  guideId: string;
+  title: string;
+  description: string;
+  durationDays: number;
+  priceINR: number;
+  includes: string[];
+  destinationId?: string;
+  createdAt?: number;
+}
+
+export interface GuideBooking {
+  _id?: string;
+  id: string;
+  guideId: string;
+  userId: string;
+  packageId?: string;
+  customRequestDetails?: string;
+  startDate: string;
+  numTravelers: number;
+  status: "requested" | "confirmed" | "declined" | "completed";
+  totalPriceINR: number;
+  pointsEarned?: number;
+  createdAt: number;
+  guideName?: string;
+  guideAvatar?: string;
+  guideTier?: "Bronze" | "Silver" | "Gold" | "Platinum";
+  travelerName?: string;
+  travelerAvatar?: string;
+  travelerEmail?: string;
+  packageTitle?: string;
+}
+
+export interface LocalGuideUser {
+  _id?: string;
+  id: string;
+  name: string;
+  email?: string;
+  image?: string;
+  tier: "Bronze" | "Silver" | "Gold" | "Platinum";
+  totalPoints: number;
+  isVerified: boolean;
+  homeTown: string;
+  avatar: string;
+  guideProfile: GuideProfile;
+  packagesCount?: number;
+  rating?: number;
+  reviewCount?: number;
+}
+
 
 // Points Constants
 export const POINTS = {

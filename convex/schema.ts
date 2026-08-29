@@ -29,6 +29,19 @@ export default defineSchema({
     passwordHash: v.optional(v.string()),
     salt: v.optional(v.string()),
     username: v.optional(v.string()),
+
+    // Hire a Local Guide extension
+    guideProfile: v.optional(
+      v.object({
+        bio: v.string(),
+        languagesSpoken: v.array(v.string()),
+        destinationsCovered: v.array(v.string()),
+        yearsExperience: v.number(),
+        pricePerDayINR: v.number(),
+        isActiveGuide: v.boolean(),
+        createdAt: v.optional(v.number()),
+      })
+    ),
   })
     .index("email", ["email"])
     .index("by_points", ["totalPoints"]),
@@ -119,7 +132,7 @@ export default defineSchema({
     .index("by_gem", ["gemId"])
     .index("by_user", ["userId"]),
 
-  // Reviews for both destinations and hidden gems
+  // Reviews for destinations, hidden gems, and local guides
   reviews: defineTable({
     rating: v.number(), // 1 to 5
     text: v.string(),
@@ -127,12 +140,14 @@ export default defineSchema({
     author: v.id("users"),
     destinationId: v.optional(v.id("destinations")), // Linked to official destination
     gemId: v.optional(v.id("hiddenGems")), // Linked to hidden gem
+    guideId: v.optional(v.id("users")), // Linked to local guide user
     createdAt: v.number(),
     flagged: v.optional(v.boolean()),
   })
     .index("by_destination", ["destinationId"])
     .index("by_gem", ["gemId"])
-    .index("by_author", ["author"]),
+    .index("by_author", ["author"])
+    .index("by_guide", ["guideId"]),
 
   // User-written travel stories
   blogs: defineTable({
@@ -316,6 +331,36 @@ export default defineSchema({
   })
     .index("by_user", ["userId"])
     .index("by_stay", ["stayId"]),
+
+  // Fixed tour packages offered by local guides
+  guidePackages: defineTable({
+    guideId: v.id("users"),
+    title: v.string(),
+    description: v.string(),
+    durationDays: v.number(),
+    priceINR: v.number(),
+    includes: v.array(v.string()),
+    destinationId: v.optional(v.string()),
+    createdAt: v.number(),
+  })
+    .index("by_guide", ["guideId"]),
+
+  // Bookings and custom package requests for local guides
+  guideBookings: defineTable({
+    guideId: v.id("users"),
+    userId: v.id("users"),
+    packageId: v.optional(v.id("guidePackages")),
+    customRequestDetails: v.optional(v.string()),
+    startDate: v.string(),
+    numTravelers: v.number(),
+    status: v.string(), // "requested" | "confirmed" | "declined" | "completed"
+    totalPriceINR: v.number(),
+    pointsEarned: v.optional(v.number()),
+    createdAt: v.number(),
+  })
+    .index("by_guide", ["guideId"])
+    .index("by_user", ["userId"])
+    .index("by_status", ["status"]),
 });
 
 

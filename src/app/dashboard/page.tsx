@@ -19,6 +19,8 @@ import CurrencyConverterCard from "@/components/CurrencyConverterCard";
 import { CATEGORIES } from "@/app/data/mockData";
 import VerificationStepper from "@/components/VerificationStepper";
 import AdminModerationConsole from "@/components/AdminModerationConsole";
+import DashboardGuidesTab from "@/components/DashboardGuidesTab";
+import ProfileGuideManagement from "@/components/ProfileGuideManagement";
 import {
   Compass,
   Gift,
@@ -2733,46 +2735,15 @@ Ensure costs are in INR numbers.`;
 
             {/* TAB 4: GUIDES */}
             {activeTab === "guides" && (
-              <div className="space-y-8 animate-in fade-in duration-300">
-                <div className="space-y-1 border-b border-earth-clay/10 pb-4">
-                  <h2 className="font-serif text-xl font-bold text-earth-forest">
-                    Local Guides & Experiences
-                  </h2>
-                  <p className="font-sans text-xs text-earth-charcoal/70 font-light">
-                    Connect with verified local experts, book guided trekking tours, and discover authentic offbeat experiences.
-                  </p>
-                </div>
-
-                {/* Empty State Banner */}
-                <div className="bg-white border border-earth-clay/15 p-10 md:p-16 text-center space-y-6 shadow-sm">
-                  <div className="h-20 w-20 bg-earth-sand border-2 border-earth-terracotta/20 rounded-full flex items-center justify-center mx-auto text-earth-terracotta shadow-inner">
-                    <BookOpen className="h-10 w-10 stroke-[1.5]" />
-                  </div>
-
-                  <div className="space-y-2 max-w-lg mx-auto">
-                    <h3 className="font-serif text-2xl font-bold text-earth-forest">
-                      Local Guides Coming Soon
-                    </h3>
-                    <p className="font-sans text-xs text-earth-charcoal/70 leading-relaxed font-light">
-                      We are onboarding verified local experts, native storytellers, and trekking guides across India to bring you authentic local experiences. Stay tuned!
-                    </p>
-                  </div>
-
-                  <div className="pt-2">
-                    <button
-                      onClick={() => alert("Thank you! You will be notified when local guides launch.")}
-                      className="px-8 py-3 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest cursor-pointer transition-colors"
-                    >
-                      Get Notified on Launch
-                    </button>
-                  </div>
-                </div>
-              </div>
+              <DashboardGuidesTab onNavigateToProfile={() => setActiveTab("profile")} />
             )}
 
             {/* TAB 5: PROFILE */}
             {activeTab === "profile" && (
               <div className="space-y-8 animate-in fade-in duration-300">
+                {/* Hire a Local Guide Management Section */}
+                <ProfileGuideManagement currentUser={currentUser} />
+
                 {/* Account Settings & Preferences Section */}
                 <div className="bg-earth-sand/20 border border-earth-clay/15 p-6 space-y-6">
                   <div className="flex items-center justify-between border-b border-earth-clay/10 pb-3">
