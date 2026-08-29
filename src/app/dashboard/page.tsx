@@ -10,6 +10,7 @@ import ExplorerBadge from "@/components/badges/ExplorerBadge";
 import Footer from "@/components/Footer";
 import Leaderboard from "@/components/Leaderboard";
 import MapPicker from "@/components/MapPicker";
+import HiddenGemForm from "@/components/HiddenGemForm";
 import { CategoryDonutChart, TripExpensesBarChart } from "@/components/ExpenseCharts";
 import { useUser, PlanDay } from "@/components/UserContext";
 import { useCurrency, SupportedCurrency } from "@/components/CurrencyContext";
@@ -814,24 +815,6 @@ Ensure costs are in INR numbers.`;
     }
   }, [queryTab, queryPlanId, journeys]);
 
-  // Add Hidden Gem Form State
-  const [gemTitle, setGemTitle] = useState("");
-  const [gemLocName, setGemLocName] = useState("");
-  const [gemState, setGemState] = useState("");
-  const [selectedGemCategories, setSelectedGemCategories] = useState<string[]>(["Offbeat"]);
-  const [gemDesc, setGemDesc] = useState("");
-  const [gemLat, setGemLat] = useState<number>(0);
-  const [gemLng, setGemLng] = useState<number>(0);
-  const [gemSuccess, setGemSuccess] = useState(false);
-  const [gemError, setGemError] = useState<string | null>(null);
-  const [uploadedImageUrl, setUploadedImageUrl] = useState<string>("");
-
-  const isValidImageUrl = (url: string) => {
-    const trimmed = url.trim();
-    if (!trimmed) return false;
-    return /^https?:\/\/.+/i.test(trimmed) || /^data:image\/.+/i.test(trimmed);
-  };
-
   if (!currentUser) {
     return (
       <div className="min-h-screen bg-earth-sand flex items-center justify-center">
@@ -839,57 +822,6 @@ Ensure costs are in INR numbers.`;
       </div>
     );
   }
-
-  const handleAddGemSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!gemTitle || !gemLocName || !gemState || !gemDesc || !uploadedImageUrl) {
-      setGemError("Please fill in all fields.");
-      return;
-    }
-    if (!isValidImageUrl(uploadedImageUrl)) {
-      setGemError("Please enter a valid image URL.");
-      return;
-    }
-    if (selectedGemCategories.length === 0) {
-      setGemError("Please select at least one category vibe.");
-      return;
-    }
-
-    try {
-      setGemError(null);
-      setGemSuccess(false);
-
-      await submitGem({
-        title: gemTitle,
-        description: gemDesc,
-        location: gemLocName,
-        state: gemState,
-        category: selectedGemCategories.join(", "),
-        photo: uploadedImageUrl,
-        geo: { lat: gemLat, lng: gemLng },
-      });
-
-      setGemSuccess(true);
-
-      // Reset Form
-      setGemTitle("");
-      setGemLocName("");
-      setGemState("");
-      setSelectedGemCategories(["Offbeat"]);
-      setGemDesc("");
-      setGemLat(0);
-      setGemLng(0);
-      setUploadedImageUrl("");
-
-      setTimeout(() => {
-        setGemSuccess(false);
-        setExploreSubView("browse");
-      }, 4000);
-    } catch (err: any) {
-      console.error("Error submitting gem:", err);
-      setGemError(err.message || "Failed to submit discovery guide.");
-    }
-  };
 
   const renderTierBadge = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
     return <ExplorerBadge tier={tier} size={32} showTooltip showLabel />;
@@ -1773,110 +1705,11 @@ Ensure costs are in INR numbers.`;
                       </button>
                     </div>
 
-                    {gemSuccess && (
-                      <div className="p-4 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-2">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span>Submitted! Your spot will appear after review.</span>
-                      </div>
-                    )}
-
-                    <form onSubmit={handleAddGemSubmit} className="space-y-6 font-sans text-xs">
-                      <div className="bg-earth-sand/10 border border-earth-clay/10 p-4">
-                        <MapPicker
-                          onSelectLocation={(lat, lng, name) => {
-                            setGemLat(lat);
-                            setGemLng(lng);
-                            if (name.includes(",")) {
-                              const [cityName, stateName] = name.split(",");
-                              setGemLocName(cityName.trim());
-                              setGemState(stateName.trim());
-                            }
-                          }}
-                        />
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                            Spot Name *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={gemTitle}
-                            onChange={(e) => setGemTitle(e.target.value)}
-                            placeholder="Spot name"
-                            className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                            Photo URL *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={uploadedImageUrl}
-                            onChange={(e) => setUploadedImageUrl(e.target.value)}
-                            placeholder="https://..."
-                            className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-1">
-                          <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                            City / District *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={gemLocName}
-                            onChange={(e) => setGemLocName(e.target.value)}
-                            placeholder="Location"
-                            className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                            State *
-                          </label>
-                          <input
-                            type="text"
-                            required
-                            value={gemState}
-                            onChange={(e) => setGemState(e.target.value)}
-                            placeholder="State"
-                            className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                          Description & Details *
-                        </label>
-                        <textarea
-                          required
-                          rows={3}
-                          value={gemDesc}
-                          onChange={(e) => setGemDesc(e.target.value)}
-                          placeholder="Describe the hidden gem spot..."
-                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={!gemTitle || !gemLocName || !gemState || !gemDesc || !uploadedImageUrl}
-                        className="w-full py-3 bg-earth-forest hover:bg-earth-terracotta disabled:opacity-50 text-white font-sans text-xs font-bold uppercase tracking-widest cursor-pointer"
-                      >
-                        Submit Hidden Gem (+100 PTS)
-                      </button>
-                    </form>
+                    <HiddenGemForm
+                      variant="inline"
+                      onSuccess={() => setExploreSubView("browse")}
+                      onCancel={() => setExploreSubView("browse")}
+                    />
                   </div>
                 )}
 

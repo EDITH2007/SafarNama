@@ -9,6 +9,8 @@ import { useUser } from "./UserContext";
 import ExplorerBadge from "./badges/ExplorerBadge";
 import CrowdBadge from "./badges/CrowdBadge";
 
+import HiddenGemForm from "./HiddenGemForm";
+
 interface AcquisitionZoneProps {
   searchQuery: string;
 }
@@ -16,26 +18,10 @@ interface AcquisitionZoneProps {
 export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
   const router = useRouter();
   const [activeCategory, setActiveCategory] = useState("All");
-  const { hiddenGems, destinations, submitGem, toggleWishlist, isWishlisted, isAuthenticated } = useUser();
+  const { hiddenGems, destinations, toggleWishlist, isWishlisted, isAuthenticated } = useUser();
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
-  const [location, setLocation] = useState("");
-  const [state, setState] = useState("");
-  const [selectedCategories, setSelectedCategories] = useState<string[]>(["Offbeat"]);
-  const [photoUrl, setPhotoUrl] = useState("");
-  const [lat, setLat] = useState("");
-  const [lng, setLng] = useState("");
-  const [errorMsg, setErrorMsg] = useState<string | null>(null);
-
-  const isValidImageUrl = (url: string) => {
-    const trimmed = url.trim();
-    if (!trimmed) return false;
-    return /^https?:\/\/.+/i.test(trimmed) || /^data:image\/.+/i.test(trimmed);
-  };
-  const [showSuccessMsg, setShowSuccessMsg] = useState(false);
 
   // Filter curated destinations
   const filteredDestinations = destinations.filter((dest) => {
@@ -81,60 +67,6 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
   const landingGems = searchQuery ? prioritizedGems : prioritizedGems.slice(0, 3);
 
   const spotlightGem = approvedGems[0];
-
-  const handleSubmitSpot = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title || !description || !location || !state || !photoUrl || !lat || !lng) {
-      setErrorMsg("Please fill in all fields.");
-      return;
-    }
-    if (!isValidImageUrl(photoUrl)) {
-      setErrorMsg("Please enter a valid image URL.");
-      return;
-    }
-    if (selectedCategories.length === 0) {
-      setErrorMsg("Please select at least one vibe category.");
-      return;
-    }
-    const parsedLat = Number(lat);
-    const parsedLng = Number(lng);
-    if (isNaN(parsedLat) || isNaN(parsedLng)) {
-      setErrorMsg("Please enter valid numeric coordinates.");
-      return;
-    }
-
-    try {
-      setErrorMsg(null);
-      setShowSuccessMsg(false);
-
-      await submitGem({
-        title,
-        description,
-        location,
-        state,
-        category: selectedCategories.join(", "),
-        photo: photoUrl,
-        geo: { lat: parsedLat, lng: parsedLng },
-      });
-
-      setShowSuccessMsg(true);
-      setTimeout(() => {
-        setIsModalOpen(false);
-        setShowSuccessMsg(false);
-        setTitle("");
-        setDescription("");
-        setLocation("");
-        setState("");
-        setPhotoUrl("");
-        setSelectedCategories(["Offbeat"]);
-        setLat("");
-        setLng("");
-      }, 4000);
-    } catch (err: any) {
-      console.error("Error submitting gem:", err);
-      setErrorMsg(err.message || "Failed to submit spot discovery.");
-    }
-  };
 
   // Helper to color tier label
   const getTierColorClass = (tier: "Bronze" | "Silver" | "Gold" | "Platinum") => {
@@ -484,225 +416,19 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
       {/* 4. Submit Spot Modal Form */}
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 backdrop-blur-sm">
-          <div className="bg-white border border-earth-clay/10 max-w-lg w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 space-y-6 relative rounded-none animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white border border-earth-clay/10 max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8 relative rounded-none animate-in fade-in zoom-in-95 duration-200">
             <button
               onClick={() => setIsModalOpen(false)}
-              className="absolute top-4 right-4 p-2 text-earth-charcoal/60 hover:text-earth-charcoal cursor-pointer"
+              className="absolute top-4 right-4 p-2 text-earth-charcoal/60 hover:text-earth-charcoal cursor-pointer z-10"
             >
               <X className="h-5 w-5" />
             </button>
 
-            <div className="space-y-2">
-              <h3 className="font-serif text-2xl font-bold text-earth-forest flex items-center space-x-2">
-                <Compass className="h-6 w-6 text-earth-terracotta" />
-                <span>Submit a Hidden Gem</span>
-              </h3>
-              <p className="font-sans text-xs text-earth-charcoal/70 font-light">
-                Discoveries will be sent to the moderation queue. On admin approval, you will earn <span className="font-bold text-earth-terracotta">100 points</span>.
-              </p>
-            </div>
-
-            {showSuccessMsg ? (
-              <div className="p-6 bg-earth-forest/10 border border-earth-forest text-earth-forest text-center space-y-4">
-                <Gift className="h-10 w-10 text-earth-saffron mx-auto animate-bounce" />
-                <h4 className="font-serif text-lg font-bold">Spot Submitted Successfully!</h4>
-                <p className="font-sans text-xs font-light leading-relaxed">
-                  Your submission is now <span className="font-bold uppercase tracking-wider text-earth-terracotta bg-earth-terracotta/5 px-2 py-0.5 border border-earth-terracotta/10">Pending</span>. The destination will appear on the map and lists once the administrator reviews and approves it. You&apos;ll earn <span className="font-bold text-earth-terracotta">+100 points</span> on approval!
-                </p>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmitSpot} className="space-y-4 font-sans">
-                {errorMsg && (
-                  <div className="p-3 bg-red-50 border border-red-200 text-red-800 text-xs font-semibold flex items-center space-x-2 rounded-none animate-in fade-in duration-300">
-                    <ShieldAlert className="h-4 w-4 text-red-650 shrink-0" />
-                    <span>{errorMsg}</span>
-                  </div>
-                )}
-
-                {/* Title */}
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
-                    Spot Name
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Athirappilly Waterfalls"
-                    className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-sm focus:outline-none focus:border-earth-terracotta rounded-none"
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  {/* Location */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
-                      Location
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={location}
-                      onChange={(e) => setLocation(e.target.value)}
-                      placeholder="e.g. Thrissur, Kerala"
-                      className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-sm focus:outline-none focus:border-earth-terracotta rounded-none"
-                    />
-                  </div>
-
-                  {/* State */}
-                  <div className="space-y-1">
-                    <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
-                      State
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={state}
-                      onChange={(e) => setState(e.target.value)}
-                      placeholder="e.g. Kerala"
-                      className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-sm focus:outline-none focus:border-earth-terracotta rounded-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Coordinates Row */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-1">
-                    <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
-                      Latitude Coordinate *
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      required
-                      value={lat}
-                      onChange={(e) => setLat(e.target.value)}
-                      placeholder="e.g. 33.1711"
-                      className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-sm focus:outline-none focus:border-earth-terracotta rounded-none text-earth-charcoal"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
-                      Longitude Coordinate *
-                    </label>
-                    <input
-                      type="number"
-                      step="any"
-                      required
-                      value={lng}
-                      onChange={(e) => setLng(e.target.value)}
-                      placeholder="e.g. 77.2356"
-                      className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-sm focus:outline-none focus:border-earth-terracotta rounded-none text-earth-charcoal"
-                    />
-                  </div>
-                </div>
-
-                {/* Category Vibe selector & Photo URL */}
-                <div className="space-y-4 border border-earth-clay/10 p-4 bg-earth-sand/5">
-                  <div className="space-y-1.5">
-                    <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
-                      Vibe Categories (Select all that apply)
-                    </label>
-                    <div className="flex flex-wrap gap-1.5 p-3 bg-white border border-earth-clay/20 max-h-[100px] overflow-y-auto">
-                      {CATEGORIES.filter((c) => c !== "All").map((cat) => {
-                        const isSelected = selectedCategories.includes(cat);
-                        return (
-                          <button
-                            key={cat}
-                            type="button"
-                            onClick={() => {
-                              if (isSelected) {
-                                setSelectedCategories(selectedCategories.filter((c) => c !== cat));
-                              } else {
-                                setSelectedCategories([...selectedCategories, cat]);
-                              }
-                            }}
-                            className={`px-2.5 py-1 text-[10px] font-sans font-semibold uppercase tracking-wider transition-all border rounded-none cursor-pointer ${
-                              isSelected
-                                ? "bg-earth-terracotta border-earth-terracotta text-white shadow-sm"
-                                : "bg-white border-earth-clay/10 text-earth-charcoal/85 hover:border-earth-terracotta hover:text-earth-terracotta"
-                            }`}
-                          >
-                            {cat}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
-                      Photo URL
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={photoUrl}
-                      onChange={(e) => setPhotoUrl(e.target.value)}
-                      placeholder="e.g., https://images.unsplash.com/photo-1626590212990-2e40026e6cb5?auto=format&fit=crop&w=800&q=80"
-                      className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta rounded-none text-earth-charcoal"
-                    />
-                    
-                    {/* Live Validation Warning */}
-                    {photoUrl && !isValidImageUrl(photoUrl) && (
-                      <p className="text-red-655 text-[10px] font-semibold animate-pulse mt-1">
-                        ⚠️ Please enter a valid image URL starting with http:// or https://.
-                      </p>
-                    )}
-
-                    {/* Live Image Preview */}
-                    {photoUrl && isValidImageUrl(photoUrl) && (
-                      <div className="mt-2 space-y-1 animate-in fade-in duration-200">
-                        <span className="text-[9px] font-bold text-earth-forest uppercase tracking-wider block">✓ Image URL Validated</span>
-                        <div className="h-20 w-32 overflow-hidden border border-earth-clay/15 bg-white shadow-sm relative">
-                          <img
-                            src={photoUrl}
-                            alt="Live spot preview"
-                            className="w-full h-full object-cover"
-                            onError={(e) => {
-                              e.currentTarget.style.display = "none";
-                            }}
-                          />
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Description */}
-                <div className="space-y-1">
-                  <label className="block text-xs font-semibold text-earth-charcoal uppercase tracking-wider">
-                    Description
-                  </label>
-                  <textarea
-                    required
-                    rows={3}
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    placeholder="Describe what makes this spot a hidden gem, how to reach, or best time to visit..."
-                    className="w-full p-2.5 bg-earth-sand/30 border border-earth-clay/20 text-sm focus:outline-none focus:border-earth-terracotta rounded-none resize-none"
-                  />
-                </div>
-
-                <div className="pt-2 flex justify-end space-x-3">
-                  <button
-                    type="button"
-                    onClick={() => setIsModalOpen(false)}
-                    className="px-5 py-2.5 border border-earth-clay/20 font-sans text-xs font-semibold uppercase tracking-wider hover:bg-earth-sand rounded-none cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={!title || !description || !location || !state || !photoUrl || !lat || !lng || !isValidImageUrl(photoUrl) || selectedCategories.length === 0}
-                    className="px-6 py-2.5 bg-earth-terracotta hover:bg-earth-forest disabled:bg-earth-clay/35 text-white font-sans text-xs font-bold uppercase tracking-widest rounded-none cursor-pointer transition-all duration-200"
-                  >
-                    Submit Discovery
-                  </button>
-                </div>
-              </form>
-            )}
+            <HiddenGemForm
+              variant="modal"
+              onSuccess={() => setIsModalOpen(false)}
+              onCancel={() => setIsModalOpen(false)}
+            />
           </div>
         </div>
       )}
