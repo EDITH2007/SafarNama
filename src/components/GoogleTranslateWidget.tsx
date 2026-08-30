@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { Globe, Info } from "lucide-react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
+import Script from "next/script";
+import { Globe, AlertTriangle, RefreshCw, Info } from "lucide-react";
 
 declare global {
   interface Window {
@@ -11,45 +12,17 @@ declare global {
 }
 
 export default function GoogleTranslateWidget() {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [loadError, setLoadError] = useState(false);
+  const [status, setStatus] = useState<"loading" | "ready" | "error">("loading");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const checkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
-  useEffect(() => {
-    // If google translate script is already initialized and element loaded
-    if (window.google?.translate?.TranslateElement) {
-      initTranslateElement();
-      setIsLoaded(true);
-      return;
-    }
-
-    // Callback function invoked when Google Translate script loads
-    window.googleTranslateElementInit = () => {
-      initTranslateElement();
-      setIsLoaded(true);
-    };
-
-    // Check if script tag is already in DOM
-    const existingScript = document.getElementById("google-translate-script");
-    if (!existingScript) {
-      const script = document.createElement("script");
-      script.id = "google-translate-script";
-      script.src = "//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
-      script.async = true;
-      script.onerror = () => {
-        setLoadError(true);
-        console.warn("Google Translate script failed to load.");
-      };
-      document.body.appendChild(script);
-    } else if (window.googleTranslateElementInit) {
-      window.googleTranslateElementInit();
-    }
-  }, []);
-
-  const initTranslateElement = () => {
+  const initTranslateElement = useCallback(() => {
     try {
       const targetEl = document.getElementById("google_translate_element");
-      if (targetEl && window.google?.translate?.TranslateElement) {
-        // Prevent duplicate rendering
+      if (!targetEl) return false;
+
+      if (window.google?.translate?.TranslateElement) {
+        // Prevent duplicate rendering glitches on re-mounts
         targetEl.innerHTML = "";
         new window.google.translate.TranslateElement(
           {
@@ -60,14 +33,104 @@ export default function GoogleTranslateWidget() {
           },
           "google_translate_element"
         );
+        setStatus("ready");
+        setErrorMessage(null);
+        return true;
       }
-    } catch (err) {
-      console.warn("Google Translate initialization warning:", err);
+      return false;
+    } catch (err: any) {
+      console.error("[GoogleTranslateWidget] Initialization error:", err);
+      setStatus("error");
+      setErrorMessage("Initialization failed: " + (err?.message || "Unknown error"));
+      return false;
+    }
+  }, []);
+
+  const handleScriptReady = useCallback(() => {
+    // Attempt immediate initialization
+    const initialized = initTranslateElement();
+
+    // Set a verification timeout to catch silent failures or ad-blocker suppression
+    if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
+    checkTimeoutRef.current = setTimeout(() => {
+      const targetEl = document.getElementById("google_translate_element");
+      const hasContent = targetEl && targetEl.children.length > 0;
+      if (!hasContent && !window.google?.translate?.TranslateElement) {
+        console.error(
+          "[GoogleTranslateWidget] Google Translate script failed to initialize target DOM. Likely blocked by ad-blocker or privacy extension."
+        );
+        setStatus("error");
+        setErrorMessage("Widget script loaded but widget element did not populate (likely ad-blocker interference).");
+      } else {
+        setStatus("ready");
+      }
+    }, 2500);
+  }, [initTranslateElement]);
+
+  const handleScriptError = useCallback((e: any) => {
+    console.error("[GoogleTranslateWidget] Failed to load Google Translate script from translate.google.com:", e);
+    setStatus("error");
+    setErrorMessage("Failed to fetch script from translate.google.com. Likely blocked by ad-blocker or network security policy.");
+  }, []);
+
+  useEffect(() => {
+    // Global callback definition MUST exist on window BEFORE or during script loading
+    window.googleTranslateElementInit = () => {
+      initTranslateElement();
+    };
+
+    // If google script is already present in window from previous route/mount
+    if (window.google?.translate?.TranslateElement) {
+      handleScriptReady();
+    } else {
+      // Set fallback timeout if script takes >5s or hangs
+      checkTimeoutRef.current = setTimeout(() => {
+        const targetEl = document.getElementById("google_translate_element");
+        if (!targetEl || targetEl.children.length === 0) {
+          if (!window.google?.translate?.TranslateElement) {
+            console.warn("[GoogleTranslateWidget] Loading timed out after 5 seconds.");
+            setStatus("error");
+            setErrorMessage("Translation script loading timed out. Please verify your connection or browser extensions.");
+          }
+        }
+      }, 5000);
+    }
+
+    return () => {
+      if (checkTimeoutRef.current) clearTimeout(checkTimeoutRef.current);
+    };
+  }, [handleScriptReady, initTranslateElement]);
+
+  const handleRetry = () => {
+    setStatus("loading");
+    setErrorMessage(null);
+    if (window.google?.translate?.TranslateElement) {
+      initTranslateElement();
+    } else {
+      // Force reload script if missing
+      const existing = document.getElementById("google-translate-script");
+      if (existing) {
+        existing.remove();
+      }
+      const script = document.createElement("script");
+      script.id = "google-translate-script";
+      script.src = "https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit";
+      script.onload = () => handleScriptReady();
+      script.onerror = (e) => handleScriptError(e);
+      document.body.appendChild(script);
     }
   };
 
   return (
     <div className="space-y-2 bg-white p-3 border border-earth-clay/20 shadow-sm">
+      <Script
+        id="google-translate-script"
+        src="https://translate.google.com/translate_a/element.js?cb=googleTranslateElementInit"
+        strategy="afterInteractive"
+        onReady={handleScriptReady}
+        onError={handleScriptError}
+      />
+
       <div className="flex items-center justify-between">
         <label className="text-[10px] font-bold uppercase tracking-wider text-earth-clay flex items-center space-x-1.5">
           <Globe className="h-3.5 w-3.5 text-earth-terracotta" />
@@ -78,15 +141,46 @@ export default function GoogleTranslateWidget() {
         </span>
       </div>
 
-      <div className="pt-1">
-        <div id="google_translate_element" className="min-h-[38px] flex items-center" />
+      <div className="pt-1 min-h-[38px] flex items-center">
+        {status === "loading" && (
+          <div className="flex items-center space-x-2 text-xs text-earth-clay/70 animate-pulse">
+            <RefreshCw className="h-3.5 w-3.5 animate-spin text-earth-terracotta" />
+            <span>Loading translation widget...</span>
+          </div>
+        )}
+
+        <div
+          id="google_translate_element"
+          className={`min-h-[38px] flex items-center w-full ${status === "error" ? "hidden" : "block"}`}
+        />
       </div>
 
-      {loadError && (
-        <p className="text-[10px] text-red-600 flex items-center gap-1 font-sans">
-          <Info className="h-3 w-3" />
-          <span>Google Translate widget failed to load. Check internet connection.</span>
-        </p>
+      {status === "error" && (
+        <div className="p-3 bg-amber-50/90 border border-amber-200 text-xs space-y-2 rounded-sm">
+          <div className="flex items-start gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="font-semibold text-amber-900">Translation Temporarily Unavailable</p>
+              <p className="text-[11px] text-amber-800/90 mt-0.5 leading-snug">
+                {errorMessage || "The Google Translate widget could not be loaded."}
+              </p>
+            </div>
+          </div>
+          <div className="pt-1 flex items-center justify-between border-t border-amber-200/60">
+            <button
+              type="button"
+              onClick={handleRetry}
+              className="inline-flex items-center gap-1 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider bg-earth-terracotta text-white hover:bg-earth-terracotta/90 transition-colors shadow-xs"
+            >
+              <RefreshCw className="h-3 w-3" />
+              Retry Loading
+            </button>
+            <span className="text-[9px] text-amber-800/70 italic flex items-center gap-1">
+              <Info className="h-3 w-3" />
+              Check ad-blocker / privacy extensions
+            </span>
+          </div>
+        </div>
       )}
 
       <p className="text-[9px] text-earth-clay/60 font-light font-sans">
@@ -95,3 +189,4 @@ export default function GoogleTranslateWidget() {
     </div>
   );
 }
+
