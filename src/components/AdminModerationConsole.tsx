@@ -30,6 +30,7 @@ import {
   Info,
 } from "lucide-react";
 import Link from "next/link";
+import { TRUSTED_IMAGE_HELPER_TEXT } from "@/lib/imageValidation";
 
 interface AdminModerationConsoleProps {
   currentUser: {
@@ -1370,6 +1371,7 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                       placeholder="https://images.unsplash.com/..."
                       className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest"
                     />
+                    <p className="text-[9px] text-earth-clay/70">{TRUSTED_IMAGE_HELPER_TEXT}</p>
                   </div>
                   <div className="space-y-1">
                     <label htmlFor="admin-dest-modal-gallery" className="text-[10px] font-bold uppercase text-earth-clay">Photo Gallery URLs (Optional, 1 per line)</label>

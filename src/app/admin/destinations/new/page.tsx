@@ -9,6 +9,7 @@ import Footer from "@/components/Footer";
 import MapPicker from "@/components/MapPicker";
 import { useUser } from "@/components/UserContext";
 import { CATEGORIES } from "@/app/data/mockData";
+import { isTrustedImageUrl, TRUSTED_IMAGE_HELPER_TEXT } from "@/lib/imageValidation";
 
 export default function NewDestinationPage() {
   const router = useRouter();
@@ -41,15 +42,18 @@ export default function NewDestinationPage() {
   const [success, setSuccess] = useState(false);
 
   const isValidImageUrl = (url: string) => {
-    const trimmed = url.trim();
-    if (!trimmed) return false;
-    return /^https?:\/\/.+/i.test(trimmed) || /^data:image\/.+/i.test(trimmed);
+    return isTrustedImageUrl(url);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!title || !desc || !location || !state || !photoUrl || !lat || !lng) {
       setError("Please fill in all required fields (including coordinate pins).");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
+    }
+    if (!isTrustedImageUrl(photoUrl)) {
+      setError("Main preview photo URL must be hosted on a trusted image platform (Unsplash, Wikimedia, Pexels, Imgur, Cloudinary, GitHub, Google, or Convex).");
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
@@ -515,6 +519,9 @@ export default function NewDestinationPage() {
                       placeholder="e.g. https://images.unsplash.com/photo-..."
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
                     />
+                    <p className="text-[10px] text-earth-charcoal/60 leading-tight">
+                      {TRUSTED_IMAGE_HELPER_TEXT}
+                    </p>
 
                     {/* Live Image Preview */}
                     {photoUrl && isValidImageUrl(photoUrl) && (

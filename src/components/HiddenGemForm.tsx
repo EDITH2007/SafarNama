@@ -5,6 +5,7 @@ import { Compass, Gift, ShieldAlert, Check, MapPin } from "lucide-react";
 import { CATEGORIES } from "@/app/data/mockData";
 import { useUser } from "@/components/UserContext";
 import MapPicker from "@/components/MapPicker";
+import { isTrustedImageUrl, TRUSTED_IMAGE_HELPER_TEXT } from "@/lib/imageValidation";
 
 interface HiddenGemFormProps {
   onSuccess?: () => void;
@@ -34,9 +35,7 @@ export default function HiddenGemForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const isValidImageUrl = (url: string) => {
-    const trimmed = url.trim();
-    if (!trimmed) return false;
-    return /^https?:\/\/.+/i.test(trimmed) || /^data:image\/.+/i.test(trimmed);
+    return isTrustedImageUrl(url);
   };
 
   const handleMapSelectLocation = (selectedLat: number, selectedLng: number, regionName: string) => {
@@ -57,7 +56,7 @@ export default function HiddenGemForm({
       return;
     }
     if (!isValidImageUrl(photoUrl)) {
-      setErrorMsg("Please enter a valid image URL starting with http://, https://, or data:image/");
+      setErrorMsg("Please enter a valid photo URL hosted on a trusted domain (Unsplash, Wikimedia, Pexels, Imgur, Cloudinary, GitHub, Google, or Convex).");
       return;
     }
     if (selectedCategories.length === 0) {
@@ -277,11 +276,14 @@ export default function HiddenGemForm({
                 placeholder="https://images.unsplash.com/..."
                 className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
               />
+              <p className="text-[10px] text-earth-charcoal/60 leading-tight">
+                {TRUSTED_IMAGE_HELPER_TEXT}
+              </p>
             </div>
 
             {photoUrl && !isValidImageUrl(photoUrl) && (
               <p className="text-red-600 text-[10px] font-semibold animate-pulse">
-                ⚠️ Please enter a valid URL starting with http://, https://, or data:image/
+                ⚠️ Untrusted photo host. Only URLs from Unsplash, Wikimedia, Pexels, Imgur, Cloudinary, GitHub, Google, or Convex are permitted.
               </p>
             )}
 
