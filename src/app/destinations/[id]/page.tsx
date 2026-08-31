@@ -598,10 +598,12 @@ export default function DestinationDetailPage({ params }: PageProps) {
 
                       {/* Review Text */}
                       <div className="space-y-1.5">
-                        <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                        <label htmlFor="dest-review-text" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                           Review Details
                         </label>
                         <textarea
+                          id="dest-review-text"
+                          name="destReviewText"
                           rows={4}
                           required
                           value={reviewText}

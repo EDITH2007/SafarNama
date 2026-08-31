@@ -313,10 +313,12 @@ export default function EditHiddenGemPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-gem-title" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Spot Title *
                     </label>
                     <input
+                      id="admin-gem-title"
+                      name="adminGemTitle"
                       type="text"
                       required
                       value={title}
@@ -357,10 +359,12 @@ export default function EditHiddenGemPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-gem-location" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Location / District / City *
                     </label>
                     <input
+                      id="admin-gem-location"
+                      name="adminGemLocation"
                       type="text"
                       required
                       value={location}
@@ -371,10 +375,12 @@ export default function EditHiddenGemPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-gem-state" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       State *
                     </label>
                     <input
+                      id="admin-gem-state"
+                      name="adminGemState"
                       type="text"
                       required
                       value={state}
@@ -386,10 +392,12 @@ export default function EditHiddenGemPage({ params }: PageProps) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                  <label htmlFor="admin-gem-desc" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                     Description *
                   </label>
                   <textarea
+                    id="admin-gem-desc"
+                    name="adminGemDesc"
                     rows={4}
                     required
                     value={desc}
@@ -408,10 +416,12 @@ export default function EditHiddenGemPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-gem-lat" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Latitude Coordinate *
                     </label>
                     <input
+                      id="admin-gem-lat"
+                      name="adminGemLat"
                       type="number"
                       step="any"
                       required
@@ -423,10 +433,12 @@ export default function EditHiddenGemPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-gem-lng" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Longitude Coordinate *
                     </label>
                     <input
+                      id="admin-gem-lng"
+                      name="adminGemLng"
                       type="number"
                       step="any"
                       required
@@ -451,11 +463,13 @@ export default function EditHiddenGemPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-gem-best-time" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Best Time to Visit</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
                     </label>
                     <input
+                      id="admin-gem-best-time"
+                      name="adminGemBestTime"
                       type="text"
                       value={bestTimeToVisit}
                       onChange={(e) => setBestTimeToVisit(e.target.value)}
@@ -465,11 +479,13 @@ export default function EditHiddenGemPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-gem-how-to-reach" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>How to Reach</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
                     </label>
                     <input
+                      id="admin-gem-how-to-reach"
+                      name="adminGemHowToReach"
                       type="text"
                       value={howToReach}
                       onChange={(e) => setHowToReach(e.target.value)}
@@ -481,11 +497,13 @@ export default function EditHiddenGemPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-gem-attractions" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Nearby Attractions</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(one per line)</span>
                     </label>
                     <textarea
+                      id="admin-gem-attractions"
+                      name="adminGemAttractions"
                       rows={3}
                       value={nearbyAttractionsRaw}
                       onChange={(e) => setNearbyAttractionsRaw(e.target.value)}
@@ -495,11 +513,13 @@ export default function EditHiddenGemPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-gem-tips" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Travel Advice & Tips</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(one per line)</span>
                     </label>
                     <textarea
+                      id="admin-gem-tips"
+                      name="adminGemTips"
                       rows={3}
                       value={tipsRaw}
                       onChange={(e) => setTipsRaw(e.target.value)}
@@ -518,10 +538,12 @@ export default function EditHiddenGemPage({ params }: PageProps) {
 
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-gem-photo-url" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Main Photo URL *
                     </label>
                     <input
+                      id="admin-gem-photo-url"
+                      name="adminGemPhotoUrl"
                       type="url"
                       required
                       value={photoUrl}
@@ -532,11 +554,13 @@ export default function EditHiddenGemPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-gem-gallery" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Additional Gallery Images</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(one per line)</span>
                     </label>
                     <textarea
+                      id="admin-gem-gallery"
+                      name="adminGemGallery"
                       rows={4}
                       value={galleryRaw}
                       onChange={(e) => setGalleryRaw(e.target.value)}

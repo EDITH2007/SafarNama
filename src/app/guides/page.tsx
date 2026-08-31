@@ -89,12 +89,14 @@ export default function GuidesPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Search Input */}
             <div className="relative">
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
+              <label htmlFor="guides-page-search" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
                 Search Guides or Locations
               </label>
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-earth-clay" />
                 <input
+                  id="guides-page-search"
+                  name="guidesPageSearch"
                   type="text"
                   placeholder="e.g. Tenzing, Hampi, Trek..."
                   value={searchQuery}
@@ -106,10 +108,12 @@ export default function GuidesPage() {
 
             {/* Destination Filter */}
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
+              <label htmlFor="guides-page-dest" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
                 Destination
               </label>
               <select
+                id="guides-page-dest"
+                name="guidesPageDest"
                 value={selectedDestination}
                 onChange={(e) => setSelectedDestination(e.target.value)}
                 className="w-full px-3 py-2 bg-earth-sand/20 border border-earth-clay/20 text-xs text-earth-charcoal focus:outline-none focus:border-earth-terracotta transition-colors cursor-pointer"
@@ -124,10 +128,12 @@ export default function GuidesPage() {
 
             {/* Language Filter */}
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
+              <label htmlFor="guides-page-lang" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
                 Language Spoken
               </label>
               <select
+                id="guides-page-lang"
+                name="guidesPageLang"
                 value={selectedLanguage}
                 onChange={(e) => setSelectedLanguage(e.target.value)}
                 className="w-full px-3 py-2 bg-earth-sand/20 border border-earth-clay/20 text-xs text-earth-charcoal focus:outline-none focus:border-earth-terracotta transition-colors cursor-pointer"
@@ -142,10 +148,12 @@ export default function GuidesPage() {
 
             {/* Explorer Tier Filter */}
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
+              <label htmlFor="guides-page-tier" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
                 Explorer Rank Level
               </label>
               <select
+                id="guides-page-tier"
+                name="guidesPageTier"
                 value={selectedTier}
                 onChange={(e) => setSelectedTier(e.target.value)}
                 className="w-full px-3 py-2 bg-earth-sand/20 border border-earth-clay/20 text-xs text-earth-charcoal focus:outline-none focus:border-earth-terracotta transition-colors cursor-pointer"

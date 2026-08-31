@@ -154,7 +154,7 @@ export default function SignInPage() {
           {/* Credentials Sign In Form */}
           <form onSubmit={handleCredentialsSignIn} className="space-y-5 mt-4">
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-earth-charcoal uppercase tracking-wider">
+              <label htmlFor="signin-email" className="block text-xs font-bold text-earth-charcoal uppercase tracking-wider">
                 Gmail Address
               </label>
               <div className="relative">
@@ -162,6 +162,8 @@ export default function SignInPage() {
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
+                  id="signin-email"
+                  name="signinEmail"
                   type="email"
                   required
                   value={email}
@@ -173,7 +175,7 @@ export default function SignInPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-earth-charcoal uppercase tracking-wider">
+              <label htmlFor="signin-password" className="block text-xs font-bold text-earth-charcoal uppercase tracking-wider">
                 Password
               </label>
               <div className="relative">
@@ -181,6 +183,8 @@ export default function SignInPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  id="signin-password"
+                  name="signinPassword"
                   type="password"
                   required
                   value={password}

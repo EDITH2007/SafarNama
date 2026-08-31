@@ -92,12 +92,14 @@ export default function DashboardGuidesTab({ onNavigateToProfile }: DashboardGui
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {/* Search Input */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
+            <label htmlFor="dash-guide-search" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
               Search Name or Location
             </label>
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-earth-clay" />
               <input
+                id="dash-guide-search"
+                name="dashGuideSearch"
                 type="text"
                 placeholder="e.g. Tenzing, Hampi, Trek..."
                 value={searchQuery}
@@ -109,10 +111,12 @@ export default function DashboardGuidesTab({ onNavigateToProfile }: DashboardGui
 
           {/* Destination Filter */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
+            <label htmlFor="dash-guide-dest-filter" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
               Filter by Destination
             </label>
             <select
+              id="dash-guide-dest-filter"
+              name="dashGuideDestFilter"
               value={selectedDestination}
               onChange={(e) => setSelectedDestination(e.target.value)}
               className="w-full px-3 py-2 bg-earth-sand/20 border border-earth-clay/20 text-xs text-earth-charcoal focus:outline-none focus:border-earth-terracotta cursor-pointer"
@@ -127,10 +131,12 @@ export default function DashboardGuidesTab({ onNavigateToProfile }: DashboardGui
 
           {/* Language Filter */}
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
+            <label htmlFor="dash-guide-lang-filter" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/70 mb-1">
               Filter by Language
             </label>
             <select
+              id="dash-guide-lang-filter"
+              name="dashGuideLangFilter"
               value={selectedLanguage}
               onChange={(e) => setSelectedLanguage(e.target.value)}
               className="w-full px-3 py-2 bg-earth-sand/20 border border-earth-clay/20 text-xs text-earth-charcoal focus:outline-none focus:border-earth-terracotta cursor-pointer"

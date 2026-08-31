@@ -389,10 +389,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                   </>
                 ) : (
                   <div className="w-full space-y-3 bg-white border border-red-200/50 p-4">
-                    <label className="block text-[10px] font-bold uppercase tracking-wider text-red-800">
+                    <label htmlFor="gem-reject-reason" className="block text-[10px] font-bold uppercase tracking-wider text-red-800">
                       Rejection Feedback Note / Reason:
                     </label>
                     <textarea
+                      id="gem-reject-reason"
+                      name="gemRejectReason"
                       rows={2}
                       value={rejectionReasonText}
                       onChange={(e) => setRejectionReasonText(e.target.value)}
@@ -442,10 +444,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                 {/* Basic info */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-1">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="gem-edit-title" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Spot Name *
                     </label>
                     <input
+                      id="gem-edit-title"
+                      name="gemEditTitle"
                       type="text"
                       required
                       value={editTitle}
@@ -485,10 +489,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="gem-edit-location" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       City / Valley / District *
                     </label>
                     <input
+                      id="gem-edit-location"
+                      name="gemEditLocation"
                       type="text"
                       required
                       value={editLocation}
@@ -498,10 +504,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="gem-edit-state" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       State *
                     </label>
                     <input
+                      id="gem-edit-state"
+                      name="gemEditState"
                       type="text"
                       required
                       value={editState}
@@ -512,10 +520,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                 </div>
 
                 <div className="space-y-1">
-                  <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                  <label htmlFor="gem-edit-desc" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                     Detailed Description *
                   </label>
                   <textarea
+                    id="gem-edit-desc"
+                    name="gemEditDesc"
                     rows={4}
                     required
                     value={editDesc}
@@ -531,10 +541,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                   </h3>
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                      <label htmlFor="gem-edit-lat" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                         Latitude Coordinate *
                       </label>
                       <input
+                        id="gem-edit-lat"
+                        name="gemEditLat"
                         type="number"
                         step="any"
                         required
@@ -544,10 +556,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                      <label htmlFor="gem-edit-lng" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                         Longitude Coordinate *
                       </label>
                       <input
+                        id="gem-edit-lng"
+                        name="gemEditLng"
                         type="number"
                         step="any"
                         required
@@ -570,10 +584,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                   </h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div className="space-y-1">
-                      <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                      <label htmlFor="gem-edit-best-time" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                         Best Time to Visit (optional)
                       </label>
                       <input
+                        id="gem-edit-best-time"
+                        name="gemEditBestTime"
                         type="text"
                         value={bestTimeToVisit}
                         onChange={(e) => setBestTimeToVisit(e.target.value)}
@@ -582,10 +598,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                      <label htmlFor="gem-edit-how-to-reach" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                         How to Reach (optional)
                       </label>
                       <input
+                        id="gem-edit-how-to-reach"
+                        name="gemEditHowToReach"
                         type="text"
                         value={howToReach}
                         onChange={(e) => setHowToReach(e.target.value)}
@@ -595,10 +613,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                      <label htmlFor="gem-edit-attractions" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                         Nearby Attractions (optional, one per line)
                       </label>
                       <textarea
+                        id="gem-edit-attractions"
+                        name="gemEditAttractions"
                         rows={3}
                         value={nearbyAttractionsRaw}
                         onChange={(e) => setNearbyAttractionsRaw(e.target.value)}
@@ -608,10 +628,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                      <label htmlFor="gem-edit-tips" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                         Travel Advice & Tips (optional, one per line)
                       </label>
                       <textarea
+                        id="gem-edit-tips"
+                        name="gemEditTips"
                         rows={3}
                         value={tipsRaw}
                         onChange={(e) => setTipsRaw(e.target.value)}
@@ -629,10 +651,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                   </h3>
                   <div className="space-y-3">
                     <div className="space-y-1">
-                      <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                      <label htmlFor="gem-edit-photo-url" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                         Main Photo URL *
                       </label>
                       <input
+                        id="gem-edit-photo-url"
+                        name="gemEditPhotoUrl"
                         type="url"
                         required
                         value={editPhotoUrl}
@@ -641,10 +665,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                       />
                     </div>
                     <div className="space-y-1">
-                      <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                      <label htmlFor="gem-edit-gallery" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                         Additional Photo Gallery URLs (optional, one per line)
                       </label>
                       <textarea
+                        id="gem-edit-gallery"
+                        name="gemEditGallery"
                         rows={3}
                         value={galleryRaw}
                         onChange={(e) => setGalleryRaw(e.target.value)}
@@ -1102,10 +1128,12 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
                           {/* Review Text */}
                           <div className="space-y-1.5">
-                            <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                            <label htmlFor="gem-review-text" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                               Log Details
                             </label>
                             <textarea
+                              id="gem-review-text"
+                              name="gemReviewText"
                               rows={4}
                               required
                               value={reviewText}

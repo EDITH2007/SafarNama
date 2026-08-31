@@ -178,7 +178,10 @@ export default function Hero({ onSearch }: HeroProps) {
             <div className="flex-1 flex items-center px-4 py-3 space-x-2 text-earth-charcoal">
               <Search className="h-5 w-5 text-earth-clay/60 shrink-0" />
               <input
+                id="hero-search"
+                name="heroSearch"
                 type="text"
+                aria-label="Search destinations or hidden gems"
                 value={query}
                 onFocus={() => setIsFocused(true)}
                 onChange={(e) => {

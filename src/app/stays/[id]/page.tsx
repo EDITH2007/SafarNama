@@ -319,10 +319,12 @@ export default function StayDetailPage({ params }: PageProps) {
                 <div className="space-y-4 font-sans text-xs">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-1">
-                      <label className="block text-[10px] uppercase font-bold text-earth-charcoal tracking-wider">
+                      <label htmlFor="stay-check-in" className="block text-[10px] uppercase font-bold text-earth-charcoal tracking-wider">
                         Check-In Date
                       </label>
                       <input
+                        id="stay-check-in"
+                        name="stayCheckIn"
                         type="date"
                         value={checkIn}
                         min={todayStr}
@@ -332,10 +334,12 @@ export default function StayDetailPage({ params }: PageProps) {
                     </div>
 
                     <div className="space-y-1">
-                      <label className="block text-[10px] uppercase font-bold text-earth-charcoal tracking-wider">
+                      <label htmlFor="stay-check-out" className="block text-[10px] uppercase font-bold text-earth-charcoal tracking-wider">
                         Check-Out Date
                       </label>
                       <input
+                        id="stay-check-out"
+                        name="stayCheckOut"
                         type="date"
                         value={checkOut}
                         min={checkIn}
@@ -346,10 +350,12 @@ export default function StayDetailPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1">
-                    <label className="block text-[10px] uppercase font-bold text-earth-charcoal tracking-wider">
+                    <label htmlFor="stay-guests" className="block text-[10px] uppercase font-bold text-earth-charcoal tracking-wider">
                       Number of Guests
                     </label>
                     <select
+                      id="stay-guests"
+                      name="stayGuests"
                       value={guests}
                       onChange={(e) => setGuests(Number(e.target.value))}
                       className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs font-medium focus:outline-none focus:border-earth-terracotta cursor-pointer"

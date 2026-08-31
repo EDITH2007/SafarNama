@@ -87,7 +87,10 @@ export default function DestinationsPage() {
             <div className="w-full lg:w-72 flex items-center bg-white border border-earth-clay/20 px-3.5 py-2 shadow-sm focus-within:border-earth-terracotta transition-colors shrink-0">
               <Search className="h-4 w-4 text-earth-clay/60 mr-2 shrink-0" />
               <input
+                id="destinations-search"
+                name="destinationsSearch"
                 type="text"
+                aria-label="Search chronicles"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search chronicles..."

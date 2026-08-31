@@ -100,7 +100,10 @@ export default function HiddenGemsPage() {
             <div className="w-full lg:w-72 flex items-center bg-[#142B1B] border border-white/10 px-3.5 py-2 shadow-sm focus-within:border-earth-saffron transition-colors shrink-0">
               <Search className="h-4 w-4 text-earth-sand/40 mr-2 shrink-0" />
               <input
+                id="hidden-gems-search"
+                name="hiddenGemsSearch"
                 type="text"
+                aria-label="Search hidden gems"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search hidden gems..."

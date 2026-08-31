@@ -293,10 +293,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
 
         <div className="space-y-4">
           <div>
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+            <label htmlFor="guide-bio" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
               Guide Bio & Experience Highlights
             </label>
             <textarea
+              id="guide-bio"
+              name="guideBio"
               rows={3}
               required
               placeholder="Tell travelers about your trekking background, local knowledge, and what makes your tours unique..."
@@ -308,10 +310,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+              <label htmlFor="guide-languages" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                 Languages Spoken (comma separated)
               </label>
               <input
+                id="guide-languages"
+                name="guideLanguages"
                 type="text"
                 required
                 placeholder="e.g. English, Hindi, Malayalam"
@@ -322,10 +326,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+              <label htmlFor="guide-destinations" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                 Destinations / Regions Covered (comma separated)
               </label>
               <input
+                id="guide-destinations"
+                name="guideDestinations"
                 type="text"
                 required
                 placeholder="e.g. Munnar, Hampi, Manali"
@@ -338,10 +344,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+              <label htmlFor="guide-years-exp" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                 Years of Guiding Experience
               </label>
               <input
+                id="guide-years-exp"
+                name="guideYearsExp"
                 type="number"
                 min={1}
                 max={50}
@@ -353,10 +361,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
             </div>
 
             <div>
-              <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+              <label htmlFor="guide-price-day" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                 Base Daily Guide Rate (₹ INR)
               </label>
               <input
+                id="guide-price-day"
+                name="guidePriceDay"
                 type="number"
                 min={500}
                 max={50000}
@@ -621,10 +631,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
 
             <form onSubmit={handleCreatePackage} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                <label htmlFor="pkg-title" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                   Package Title
                 </label>
                 <input
+                  id="pkg-title"
+                  name="pkgTitle"
                   type="text"
                   required
                   placeholder="e.g. 3-Day Secret Waterfall & Tea Trail Hike"
@@ -635,10 +647,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
               </div>
 
               <div>
-                <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                <label htmlFor="pkg-desc" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                   Package Description
                 </label>
                 <textarea
+                  id="pkg-desc"
+                  name="pkgDesc"
                   rows={3}
                   required
                   placeholder="Describe the journey highlights, trail route, and offbeat stops..."
@@ -650,10 +664,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                  <label htmlFor="pkg-duration" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                     Duration (Days)
                   </label>
                   <input
+                    id="pkg-duration"
+                    name="pkgDuration"
                     type="number"
                     min={1}
                     max={30}
@@ -665,10 +681,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
                 </div>
 
                 <div>
-                  <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                  <label htmlFor="pkg-price" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                     Total Package Price (₹ INR)
                   </label>
                   <input
+                    id="pkg-price"
+                    name="pkgPrice"
                     type="number"
                     min={500}
                     max={100000}
@@ -681,10 +699,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
               </div>
 
               <div>
-                <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                <label htmlFor="pkg-includes" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                   What's Included (comma separated)
                 </label>
                 <input
+                  id="pkg-includes"
+                  name="pkgIncludes"
                   type="text"
                   required
                   placeholder="e.g. Local Transport, Meals, Permits, Safety Gear"
@@ -695,10 +715,12 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
               </div>
 
               <div>
-                <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                <label htmlFor="pkg-destination" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                   Primary Destination Name (Optional)
                 </label>
                 <input
+                  id="pkg-destination"
+                  name="pkgDestination"
                   type="text"
                   placeholder="e.g. Munnar, Hampi, Manali"
                   value={pkgDestination}

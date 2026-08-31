@@ -119,7 +119,10 @@ function StaysContent() {
               <div className="relative flex-grow max-w-md">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-earth-clay/60" />
                 <input
+                  id="stays-search"
+                  name="staysSearch"
                   type="text"
+                  aria-label="Search stays, amenities, host or features"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search stays, amenities, host or features..."
@@ -131,6 +134,9 @@ function StaysContent() {
               <div className="flex items-center space-x-2 shrink-0">
                 <MapPin className="w-4 h-4 text-earth-terracotta shrink-0" />
                 <select
+                  id="stays-dest-filter"
+                  name="staysDestFilter"
+                  aria-label="Filter stays by destination"
                   value={selectedDestId}
                   onChange={(e) => setSelectedDestId(e.target.value)}
                   className="p-2.5 bg-earth-sand/20 border border-earth-clay/20 text-xs font-bold text-earth-forest focus:outline-none focus:border-earth-terracotta cursor-pointer max-w-[220px]"
@@ -148,10 +154,12 @@ function StaysContent() {
               <div className="flex items-center space-x-3 shrink-0 bg-earth-sand/20 px-3 py-2 border border-earth-clay/15">
                 <SlidersHorizontal className="w-4 h-4 text-earth-clay shrink-0" />
                 <div className="flex flex-col">
-                  <span className="text-[9px] uppercase font-bold text-earth-clay tracking-wider">
+                  <label htmlFor="stays-price-range" className="text-[9px] uppercase font-bold text-earth-clay tracking-wider">
                     Max Rate: <strong className="text-earth-forest font-mono">{formatPrice(maxPriceFilter)}</strong>
-                  </span>
+                  </label>
                   <input
+                    id="stays-price-range"
+                    name="staysPriceRange"
                     type="range"
                     min={1500}
                     max={12000}

@@ -108,11 +108,14 @@ export default function Footer() {
             ) : (
               <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-2">
                 <input
+                  id="newsletter-email"
+                  name="newsletterEmail"
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Your Email"
                   required
+                  aria-label="Your Email"
                   className="px-4 py-2.5 rounded-none border border-earth-sand/20 bg-earth-sand/5 text-earth-sand text-sm font-sans focus:outline-none focus:border-earth-saffron w-full"
                 />
                 <button

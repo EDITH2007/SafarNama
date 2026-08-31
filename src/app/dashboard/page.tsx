@@ -1053,7 +1053,10 @@ Ensure costs are in INR numbers.`;
                       <div className="relative flex-1">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-earth-clay/50" />
                         <input
+                          id="dash-explore-search"
+                          name="dashExploreSearch"
                           type="text"
+                          aria-label="Search places, states, valleys, or activities"
                           value={exploreSearch}
                           onChange={(e) => setExploreSearch(e.target.value)}
                           placeholder="Search places, states, valleys, or activities..."
@@ -1331,10 +1334,12 @@ Ensure costs are in INR numbers.`;
                           <div className="space-y-6">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div ref={suggestionsRef} className="relative space-y-1">
-                                <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                                <label htmlFor="plan-region" className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
                                   Where do you want to go? *
                                 </label>
                                 <input
+                                  id="plan-region"
+                                  name="planRegion"
                                   type="text"
                                   required
                                   value={planRegion}
@@ -1366,10 +1371,12 @@ Ensure costs are in INR numbers.`;
                               </div>
 
                               <div className="space-y-1">
-                                <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                                <label htmlFor="plan-days" className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
                                   Duration (Days) *
                                 </label>
                                 <input
+                                  id="plan-days"
+                                  name="planDays"
                                   type="number"
                                   required
                                   min={1}
@@ -1383,10 +1390,12 @@ Ensure costs are in INR numbers.`;
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                               <div className="space-y-1">
-                                <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                                <label htmlFor="plan-budget" className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
                                   Budget (₹ INR) *
                                 </label>
                                 <input
+                                  id="plan-budget"
+                                  name="planBudget"
                                   type="number"
                                   required
                                   min={1000}
@@ -1397,10 +1406,12 @@ Ensure costs are in INR numbers.`;
                               </div>
 
                               <div className="space-y-1">
-                                <label className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
+                                <label htmlFor="plan-budget-style" className="block text-[9px] font-bold uppercase tracking-wider text-earth-clay">
                                   Budget Style
                                 </label>
                                 <select
+                                  id="plan-budget-style"
+                                  name="planBudgetStyle"
                                   value={planBudgetStyle}
                                   onChange={(e) => setPlanBudgetStyle(e.target.value as any)}
                                   className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta font-semibold"
@@ -1756,10 +1767,12 @@ Ensure costs are in INR numbers.`;
                     <form onSubmit={handleAddJourneySubmit} className="space-y-6 font-sans text-xs">
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="md:col-span-2 space-y-1">
-                          <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                          <label htmlFor="journey-title" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                             Journey Title *
                           </label>
                           <input
+                            id="journey-title"
+                            name="journeyTitle"
                             type="text"
                             required
                             value={jTitle}
@@ -1770,10 +1783,12 @@ Ensure costs are in INR numbers.`;
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                          <label htmlFor="journey-duration" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                             Duration *
                           </label>
                           <input
+                            id="journey-duration"
+                            name="journeyDuration"
                             type="text"
                             required
                             value={jDuration}
@@ -1785,10 +1800,12 @@ Ensure costs are in INR numbers.`;
                       </div>
 
                       <div className="space-y-1">
-                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                        <label htmlFor="journey-desc" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                           Journey Story / Overview *
                         </label>
                         <textarea
+                          id="journey-desc"
+                          name="journeyDesc"
                           rows={3}
                           required
                           value={jDesc}
@@ -1833,10 +1850,12 @@ Ensure costs are in INR numbers.`;
 
                     <form onSubmit={handleAddBlogSubmit} className="space-y-6 font-sans text-xs">
                       <div className="space-y-1">
-                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                        <label htmlFor="blog-title" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                           Story Title *
                         </label>
                         <input
+                          id="blog-title"
+                          name="blogTitle"
                           type="text"
                           required
                           value={bTitle}
@@ -1847,10 +1866,12 @@ Ensure costs are in INR numbers.`;
                       </div>
 
                       <div className="space-y-1">
-                        <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+                        <label htmlFor="blog-content" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                           Story Content *
                         </label>
                         <textarea
+                          id="blog-content"
+                          name="blogContent"
                           rows={8}
                           required
                           value={bContent}
@@ -2051,6 +2072,9 @@ Ensure costs are in INR numbers.`;
 
                       <div className="flex flex-wrap items-center gap-3">
                         <select
+                          id="expense-selected-trip"
+                          name="expenseSelectedTrip"
+                          aria-label="Select trip view mode for expense tracking"
                           value={selectedTripId}
                           onChange={(e) => setSelectedTripId(e.target.value)}
                           className="p-2 bg-white border border-earth-clay/20 text-xs font-medium focus:outline-none focus:border-earth-terracotta shadow-sm"
@@ -2089,10 +2113,12 @@ Ensure costs are in INR numbers.`;
 
                           <form onSubmit={handleCreateCustomTrip} className="space-y-4 font-sans text-xs">
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-bold uppercase text-earth-charcoal">
+                              <label htmlFor="new-trip-title" className="block text-[10px] font-bold uppercase text-earth-charcoal">
                                 Trip Name / Title
                               </label>
                               <input
+                                id="new-trip-title"
+                                name="newTripTitle"
                                 type="text"
                                 value={newTripTitle}
                                 onChange={(e) => setNewTripTitle(e.target.value)}
@@ -2102,10 +2128,12 @@ Ensure costs are in INR numbers.`;
                             </div>
 
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-bold uppercase text-earth-charcoal">
+                              <label htmlFor="new-trip-dest" className="block text-[10px] font-bold uppercase text-earth-charcoal">
                                 Destination Name *
                               </label>
                               <input
+                                id="new-trip-dest"
+                                name="newTripDest"
                                 type="text"
                                 required
                                 value={newTripDest}
@@ -2117,10 +2145,12 @@ Ensure costs are in INR numbers.`;
 
                             <div className="grid grid-cols-2 gap-3">
                               <div className="space-y-1">
-                                <label className="block text-[10px] font-bold uppercase text-earth-charcoal">
+                                <label htmlFor="new-trip-start-date" className="block text-[10px] font-bold uppercase text-earth-charcoal">
                                   Start Date
                                 </label>
                                 <input
+                                  id="new-trip-start-date"
+                                  name="newTripStartDate"
                                   type="date"
                                   value={newTripStartDate}
                                   onChange={(e) => setNewTripStartDate(e.target.value)}
@@ -2129,10 +2159,12 @@ Ensure costs are in INR numbers.`;
                               </div>
 
                               <div className="space-y-1">
-                                <label className="block text-[10px] font-bold uppercase text-earth-charcoal">
+                                <label htmlFor="new-trip-end-date" className="block text-[10px] font-bold uppercase text-earth-charcoal">
                                   End Date
                                 </label>
                                 <input
+                                  id="new-trip-end-date"
+                                  name="newTripEndDate"
                                   type="date"
                                   value={newTripEndDate}
                                   onChange={(e) => setNewTripEndDate(e.target.value)}
@@ -2142,10 +2174,12 @@ Ensure costs are in INR numbers.`;
                             </div>
 
                             <div className="space-y-1">
-                              <label className="block text-[10px] font-bold uppercase text-earth-charcoal">
+                              <label htmlFor="new-trip-desc" className="block text-[10px] font-bold uppercase text-earth-charcoal">
                                 Trip Notes / Description
                               </label>
                               <textarea
+                                id="new-trip-desc"
+                                name="newTripDesc"
                                 rows={2}
                                 value={newTripDesc}
                                 onChange={(e) => setNewTripDesc(e.target.value)}
@@ -2287,10 +2321,12 @@ Ensure costs are in INR numbers.`;
 
                         {selectedTripId === "all" && (
                           <div className="space-y-1">
-                            <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
+                            <label htmlFor="exp-target-trip" className="block text-[9px] font-bold uppercase text-earth-charcoal">
                               Select Target Trip *
                             </label>
                             <select
+                              id="exp-target-trip"
+                              name="expTargetTrip"
                               value={targetTripForForm}
                               onChange={(e) => setTargetTripForForm(e.target.value)}
                               className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
@@ -2306,10 +2342,12 @@ Ensure costs are in INR numbers.`;
 
                         <div className="grid grid-cols-2 gap-3">
                           <div className="space-y-1">
-                            <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
+                            <label htmlFor="exp-amount" className="block text-[9px] font-bold uppercase text-earth-charcoal">
                               Amount (₹ INR) *
                             </label>
                             <input
+                              id="exp-amount"
+                              name="expAmount"
                               type="number"
                               required
                               min={1}
@@ -2321,10 +2359,12 @@ Ensure costs are in INR numbers.`;
                           </div>
 
                           <div className="space-y-1">
-                            <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
+                            <label htmlFor="exp-category" className="block text-[9px] font-bold uppercase text-earth-charcoal">
                               Category *
                             </label>
                             <select
+                              id="exp-category"
+                              name="expCategory"
                               value={expCategory}
                               onChange={(e) => setExpCategory(e.target.value as any)}
                               className="w-full p-2 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-terracotta"
@@ -2339,10 +2379,12 @@ Ensure costs are in INR numbers.`;
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
+                          <label htmlFor="exp-date" className="block text-[9px] font-bold uppercase text-earth-charcoal">
                             Expense Date
                           </label>
                           <input
+                            id="exp-date"
+                            name="expDate"
                             type="date"
                             value={expDate}
                             onChange={(e) => setExpDate(e.target.value)}
@@ -2351,10 +2393,12 @@ Ensure costs are in INR numbers.`;
                         </div>
 
                         <div className="space-y-1">
-                          <label className="block text-[9px] font-bold uppercase text-earth-charcoal">
+                          <label htmlFor="exp-desc" className="block text-[9px] font-bold uppercase text-earth-charcoal">
                             Description / Note *
                           </label>
                           <input
+                            id="exp-desc"
+                            name="expDesc"
                             type="text"
                             required
                             value={expDesc}
@@ -2794,11 +2838,13 @@ Ensure costs are in INR numbers.`;
 
                       {/* Currency Display Preference Row (Task 3) */}
                       <div className="space-y-1">
-                        <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay flex items-center space-x-1">
+                        <label htmlFor="pref-currency" className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay flex items-center space-x-1">
                           <DollarSign className="h-3.5 w-3.5 text-earth-terracotta" />
                           <span>Site-wide Display Currency</span>
                         </label>
                         <select
+                          id="pref-currency"
+                          name="prefCurrency"
                           value={currentUser.currency || "INR"}
                           disabled={isUpdatingPrefs}
                           onChange={(e) => handlePreferenceChange("currency", e.target.value)}

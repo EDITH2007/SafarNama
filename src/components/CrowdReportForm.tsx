@@ -173,10 +173,12 @@ export default function CrowdReportForm({
 
           {/* Crowd Note */}
           <div className="space-y-1.5">
-            <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+            <label htmlFor="crowd-report-note" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
               Observations & Advice (Optional)
             </label>
             <textarea
+              id="crowd-report-note"
+              name="crowdReportNote"
               rows={2}
               value={note}
               onChange={(e) => setNote(e.target.value)}

@@ -141,10 +141,12 @@ export default function HiddenGemForm({
           {/* Title & Category Vibe Row */}
           <div className="space-y-4">
             <div className="space-y-1">
-              <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+              <label htmlFor="gem-spot-name" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                 Spot Name *
               </label>
               <input
+                id="gem-spot-name"
+                name="gemSpotName"
                 type="text"
                 required
                 value={title}
@@ -190,10 +192,12 @@ export default function HiddenGemForm({
           {/* Location & State Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+              <label htmlFor="gem-city" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                 City / District *
               </label>
               <input
+                id="gem-city"
+                name="gemCity"
                 type="text"
                 required
                 value={location}
@@ -204,10 +208,12 @@ export default function HiddenGemForm({
             </div>
 
             <div className="space-y-1">
-              <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+              <label htmlFor="gem-state" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                 State *
               </label>
               <input
+                id="gem-state"
+                name="gemState"
                 type="text"
                 required
                 value={stateName}
@@ -221,10 +227,12 @@ export default function HiddenGemForm({
           {/* Numeric Lat / Lng Coordinates Row */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div className="space-y-1">
-              <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+              <label htmlFor="gem-lat" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                 Latitude Coordinate *
               </label>
               <input
+                id="gem-lat"
+                name="gemLat"
                 type="number"
                 step="any"
                 required
@@ -236,10 +244,12 @@ export default function HiddenGemForm({
             </div>
 
             <div className="space-y-1">
-              <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+              <label htmlFor="gem-lng" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                 Longitude Coordinate *
               </label>
               <input
+                id="gem-lng"
+                name="gemLng"
                 type="number"
                 step="any"
                 required
@@ -254,10 +264,12 @@ export default function HiddenGemForm({
           {/* Photo URL & Live Thumbnail Preview */}
           <div className="space-y-2 border border-earth-clay/10 p-3 bg-earth-sand/5">
             <div className="space-y-1">
-              <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+              <label htmlFor="gem-photo-url" className="block font-bold uppercase tracking-wider text-earth-charcoal">
                 Photo URL *
               </label>
               <input
+                id="gem-photo-url"
+                name="gemPhotoUrl"
                 type="text"
                 required
                 value={photoUrl}
@@ -295,10 +307,12 @@ export default function HiddenGemForm({
 
           {/* Description & Details */}
           <div className="space-y-1">
-            <label className="block font-bold uppercase tracking-wider text-earth-charcoal">
+            <label htmlFor="gem-description" className="block font-bold uppercase tracking-wider text-earth-charcoal">
               Description &amp; Details *
             </label>
             <textarea
+              id="gem-description"
+              name="gemDescription"
               required
               rows={3}
               value={description}

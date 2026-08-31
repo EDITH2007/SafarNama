@@ -254,10 +254,12 @@ export default function NewDestinationPage() {
                 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="new-dest-title" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Destination Title *
                     </label>
                     <input
+                      id="new-dest-title"
+                      name="newDestTitle"
                       type="text"
                       required
                       value={title}
@@ -268,10 +270,12 @@ export default function NewDestinationPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="new-dest-category" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Category *
                     </label>
                     <select
+                      id="new-dest-category"
+                      name="newDestCategory"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
@@ -285,10 +289,12 @@ export default function NewDestinationPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="new-dest-location" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Location / District *
                     </label>
                     <input
+                      id="new-dest-location"
+                      name="newDestLocation"
                       type="text"
                       required
                       value={location}
@@ -299,10 +305,12 @@ export default function NewDestinationPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="new-dest-state" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       State *
                     </label>
                     <input
+                      id="new-dest-state"
+                      name="newDestState"
                       type="text"
                       required
                       value={state}
@@ -314,10 +322,12 @@ export default function NewDestinationPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                  <label htmlFor="new-dest-desc" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                     Description *
                   </label>
                   <textarea
+                    id="new-dest-desc"
+                    name="newDestDesc"
                     rows={4}
                     required
                     value={desc}
@@ -336,10 +346,12 @@ export default function NewDestinationPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="new-dest-lat" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Latitude Coordinate (Decimal) *
                     </label>
                     <input
+                      id="new-dest-lat"
+                      name="newDestLat"
                       type="number"
                       step="any"
                       required
@@ -351,10 +363,12 @@ export default function NewDestinationPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="new-dest-lng" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Longitude Coordinate (Decimal) *
                     </label>
                     <input
+                      id="new-dest-lng"
+                      name="newDestLng"
                       type="number"
                       step="any"
                       required
@@ -379,11 +393,13 @@ export default function NewDestinationPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="new-dest-best-time" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Best Time to Visit</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
                     </label>
                     <input
+                      id="new-dest-best-time"
+                      name="newDestBestTime"
                       type="text"
                       value={bestTimeToVisit}
                       onChange={(e) => setBestTimeToVisit(e.target.value)}
@@ -393,11 +409,13 @@ export default function NewDestinationPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="new-dest-how-to-reach" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>How to Reach</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
                     </label>
                     <input
+                      id="new-dest-how-to-reach"
+                      name="newDestHowToReach"
                       type="text"
                       value={howToReach}
                       onChange={(e) => setHowToReach(e.target.value)}
@@ -409,11 +427,13 @@ export default function NewDestinationPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="new-dest-source-name" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Attribution Source Name</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional, e.g. Wikipedia)</span>
                     </label>
                     <input
+                      id="new-dest-source-name"
+                      name="newDestSourceName"
                       type="text"
                       value={sourceName}
                       onChange={(e) => setSourceName(e.target.value)}
@@ -423,11 +443,13 @@ export default function NewDestinationPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="new-dest-source-url" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Attribution Source URL</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
                     </label>
                     <input
+                      id="new-dest-source-url"
+                      name="newDestSourceUrl"
                       type="text"
                       value={sourceUrl}
                       onChange={(e) => setSourceUrl(e.target.value)}
@@ -439,11 +461,13 @@ export default function NewDestinationPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="new-dest-attractions" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Nearby Attractions</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional, one per line)</span>
                     </label>
                     <textarea
+                      id="new-dest-attractions"
+                      name="newDestAttractions"
                       rows={3}
                       value={nearbyAttractionsRaw}
                       onChange={(e) => setNearbyAttractionsRaw(e.target.value)}
@@ -453,11 +477,13 @@ export default function NewDestinationPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="new-dest-tips" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Admin Travel Tips</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional, one per line)</span>
                     </label>
                     <textarea
+                      id="new-dest-tips"
+                      name="newDestTips"
                       rows={3}
                       value={tipsRaw}
                       onChange={(e) => setTipsRaw(e.target.value)}
@@ -476,10 +502,12 @@ export default function NewDestinationPage() {
 
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="new-dest-photo-url" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Main Preview Photo URL *
                     </label>
                     <input
+                      id="new-dest-photo-url"
+                      name="newDestPhotoUrl"
                       type="url"
                       required
                       value={photoUrl}
@@ -507,11 +535,13 @@ export default function NewDestinationPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="new-dest-gallery" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Additional Photo Gallery URLs</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional, one URL per line)</span>
                     </label>
                     <textarea
+                      id="new-dest-gallery"
+                      name="newDestGallery"
                       rows={4}
                       value={galleryRaw}
                       onChange={(e) => setGalleryRaw(e.target.value)}
@@ -530,10 +560,12 @@ export default function NewDestinationPage() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="new-dest-crowd-level" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Baseline Crowd Level *
                     </label>
                     <select
+                      id="new-dest-crowd-level"
+                      name="newDestCrowdLevel"
                       value={crowdLevel}
                       onChange={(e) => setCrowdLevel(e.target.value)}
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
@@ -546,11 +578,13 @@ export default function NewDestinationPage() {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="new-dest-crowd-note" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Crowd Advisory / Note</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
                     </label>
                     <input
+                      id="new-dest-crowd-note"
+                      name="newDestCrowdNote"
                       type="text"
                       value={crowdSourceNote}
                       onChange={(e) => setCrowdSourceNote(e.target.value)}

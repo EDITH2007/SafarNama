@@ -53,10 +53,12 @@ export default function CurrencyConverterCard() {
       <div className="grid grid-cols-1 md:grid-cols-7 gap-3 items-end font-sans text-xs">
         {/* Amount Input */}
         <div className="md:col-span-3 space-y-1">
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay">
+          <label htmlFor="currency-calc-amount" className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay">
             Amount
           </label>
           <input
+            id="currency-calc-amount"
+            name="currencyCalcAmount"
             type="number"
             min={0}
             step="any"
@@ -69,10 +71,12 @@ export default function CurrencyConverterCard() {
 
         {/* From Currency */}
         <div className="md:col-span-2 space-y-1">
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay">
+          <label htmlFor="currency-calc-from" className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay">
             From
           </label>
           <select
+            id="currency-calc-from"
+            name="currencyCalcFrom"
             value={fromCurrency}
             onChange={(e) => setFromCurrency(e.target.value as SupportedCurrency)}
             className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs font-semibold text-earth-charcoal focus:outline-none focus:border-earth-terracotta cursor-pointer"
@@ -99,10 +103,12 @@ export default function CurrencyConverterCard() {
 
         {/* To Currency */}
         <div className="md:col-span-2 space-y-1">
-          <label className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay">
+          <label htmlFor="currency-calc-to" className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay">
             To
           </label>
           <select
+            id="currency-calc-to"
+            name="currencyCalcTo"
             value={toCurrency}
             onChange={(e) => setToCurrency(e.target.value as SupportedCurrency)}
             className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs font-semibold text-earth-charcoal focus:outline-none focus:border-earth-terracotta cursor-pointer"

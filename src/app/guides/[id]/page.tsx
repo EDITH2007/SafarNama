@@ -463,7 +463,12 @@ export default function GuideProfilePage() {
               </div>
 
               <div>
+                <label htmlFor="guide-review-text" className="block text-[10px] font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                  Your Review
+                </label>
                 <textarea
+                  id="guide-review-text"
+                  name="guideReviewText"
                   rows={3}
                   required
                   placeholder="Share your experience booking with this local guide..."
@@ -567,10 +572,12 @@ export default function GuideProfilePage() {
 
             <div className="space-y-4 font-sans text-xs">
               <div>
-                <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                <label htmlFor="guide-book-start-date" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                   Select Start Date
                 </label>
                 <input
+                  id="guide-book-start-date"
+                  name="guideBookStartDate"
                   type="date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
@@ -579,10 +586,12 @@ export default function GuideProfilePage() {
               </div>
 
               <div>
-                <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                <label htmlFor="guide-book-travelers" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                   Number of Travelers
                 </label>
                 <select
+                  id="guide-book-travelers"
+                  name="guideBookTravelers"
                   value={numTravelers}
                   onChange={(e) => setNumTravelers(Number(e.target.value))}
                   className="w-full p-2.5 bg-earth-sand/20 border border-earth-clay/20 text-xs text-earth-charcoal"
@@ -657,10 +666,12 @@ export default function GuideProfilePage() {
 
             <form onSubmit={handleBookCustomPackage} className="space-y-4 text-xs">
               <div>
-                <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                <label htmlFor="custom-guide-dest" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                   Target Destination / Region
                 </label>
                 <input
+                  id="custom-guide-dest"
+                  name="customGuideDest"
                   type="text"
                   required
                   placeholder="e.g. Munnar, Hampi, Spiti Valley..."
@@ -672,10 +683,12 @@ export default function GuideProfilePage() {
 
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                  <label htmlFor="custom-guide-start-date" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                     Start Date
                   </label>
                   <input
+                    id="custom-guide-start-date"
+                    name="customGuideStartDate"
                     type="date"
                     required
                     value={startDate}
@@ -685,10 +698,12 @@ export default function GuideProfilePage() {
                 </div>
 
                 <div>
-                  <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                  <label htmlFor="custom-guide-travelers" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                     Travelers Count
                   </label>
                   <select
+                    id="custom-guide-travelers"
+                    name="customGuideTravelers"
                     value={numTravelers}
                     onChange={(e) => setNumTravelers(Number(e.target.value))}
                     className="w-full p-2.5 bg-earth-sand/20 border border-earth-clay/20 text-xs text-earth-charcoal"
@@ -703,10 +718,12 @@ export default function GuideProfilePage() {
               </div>
 
               <div>
-                <label className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
+                <label htmlFor="custom-guide-details" className="block font-bold uppercase tracking-wider text-earth-charcoal/80 mb-1">
                   Custom Request Details & Offbeat Interests
                 </label>
                 <textarea
+                  id="custom-guide-details"
+                  name="customGuideDetails"
                   rows={4}
                   required
                   placeholder="Describe what kind of experience you are looking for (e.g. 2-day photography trek, hidden waterfall hike, local food tasting)..."

@@ -310,10 +310,12 @@ export default function EditDestinationPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-dest-title" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Destination Title *
                     </label>
                     <input
+                      id="admin-dest-title"
+                      name="adminDestTitle"
                       type="text"
                       required
                       value={title}
@@ -324,10 +326,12 @@ export default function EditDestinationPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-dest-category" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Category *
                     </label>
                     <select
+                      id="admin-dest-category"
+                      name="adminDestCategory"
                       value={category}
                       onChange={(e) => setCategory(e.target.value)}
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
@@ -341,10 +345,12 @@ export default function EditDestinationPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-dest-location" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Location / District *
                     </label>
                     <input
+                      id="admin-dest-location"
+                      name="adminDestLocation"
                       type="text"
                       required
                       value={location}
@@ -355,10 +361,12 @@ export default function EditDestinationPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-dest-state" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       State *
                     </label>
                     <input
+                      id="admin-dest-state"
+                      name="adminDestState"
                       type="text"
                       required
                       value={state}
@@ -370,10 +378,12 @@ export default function EditDestinationPage({ params }: PageProps) {
                 </div>
 
                 <div className="space-y-1.5">
-                  <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                  <label htmlFor="admin-dest-desc" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                     Description *
                   </label>
                   <textarea
+                    id="admin-dest-desc"
+                    name="adminDestDesc"
                     rows={4}
                     required
                     value={desc}
@@ -392,10 +402,12 @@ export default function EditDestinationPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-dest-lat" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Latitude Coordinate *
                     </label>
                     <input
+                      id="admin-dest-lat"
+                      name="adminDestLat"
                       type="number"
                       step="any"
                       required
@@ -407,10 +419,12 @@ export default function EditDestinationPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-dest-lng" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Longitude Coordinate *
                     </label>
                     <input
+                      id="admin-dest-lng"
+                      name="adminDestLng"
                       type="number"
                       step="any"
                       required
@@ -435,11 +449,13 @@ export default function EditDestinationPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-dest-best-time" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Best Time to Visit</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
                     </label>
                     <input
+                      id="admin-dest-best-time"
+                      name="adminDestBestTime"
                       type="text"
                       value={bestTimeToVisit}
                       onChange={(e) => setBestTimeToVisit(e.target.value)}
@@ -449,11 +465,13 @@ export default function EditDestinationPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-dest-how-to-reach" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>How to Reach</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
                     </label>
                     <input
+                      id="admin-dest-how-to-reach"
+                      name="adminDestHowToReach"
                       type="text"
                       value={howToReach}
                       onChange={(e) => setHowToReach(e.target.value)}
@@ -465,11 +483,13 @@ export default function EditDestinationPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-dest-source-name" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Attribution Source Name</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional, e.g. Wikipedia)</span>
                     </label>
                     <input
+                      id="admin-dest-source-name"
+                      name="adminDestSourceName"
                       type="text"
                       value={sourceName}
                       onChange={(e) => setSourceName(e.target.value)}
@@ -479,11 +499,13 @@ export default function EditDestinationPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-dest-source-url" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Attribution Source URL</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
                     </label>
                     <input
+                      id="admin-dest-source-url"
+                      name="adminDestSourceUrl"
                       type="text"
                       value={sourceUrl}
                       onChange={(e) => setSourceUrl(e.target.value)}
@@ -495,11 +517,13 @@ export default function EditDestinationPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-dest-attractions" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Nearby Attractions</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional, one per line)</span>
                     </label>
                     <textarea
+                      id="admin-dest-attractions"
+                      name="adminDestAttractions"
                       rows={3}
                       value={nearbyAttractionsRaw}
                       onChange={(e) => setNearbyAttractionsRaw(e.target.value)}
@@ -509,11 +533,13 @@ export default function EditDestinationPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-dest-tips" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Admin Travel Tips</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional, one per line)</span>
                     </label>
                     <textarea
+                      id="admin-dest-tips"
+                      name="adminDestTips"
                       rows={3}
                       value={tipsRaw}
                       onChange={(e) => setTipsRaw(e.target.value)}
@@ -532,10 +558,12 @@ export default function EditDestinationPage({ params }: PageProps) {
 
                 <div className="space-y-4">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-dest-photo-url" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Main Preview Photo URL *
                     </label>
                     <input
+                      id="admin-dest-photo-url"
+                      name="adminDestPhotoUrl"
                       type="url"
                       required
                       value={photoUrl}
@@ -563,11 +591,13 @@ export default function EditDestinationPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-dest-gallery" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Additional Photo Gallery URLs</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional, one URL per line)</span>
                     </label>
                     <textarea
+                      id="admin-dest-gallery"
+                      name="adminDestGallery"
                       rows={4}
                       value={galleryRaw}
                       onChange={(e) => setGalleryRaw(e.target.value)}
@@ -586,10 +616,12 @@ export default function EditDestinationPage({ params }: PageProps) {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
+                    <label htmlFor="admin-dest-crowd-level" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px]">
                       Baseline Crowd Level *
                     </label>
                     <select
+                      id="admin-dest-crowd-level"
+                      name="adminDestCrowdLevel"
                       value={crowdLevel}
                       onChange={(e) => setCrowdLevel(e.target.value)}
                       className="w-full p-3 bg-white border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest font-light text-earth-charcoal"
@@ -602,11 +634,13 @@ export default function EditDestinationPage({ params }: PageProps) {
                   </div>
 
                   <div className="space-y-1.5">
-                    <label className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
+                    <label htmlFor="admin-dest-crowd-note" className="block font-bold text-earth-charcoal uppercase tracking-wider text-[10px] flex items-center space-x-1">
                       <span>Crowd Advisory / Note</span>
                       <span className="text-earth-clay/60 italic lowercase font-normal">(optional)</span>
                     </label>
                     <input
+                      id="admin-dest-crowd-note"
+                      name="adminDestCrowdNote"
                       type="text"
                       value={crowdSourceNote}
                       onChange={(e) => setCrowdSourceNote(e.target.value)}

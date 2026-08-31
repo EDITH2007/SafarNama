@@ -165,7 +165,7 @@ export default function SignUpPage() {
           {/* Credentials Registration Form */}
           <form onSubmit={handleCredentialsSignUp} className="space-y-5 mt-4">
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-earth-charcoal uppercase tracking-wider">
+              <label htmlFor="signup-username" className="block text-xs font-bold text-earth-charcoal uppercase tracking-wider">
                 Username
               </label>
               <div className="relative">
@@ -173,6 +173,8 @@ export default function SignUpPage() {
                   <User className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-username"
+                  name="signupUsername"
                   type="text"
                   required
                   value={username}
@@ -184,7 +186,7 @@ export default function SignUpPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-earth-charcoal uppercase tracking-wider">
+              <label htmlFor="signup-email" className="block text-xs font-bold text-earth-charcoal uppercase tracking-wider">
                 Gmail Address
               </label>
               <div className="relative">
@@ -192,6 +194,8 @@ export default function SignUpPage() {
                   <Mail className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-email"
+                  name="signupEmail"
                   type="email"
                   required
                   value={email}
@@ -203,7 +207,7 @@ export default function SignUpPage() {
             </div>
 
             <div className="space-y-1">
-              <label className="block text-xs font-bold text-earth-charcoal uppercase tracking-wider">
+              <label htmlFor="signup-password" className="block text-xs font-bold text-earth-charcoal uppercase tracking-wider">
                 Password
               </label>
               <div className="relative">
@@ -211,6 +215,8 @@ export default function SignUpPage() {
                   <Lock className="h-4 w-4" />
                 </div>
                 <input
+                  id="signup-password"
+                  name="signupPassword"
                   type="password"
                   required
                   value={password}

@@ -1093,10 +1093,12 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
               Reject Submission: {rejectModal.entityTitle}
             </h4>
             <div className="space-y-1">
-              <label className="text-[10px] font-bold uppercase text-earth-clay">
+              <label htmlFor="admin-reject-reason" className="text-[10px] font-bold uppercase text-earth-clay">
                 Rejection Reason (Optional - sent to user notification):
               </label>
               <textarea
+                id="admin-reject-reason"
+                name="adminRejectReason"
                 value={rejectionReasonInput}
                 onChange={(e) => setRejectionReasonInput(e.target.value)}
                 placeholder="e.g. Image resolution too low, duplicate entry, invalid location details..."
@@ -1149,8 +1151,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Destination Title *</label>
+                    <label htmlFor="admin-dest-modal-title" className="text-[10px] font-bold uppercase text-earth-clay">Destination Title *</label>
                     <input
+                      id="admin-dest-modal-title"
+                      name="adminDestModalTitle"
                       type="text"
                       required
                       value={destModal.title}
@@ -1160,8 +1164,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Category *</label>
+                    <label htmlFor="admin-dest-modal-category" className="text-[10px] font-bold uppercase text-earth-clay">Category *</label>
                     <select
+                      id="admin-dest-modal-category"
+                      name="adminDestModalCategory"
                       value={destModal.category}
                       onChange={(e) => setDestModal({ ...destModal, category: e.target.value })}
                       className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest bg-white"
@@ -1178,8 +1184,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Location / District *</label>
+                    <label htmlFor="admin-dest-modal-location" className="text-[10px] font-bold uppercase text-earth-clay">Location / District *</label>
                     <input
+                      id="admin-dest-modal-location"
+                      name="adminDestModalLocation"
                       type="text"
                       required
                       value={destModal.location}
@@ -1189,8 +1197,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">State *</label>
+                    <label htmlFor="admin-dest-modal-state" className="text-[10px] font-bold uppercase text-earth-clay">State *</label>
                     <input
+                      id="admin-dest-modal-state"
+                      name="adminDestModalState"
                       type="text"
                       required
                       value={destModal.state}
@@ -1202,8 +1212,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                 </div>
 
                 <div className="space-y-1">
-                  <label className="text-[10px] font-bold uppercase text-earth-clay">Description *</label>
+                  <label htmlFor="admin-dest-modal-desc" className="text-[10px] font-bold uppercase text-earth-clay">Description *</label>
                   <textarea
+                    id="admin-dest-modal-desc"
+                    name="adminDestModalDesc"
                     required
                     rows={3}
                     value={destModal.description}
@@ -1222,8 +1234,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Latitude (Decimal) *</label>
+                    <label htmlFor="admin-dest-modal-lat" className="text-[10px] font-bold uppercase text-earth-clay">Latitude (Decimal) *</label>
                     <input
+                      id="admin-dest-modal-lat"
+                      name="adminDestModalLat"
                       type="number"
                       step="any"
                       required
@@ -1234,8 +1248,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Longitude (Decimal) *</label>
+                    <label htmlFor="admin-dest-modal-lng" className="text-[10px] font-bold uppercase text-earth-clay">Longitude (Decimal) *</label>
                     <input
+                      id="admin-dest-modal-lng"
+                      name="adminDestModalLng"
                       type="number"
                       step="any"
                       required
@@ -1256,8 +1272,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Best Time to Visit (Optional)</label>
+                    <label htmlFor="admin-dest-modal-best-time" className="text-[10px] font-bold uppercase text-earth-clay">Best Time to Visit (Optional)</label>
                     <input
+                      id="admin-dest-modal-best-time"
+                      name="adminDestModalBestTime"
                       type="text"
                       value={destModal.bestTimeToVisit}
                       onChange={(e) => setDestModal({ ...destModal, bestTimeToVisit: e.target.value })}
@@ -1266,8 +1284,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">How to Reach (Optional)</label>
+                    <label htmlFor="admin-dest-modal-how-to-reach" className="text-[10px] font-bold uppercase text-earth-clay">How to Reach (Optional)</label>
                     <input
+                      id="admin-dest-modal-how-to-reach"
+                      name="adminDestModalHowToReach"
                       type="text"
                       value={destModal.howToReach}
                       onChange={(e) => setDestModal({ ...destModal, howToReach: e.target.value })}
@@ -1279,8 +1299,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Attribution Source Name (Optional)</label>
+                    <label htmlFor="admin-dest-modal-source-name" className="text-[10px] font-bold uppercase text-earth-clay">Attribution Source Name (Optional)</label>
                     <input
+                      id="admin-dest-modal-source-name"
+                      name="adminDestModalSourceName"
                       type="text"
                       value={destModal.sourceName}
                       onChange={(e) => setDestModal({ ...destModal, sourceName: e.target.value })}
@@ -1289,8 +1311,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Attribution Source URL (Optional)</label>
+                    <label htmlFor="admin-dest-modal-source-url" className="text-[10px] font-bold uppercase text-earth-clay">Attribution Source URL (Optional)</label>
                     <input
+                      id="admin-dest-modal-source-url"
+                      name="adminDestModalSourceUrl"
                       type="text"
                       value={destModal.sourceUrl}
                       onChange={(e) => setDestModal({ ...destModal, sourceUrl: e.target.value })}
@@ -1302,8 +1326,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Nearby Attractions (Optional, 1 per line)</label>
+                    <label htmlFor="admin-dest-modal-attractions" className="text-[10px] font-bold uppercase text-earth-clay">Nearby Attractions (Optional, 1 per line)</label>
                     <textarea
+                      id="admin-dest-modal-attractions"
+                      name="adminDestModalAttractions"
                       rows={3}
                       value={destModal.nearbyAttractions}
                       onChange={(e) => setDestModal({ ...destModal, nearbyAttractions: e.target.value })}
@@ -1312,8 +1338,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Admin Travel Tips (Optional, 1 per line)</label>
+                    <label htmlFor="admin-dest-modal-tips" className="text-[10px] font-bold uppercase text-earth-clay">Admin Travel Tips (Optional, 1 per line)</label>
                     <textarea
+                      id="admin-dest-modal-tips"
+                      name="adminDestModalTips"
                       rows={3}
                       value={destModal.tips}
                       onChange={(e) => setDestModal({ ...destModal, tips: e.target.value })}
@@ -1332,8 +1360,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Main Photos (Comma separated URLs)</label>
+                    <label htmlFor="admin-dest-modal-photos" className="text-[10px] font-bold uppercase text-earth-clay">Main Photos (Comma separated URLs)</label>
                     <input
+                      id="admin-dest-modal-photos"
+                      name="adminDestModalPhotos"
                       type="text"
                       value={destModal.photos}
                       onChange={(e) => setDestModal({ ...destModal, photos: e.target.value })}
@@ -1342,8 +1372,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                     />
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Photo Gallery URLs (Optional, 1 per line)</label>
+                    <label htmlFor="admin-dest-modal-gallery" className="text-[10px] font-bold uppercase text-earth-clay">Photo Gallery URLs (Optional, 1 per line)</label>
                     <textarea
+                      id="admin-dest-modal-gallery"
+                      name="adminDestModalGallery"
                       rows={3}
                       value={destModal.photoGallery}
                       onChange={(e) => setDestModal({ ...destModal, photoGallery: e.target.value })}
@@ -1362,8 +1394,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Crowd Level Rating</label>
+                    <label htmlFor="admin-dest-modal-crowd-level" className="text-[10px] font-bold uppercase text-earth-clay">Crowd Level Rating</label>
                     <select
+                      id="admin-dest-modal-crowd-level"
+                      name="adminDestModalCrowdLevel"
                       value={destModal.crowdLevel}
                       onChange={(e) => setDestModal({ ...destModal, crowdLevel: e.target.value })}
                       className="w-full p-2 border border-earth-clay/20 text-xs focus:outline-none focus:border-earth-forest bg-white"
@@ -1375,8 +1409,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                     </select>
                   </div>
                   <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase text-earth-clay">Crowd Advisory / Source Note (Optional)</label>
+                    <label htmlFor="admin-dest-modal-crowd-note" className="text-[10px] font-bold uppercase text-earth-clay">Crowd Advisory / Source Note (Optional)</label>
                     <input
+                      id="admin-dest-modal-crowd-note"
+                      name="adminDestModalCrowdNote"
                       type="text"
                       value={destModal.crowdSourceNote}
                       onChange={(e) => setDestModal({ ...destModal, crowdSourceNote: e.target.value })}
