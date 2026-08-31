@@ -107,7 +107,7 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
     title: "",
     message: "",
     actionLabel: "",
-    onConfirm: async () => {},
+    onConfirm: async () => { },
   });
 
   // 2. Reject Modal with Reason Input
@@ -118,7 +118,7 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
   }>({
     isOpen: false,
     entityTitle: "",
-    onReject: async () => {},
+    onReject: async () => { },
   });
   const [rejectionReasonInput, setRejectionReasonInput] = useState("");
 
@@ -501,11 +501,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center space-x-1.5 px-3 py-2 font-sans font-bold uppercase tracking-wider border-b-2 -mb-[3px] transition-all cursor-pointer ${
-                isActive
+              className={`flex items-center space-x-1.5 px-3 py-2 font-sans font-bold uppercase tracking-wider border-b-2 -mb-[3px] transition-all cursor-pointer ${isActive
                   ? "border-earth-forest text-earth-forest text-[11px]"
                   : "border-transparent text-earth-charcoal/50 hover:text-earth-charcoal text-[11px]"
-              }`}
+                }`}
             >
               <Icon className="h-3.5 w-3.5" />
               <span>{tab.name}</span>
@@ -639,21 +638,19 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
             <div className="flex space-x-2">
               <button
                 onClick={() => setGemViewMode("pending")}
-                className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${
-                  gemViewMode === "pending"
+                className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${gemViewMode === "pending"
                     ? "bg-earth-forest text-white border-earth-forest"
                     : "bg-white text-earth-charcoal/60 border-earth-clay/20 hover:text-earth-charcoal"
-                }`}
+                  }`}
               >
                 Pending Queue ({pendingGems.length})
               </button>
               <button
                 onClick={() => setGemViewMode("all")}
-                className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${
-                  gemViewMode === "all"
+                className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${gemViewMode === "all"
                     ? "bg-earth-forest text-white border-earth-forest"
                     : "bg-white text-earth-charcoal/60 border-earth-clay/20 hover:text-earth-charcoal"
-                }`}
+                  }`}
               >
                 All Gems Database ({allGems.length})
               </button>
@@ -727,13 +724,12 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                           {g.title}
                         </span>
                         <span
-                          className={`px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider ${
-                            g.status === "verified" || g.status === "approved"
+                          className={`px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider ${g.status === "verified" || g.status === "approved"
                               ? "bg-green-100 text-green-800"
                               : g.status === "rejected"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-amber-100 text-amber-800"
-                          }`}
+                                ? "bg-red-100 text-red-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
                         >
                           {g.status}
                         </span>
@@ -776,21 +772,19 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
           <div className="flex space-x-2">
             <button
               onClick={() => setJourneyViewMode("pending")}
-              className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${
-                journeyViewMode === "pending"
+              className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${journeyViewMode === "pending"
                   ? "bg-earth-forest text-white border-earth-forest"
                   : "bg-white text-earth-charcoal/60 border-earth-clay/20 hover:text-earth-charcoal"
-              }`}
+                }`}
             >
               Pending Journeys ({pendingJourneys.length})
             </button>
             <button
               onClick={() => setJourneyViewMode("all")}
-              className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${
-                journeyViewMode === "all"
+              className={`px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider border ${journeyViewMode === "all"
                   ? "bg-earth-forest text-white border-earth-forest"
                   : "bg-white text-earth-charcoal/60 border-earth-clay/20 hover:text-earth-charcoal"
-              }`}
+                }`}
             >
               All Journeys ({allJourneys.length})
             </button>
@@ -857,13 +851,12 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                           {j.title}
                         </span>
                         <span
-                          className={`px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider ${
-                            j.status === "approved"
+                          className={`px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider ${j.status === "approved"
                               ? "bg-green-100 text-green-800"
                               : j.status === "rejected"
-                              ? "bg-red-100 text-red-800"
-                              : "bg-amber-100 text-amber-800"
-                          }`}
+                                ? "bg-red-100 text-red-800"
+                                : "bg-amber-100 text-amber-800"
+                            }`}
                         >
                           {j.status}
                         </span>
@@ -912,11 +905,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
               {reviews.map((r: any) => (
                 <div
                   key={r.id || r._id}
-                  className={`p-4 border flex flex-col sm:flex-row justify-between sm:items-center gap-4 ${
-                    r.flagged
+                  className={`p-4 border flex flex-col sm:flex-row justify-between sm:items-center gap-4 ${r.flagged
                       ? "bg-red-50/50 border-red-200"
                       : "bg-earth-sand/10 border-earth-clay/10"
-                  }`}
+                    }`}
                 >
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
@@ -924,9 +916,8 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star
                             key={i}
-                            className={`h-3 w-3 ${
-                              i < r.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"
-                            }`}
+                            className={`h-3 w-3 ${i < r.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"
+                              }`}
                           />
                         ))}
                       </div>
@@ -955,11 +946,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                     </button>
                     <button
                       onClick={() => handleFlagReview(r.id || r._id, r.flagged)}
-                      className={`px-2.5 py-1 text-[10px] font-bold uppercase cursor-pointer border ${
-                        r.flagged
+                      className={`px-2.5 py-1 text-[10px] font-bold uppercase cursor-pointer border ${r.flagged
                           ? "bg-amber-100 text-amber-800 border-amber-300"
                           : "bg-white text-earth-charcoal border-earth-clay/20 hover:bg-earth-sand/20"
-                      }`}
+                        }`}
                     >
                       {r.flagged ? "Unflag" : "Flag"}
                     </button>
@@ -1001,13 +991,12 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                         {b.title}
                       </span>
                       <span
-                        className={`px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider ${
-                          b.status === "published"
+                        className={`px-2 py-0.5 text-[9px] uppercase font-bold tracking-wider ${b.status === "published"
                             ? "bg-green-100 text-green-800"
                             : b.status === "rejected"
-                            ? "bg-red-100 text-red-800"
-                            : "bg-amber-100 text-amber-800"
-                        }`}
+                              ? "bg-red-100 text-red-800"
+                              : "bg-amber-100 text-amber-800"
+                          }`}
                       >
                         {b.status}
                       </span>
@@ -1151,13 +1140,13 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
             </div>
 
             <form onSubmit={handleSaveDestination} className="space-y-4 text-xs font-sans">
-              
+
               {/* Section 1: Basic Info */}
               <div className="space-y-3">
                 <span className="font-serif text-xs font-bold text-earth-forest uppercase tracking-wider block border-b border-earth-clay/10 pb-1">
                   1. Overview & Category
                 </span>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold uppercase text-earth-clay">Destination Title *</label>
@@ -1230,7 +1219,7 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                 <span className="font-serif text-xs font-bold text-earth-forest uppercase tracking-wider block border-b border-earth-clay/10 pb-1">
                   2. Geography & Coordinates
                 </span>
-                
+
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div className="space-y-1">
                     <label className="text-[10px] font-bold uppercase text-earth-clay">Latitude (Decimal) *</label>
@@ -1423,7 +1412,7 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
       {viewModal.isOpen && viewModal.item && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white max-w-3xl w-full p-6 shadow-2xl space-y-5 animate-scale-in my-8 max-h-[90vh] overflow-y-auto border border-earth-clay/20">
-            
+
             {/* Modal Header */}
             <div className="flex justify-between items-start border-b border-earth-clay/15 pb-4">
               <div className="space-y-1">
@@ -1435,17 +1424,16 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                     {viewModal.type === "blog" && (viewModal.item.title || "Traveler Story")}
                     {viewModal.type === "review" && `Review for ${viewModal.item.location || "Location"}`}
                   </span>
-                  
+
                   {/* Status Badge */}
                   {viewModal.item.status && (
                     <span
-                      className={`px-2.5 py-0.5 text-[10px] uppercase font-bold tracking-wider ${
-                        viewModal.item.status === "verified" || viewModal.item.status === "approved" || viewModal.item.status === "published"
+                      className={`px-2.5 py-0.5 text-[10px] uppercase font-bold tracking-wider ${viewModal.item.status === "verified" || viewModal.item.status === "approved" || viewModal.item.status === "published"
                           ? "bg-green-100 text-green-800 border border-green-200"
                           : viewModal.item.status === "rejected"
-                          ? "bg-red-100 text-red-800 border border-red-200"
-                          : "bg-amber-100 text-amber-800 border border-amber-200"
-                      }`}
+                            ? "bg-red-100 text-red-800 border border-red-200"
+                            : "bg-amber-100 text-amber-800 border border-amber-200"
+                        }`}
                     >
                       {viewModal.item.status}
                     </span>
@@ -1486,7 +1474,7 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
             {/* TYPE 1: HIDDEN GEM (SPOT) */}
             {viewModal.type === "spot" && (
               <div className="space-y-5 text-xs font-sans">
-                
+
                 {/* Submitter Info Bar */}
                 <div className="p-3 bg-earth-sand/30 border border-earth-clay/10 flex flex-wrap justify-between items-center gap-2">
                   <div className="flex items-center space-x-2">
@@ -1886,9 +1874,8 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
-                          className={`h-4 w-4 ${
-                            i < viewModal.item.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"
-                          }`}
+                          className={`h-4 w-4 ${i < viewModal.item.rating ? "fill-amber-400 text-amber-400" : "text-gray-300"
+                            }`}
                         />
                       ))}
                     </div>
@@ -1938,11 +1925,10 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                       handleFlagReview(viewModal.item.id || viewModal.item._id, viewModal.item.flagged);
                       setViewModal({ isOpen: false, type: null, item: null });
                     }}
-                    className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider cursor-pointer border ${
-                      viewModal.item.flagged
+                    className={`px-4 py-2 text-[10px] font-bold uppercase tracking-wider cursor-pointer border ${viewModal.item.flagged
                         ? "bg-amber-100 text-amber-800 border-amber-300 hover:bg-amber-200"
                         : "bg-white text-earth-charcoal border-earth-clay/20 hover:bg-earth-sand"
-                    }`}
+                      }`}
                   >
                     {viewModal.item.flagged ? "Unflag Review" : "Flag Review"}
                   </button>

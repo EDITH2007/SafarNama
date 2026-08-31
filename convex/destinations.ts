@@ -227,7 +227,7 @@ export async function ensureDestinationsSeeded(db: any) {
     }
   } else {
     // Patch Wikipedia attribution on Golden Temple if it exists in DB
-    const amritsarDest = await db.query("destinations").filter((q: any) => 
+    const amritsarDest = await db.query("destinations").filter((q: any) =>
       q.or(
         q.eq(q.field("title"), "Golden Temple, Amritsar"),
         q.eq(q.field("location"), "Amritsar, Punjab")
@@ -550,7 +550,7 @@ export const deleteDestination = mutation({
       .query("reviews")
       .withIndex("by_destination", (q) => q.eq("destinationId", args.id))
       .collect();
-    
+
     for (const review of reviews) {
       await ctx.db.delete(review._id);
     }
@@ -629,7 +629,7 @@ export const submitCrowdReport = mutation({
       if (dest) {
         const existingCount = dest.crowdData?.reportCount || 10;
         const newCount = existingCount + 1;
-        
+
         await ctx.db.patch(args.destinationId, {
           crowdData: {
             crowdLevel: args.crowdLevel,

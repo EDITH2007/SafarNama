@@ -203,7 +203,7 @@ export const getPendingGems = query({
     } catch {
       return [];
     }
-    
+
     const submittedGems = await ctx.db
       .query("hiddenGems")
       .withIndex("by_status", (q) => q.eq("status", "submitted"))

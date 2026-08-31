@@ -31,7 +31,7 @@ export default function DestinationsPage() {
   const filteredDestinations = destinations.filter((dest) => {
     const matchesCategory =
       activeCategory === "All" || dest.category === activeCategory;
-    
+
     const crowdData = getCrowdData(dest);
     const matchesCrowd =
       activeCrowdLevel === "All" ||
@@ -125,11 +125,10 @@ export default function DestinationsPage() {
                     id={`dest-card-${dest.id}`}
                     onMouseEnter={() => setActiveDestinationId(dest.id)}
                     onMouseLeave={() => setActiveDestinationId(null)}
-                    className={`group flex flex-col bg-white border hover:shadow-xl hover:border-earth-clay/10 transition-all duration-300 relative ${
-                      activeDestinationId === dest.id
+                    className={`group flex flex-col bg-white border hover:shadow-xl hover:border-earth-clay/10 transition-all duration-300 relative ${activeDestinationId === dest.id
                         ? "ring-2 ring-earth-terracotta border-transparent shadow-xl scale-[1.01]"
                         : "border-earth-clay/5"
-                    }`}
+                      }`}
                   >
                     {/* Photo */}
                     <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
@@ -141,12 +140,12 @@ export default function DestinationsPage() {
                           loading="lazy"
                         />
                       </Link>
-                      
+
                       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                         <span className="bg-earth-sand text-earth-forest px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border border-earth-clay/15">
                           {dest.category}
                         </span>
-                        
+
                         {/* Crowd Meter Badge */}
                         <CrowdBadge
                           crowdLevel={crowdData.crowdLevel}
@@ -155,7 +154,7 @@ export default function DestinationsPage() {
                           variant="pill"
                         />
                       </div>
-                      
+
                       {/* Heart button for wishlist */}
                       <button
                         onClick={(e) => {
@@ -166,11 +165,10 @@ export default function DestinationsPage() {
                         title={isWishlisted(dest.id) ? "Remove from Wishlist" : "Save to Wishlist"}
                       >
                         <Heart
-                          className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${
-                            isWishlisted(dest.id)
+                          className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${isWishlisted(dest.id)
                               ? "fill-red-500 text-red-500"
                               : "text-earth-clay/60 hover:text-red-500"
-                          }`}
+                            }`}
                         />
                       </button>
                     </div>

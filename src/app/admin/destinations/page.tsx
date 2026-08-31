@@ -49,7 +49,7 @@ export default function AdminDestinationsPage() {
         setSuccessMsg(`Chronicle "${deleteTargetTitle}" was successfully deleted.`);
         setDeleteTargetId(null);
         setDeleteTargetTitle("");
-        
+
         // Clear message after timeout
         setTimeout(() => setSuccessMsg(""), 3000);
       } catch (err: any) {
@@ -120,7 +120,7 @@ export default function AdminDestinationsPage() {
 
       <main className="flex-grow py-12 md:py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          
+
           {/* Header Actions */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="space-y-2">
@@ -180,11 +180,11 @@ export default function AdminDestinationsPage() {
                       <th scope="col" className="px-6 py-4 text-right">Actions</th>
                     </tr>
                   </thead>
-                  
+
                   <tbody className="divide-y divide-earth-clay/5 font-light text-earth-charcoal">
                     {destinations.map((dest) => (
                       <tr key={dest.id} className="hover:bg-earth-sand/20 transition-colors">
-                        
+
                         {/* 1. Photo Thumbnail */}
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="h-10 w-14 overflow-hidden border border-earth-clay/15 bg-stone-100 shrink-0">
@@ -236,7 +236,7 @@ export default function AdminDestinationsPage() {
                           >
                             <Eye className="h-3.5 w-3.5" />
                           </Link>
-                          
+
                           <Link
                             href={`/admin/destinations/${dest.id}/edit`}
                             className="inline-flex items-center p-1.5 border border-blue-200 bg-blue-50 text-blue-700 hover:bg-blue-100 hover:border-blue-300 transition-all shadow-sm rounded-none"
@@ -285,10 +285,10 @@ export default function AdminDestinationsPage() {
       {/* Delete Confirmation Modal Backdrop */}
       {deleteTargetId && (
         <div className="fixed inset-0 bg-earth-charcoal/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          
+
           {/* Modal Container */}
           <div className="max-w-md w-full bg-white border border-earth-clay/10 p-6 md:p-8 space-y-6 shadow-2xl text-center relative animate-in scale-in duration-200">
-            
+
             <div className="p-3 bg-red-50 border border-red-100 text-red-600 inline-block rounded-full">
               <AlertTriangle className="h-8 w-8 text-red-500" />
             </div>
@@ -298,7 +298,7 @@ export default function AdminDestinationsPage() {
                 Confirm Chronicle Deletion
               </h3>
               <p className="font-sans text-xs text-earth-charcoal/70 leading-relaxed font-light">
-                Are you absolutely sure you want to permanently delete the guide for <span className="font-bold text-earth-charcoal">"{deleteTargetTitle}"</span>? 
+                Are you absolutely sure you want to permanently delete the guide for <span className="font-bold text-earth-charcoal">"{deleteTargetTitle}"</span>?
               </p>
               <div className="p-3 bg-amber-50 border border-amber-200 text-[10px] text-amber-800 text-left font-light leading-relaxed flex items-start space-x-2">
                 <span>⚠️</span>
@@ -317,7 +317,7 @@ export default function AdminDestinationsPage() {
               >
                 Cancel
               </button>
-              
+
               <button
                 disabled={isPending}
                 onClick={handleDeleteConfirm}

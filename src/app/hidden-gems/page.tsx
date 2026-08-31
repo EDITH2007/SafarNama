@@ -25,7 +25,7 @@ export default function HiddenGemsPage() {
     const gemCats = gem.category.split(",").map((c) => c.trim());
     const matchesCategory =
       activeCategory === "All" || gemCats.includes(activeCategory);
-    
+
     const matchesCrowd =
       activeCrowdLevel === "All" ||
       (gem.crowdData?.crowdLevel || "low") === activeCrowdLevel;
@@ -35,7 +35,7 @@ export default function HiddenGemsPage() {
       gem.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gem.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
       gem.category.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     return matchesCategory && matchesCrowd && matchesSearch;
   });
 
@@ -126,7 +126,7 @@ export default function HiddenGemsPage() {
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                         loading="lazy"
                       />
-                      
+
                       {/* Top Badges overlay */}
                       <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                         {/* Points Tag */}
@@ -151,7 +151,7 @@ export default function HiddenGemsPage() {
                           <span>Verified Safar Gem</span>
                         </span>
                       )}
-                      
+
                       {/* If Gold/Platinum submitter, show a badge on the image as well */}
                       {(gem.submitterTier === "Gold" || gem.submitterTier === "Platinum") && (
                         <span className={`absolute top-14 left-4 ${gem.submitterTier === "Platinum" ? "bg-sky-400 text-slate-900" : "bg-earth-saffron text-earth-forest"} px-2.5 py-1 font-sans text-[9px] font-bold uppercase tracking-widest shadow-md z-10`}>
@@ -210,11 +210,10 @@ export default function HiddenGemsPage() {
                     title={isWishlisted(gem.id) ? "Remove from Wishlist" : "Save to Wishlist"}
                   >
                     <Heart
-                      className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${
-                        isWishlisted(gem.id)
+                      className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${isWishlisted(gem.id)
                           ? "fill-red-500 text-red-500"
                           : "text-earth-clay/60 hover:text-red-500"
-                      }`}
+                        }`}
                     />
                   </button>
                 </article>

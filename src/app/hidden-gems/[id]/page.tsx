@@ -78,7 +78,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
   const [editPhotoUrl, setEditPhotoUrl] = useState("");
   const [editLat, setEditLat] = useState("");
   const [editLng, setEditLng] = useState("");
-  
+
   const [bestTimeToVisit, setBestTimeToVisit] = useState("");
   const [howToReach, setHowToReach] = useState("");
   const [nearbyAttractionsRaw, setNearbyAttractionsRaw] = useState("");
@@ -298,7 +298,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
       <main className="flex-grow py-8 md:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          
+
           {/* Breadcrumbs, navigation & wishlist */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <Link
@@ -308,7 +308,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Discoveries</span>
             </Link>
-            
+
             <div className="flex items-center gap-3">
               {/* Wishlist toggle */}
               <button
@@ -316,9 +316,8 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                 className="flex items-center space-x-1.5 px-3.5 py-1.5 border border-earth-clay/10 bg-white hover:border-earth-terracotta/30 text-xs font-semibold text-earth-charcoal uppercase tracking-wider cursor-pointer transition-all shadow-sm"
               >
                 <Heart
-                  className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${
-                    isWishlisted(gem.id) ? "fill-red-500 text-red-500" : "text-earth-clay/60"
-                  }`}
+                  className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${isWishlisted(gem.id) ? "fill-red-500 text-red-500" : "text-earth-clay/60"
+                    }`}
                 />
                 <span>{isWishlisted(gem.id) ? "Saved" : "Save Discovery"}</span>
               </button>
@@ -473,11 +472,10 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                                 setSelectedEditCategories([...selectedEditCategories, cat]);
                               }
                             }}
-                            className={`px-2 py-1 text-[9px] font-sans font-semibold uppercase tracking-wider transition-all border rounded-none cursor-pointer ${
-                              isSelected
+                            className={`px-2 py-1 text-[9px] font-sans font-semibold uppercase tracking-wider transition-all border rounded-none cursor-pointer ${isSelected
                                 ? "bg-earth-terracotta border-earth-terracotta text-white shadow-sm"
                                 : "bg-white border-earth-clay/10 text-earth-charcoal/80 hover:border-earth-terracotta hover:text-earth-terracotta"
-                            }`}
+                              }`}
                           >
                             {cat}
                           </button>
@@ -728,7 +726,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                       <span className="text-xs uppercase tracking-wider font-semibold">No photos available</span>
                     </div>
                   )}
-                  
+
                   <div className="absolute top-4 left-4 flex flex-wrap gap-1.5 z-10 max-w-[70%]">
                     {gem.category.split(",").map((cat) => (
                       <span key={cat} className="bg-earth-sand text-earth-forest px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border border-earth-clay/15">
@@ -745,20 +743,19 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                   </div>
 
                   {/* Status Badge */}
-                  <span className={`absolute top-4 right-4 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border z-10 ${
-                    (gem.status === "verified" || gem.status === "approved")
+                  <span className={`absolute top-4 right-4 px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border z-10 ${(gem.status === "verified" || gem.status === "approved")
                       ? "bg-green-50 border-green-200 text-green-700"
                       : gem.status === "rejected"
-                      ? "bg-red-50 border-red-200 text-red-700"
-                      : "bg-amber-50 border-amber-200 text-amber-700"
-                  }`}>
+                        ? "bg-red-50 border-red-200 text-red-700"
+                        : "bg-amber-50 border-amber-200 text-amber-700"
+                    }`}>
                     {gem.status === "verified" || gem.status === "approved"
-                      ? "Verified" 
+                      ? "Verified"
                       : gem.status === "in_review"
-                      ? "In Review"
-                      : gem.status === "submitted"
-                      ? "Submitted"
-                      : gem.status}
+                        ? "In Review"
+                        : gem.status === "submitted"
+                          ? "Submitted"
+                          : gem.status}
                   </span>
                 </div>
 
@@ -821,9 +818,8 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                     <button
                       key={idx}
                       onClick={() => setActivePhotoIndex(idx)}
-                      className={`relative w-20 h-16 overflow-hidden border transition-all cursor-pointer ${
-                        activePhotoIndex === idx ? "border-earth-terracotta ring-1 ring-earth-terracotta" : "border-earth-clay/10 opacity-70 hover:opacity-100"
-                      }`}
+                      className={`relative w-20 h-16 overflow-hidden border transition-all cursor-pointer ${activePhotoIndex === idx ? "border-earth-terracotta ring-1 ring-earth-terracotta" : "border-earth-clay/10 opacity-70 hover:opacity-100"
+                        }`}
                     >
                       <img src={url} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
                     </button>
@@ -842,10 +838,10 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
               {/* 2. Core Information & Guidelines Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
-                
+
                 {/* LEFT COLUMN: GUIDELINES & TIPS */}
                 <div className="lg:col-span-7 space-y-8">
-                  
+
                   {/* Detailed Description Section */}
                   <div className="bg-white border border-earth-clay/5 p-6 md:p-8 space-y-4 shadow-sm">
                     <h2 className="font-serif text-xl font-bold text-earth-forest">
@@ -884,7 +880,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
                 {/* RIGHT COLUMN: LOGISTICS & GEOGRAPHY */}
                 <div className="lg:col-span-5 space-y-8">
-                  
+
                   {/* Logistics cards */}
                   <div className="bg-white border border-earth-clay/5 p-6 md:p-8 space-y-6 shadow-sm">
                     <h3 className="font-serif text-lg font-bold text-earth-forest">
@@ -957,7 +953,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                           Lat: {gem.geo.lat.toFixed(6)}, Lng: {gem.geo.lng.toFixed(6)}
                         </span>
                       </div>
-                      
+
                       {/* Google Maps Embed iframe */}
                       <div className="relative aspect-video overflow-hidden border border-earth-clay/10 bg-[#142B1B]/10">
                         <iframe
@@ -985,7 +981,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-                  
+
                   {/* REVIEWS LIST FEED */}
                   <div className="lg:col-span-7 space-y-6">
                     {reviews.length > 0 ? (
@@ -1030,9 +1026,8 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                                 {[...Array(5)].map((_, i) => (
                                   <Star
                                     key={i}
-                                    className={`h-3 w-3 ${
-                                      i < review.rating ? "fill-current" : "text-stone-200"
-                                    }`}
+                                    className={`h-3 w-3 ${i < review.rating ? "fill-current" : "text-stone-200"
+                                      }`}
                                   />
                                 ))}
                               </div>
@@ -1068,7 +1063,7 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
 
                       {currentUser && currentUser.id !== "loading" ? (
                         <form onSubmit={handleReviewSubmit} className="space-y-4 text-xs font-sans">
-                          
+
                           {reviewSuccess && (
                             <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold flex items-center space-x-2">
                               <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
@@ -1097,9 +1092,8 @@ export default function HiddenGemDetailPage({ params }: PageProps) {
                                   className="p-1 text-earth-saffron hover:scale-110 transition-transform cursor-pointer"
                                 >
                                   <Star
-                                    className={`h-6 w-6 ${
-                                      stars <= reviewRating ? "fill-current" : "text-stone-200"
-                                    }`}
+                                    className={`h-6 w-6 ${stars <= reviewRating ? "fill-current" : "text-stone-200"
+                                      }`}
                                   />
                                 </button>
                               ))}

@@ -128,7 +128,7 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                       variant="pill"
                     />
                   </div>
-                  
+
                   {/* Heart button for wishlist */}
                   <button
                     onClick={(e) => {
@@ -139,11 +139,10 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                     title={isWishlisted(dest.id) ? "Remove from Wishlist" : "Save to Wishlist"}
                   >
                     <Heart
-                      className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${
-                        isWishlisted(dest.id)
+                      className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${isWishlisted(dest.id)
                           ? "fill-red-500 text-red-500"
                           : "text-earth-clay/60 hover:text-red-500"
-                      }`}
+                        }`}
                     />
                   </button>
                 </div>
@@ -323,11 +322,10 @@ export default function AcquisitionZone({ searchQuery }: AcquisitionZoneProps) {
                     title={isWishlisted(gem.id) ? "Remove from Wishlist" : "Save to Wishlist"}
                   >
                     <Heart
-                      className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${
-                        isWishlisted(gem.id)
+                      className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${isWishlisted(gem.id)
                           ? "fill-red-500 text-red-500"
                           : "text-earth-clay/60 hover:text-red-500"
-                      }`}
+                        }`}
                     />
                   </button>
                 </article>

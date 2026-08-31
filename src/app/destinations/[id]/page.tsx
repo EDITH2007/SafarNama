@@ -159,7 +159,7 @@ export default function DestinationDetailPage({ params }: PageProps) {
 
       <main className="flex-grow py-8 md:py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
-          
+
           {/* Breadcrumbs and navigation */}
           <div className="flex items-center justify-between">
             <Link
@@ -169,16 +169,15 @@ export default function DestinationDetailPage({ params }: PageProps) {
               <ArrowLeft className="h-4 w-4" />
               <span>Back to Chronicles</span>
             </Link>
-            
+
             {/* Wishlist toggle */}
             <button
               onClick={() => toggleWishlist(destination.id)}
               className="flex items-center space-x-1.5 px-3.5 py-1.5 border border-earth-clay/10 bg-white hover:border-earth-terracotta/30 text-xs font-semibold text-earth-charcoal uppercase tracking-wider cursor-pointer transition-all shadow-sm"
             >
               <Heart
-                className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${
-                  isWishlisted(destination.id) ? "fill-red-500 text-red-500" : "text-earth-clay/60"
-                }`}
+                className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${isWishlisted(destination.id) ? "fill-red-500 text-red-500" : "text-earth-clay/60"
+                  }`}
               />
               <span>{isWishlisted(destination.id) ? "Saved" : "Save Guide"}</span>
             </button>
@@ -221,7 +220,7 @@ export default function DestinationDetailPage({ params }: PageProps) {
                   <span className="text-xs uppercase tracking-wider font-semibold">No photos available</span>
                 </div>
               )}
-              
+
               <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
                 <span className="bg-earth-sand text-earth-forest px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border border-earth-clay/15">
                   {destination.category}
@@ -302,9 +301,8 @@ export default function DestinationDetailPage({ params }: PageProps) {
                 <button
                   key={idx}
                   onClick={() => setActivePhotoIndex(idx)}
-                  className={`relative w-20 h-16 overflow-hidden border transition-all cursor-pointer ${
-                    activePhotoIndex === idx ? "border-earth-terracotta ring-1 ring-earth-terracotta" : "border-earth-clay/10 opacity-70 hover:opacity-100"
-                  }`}
+                  className={`relative w-20 h-16 overflow-hidden border transition-all cursor-pointer ${activePhotoIndex === idx ? "border-earth-terracotta ring-1 ring-earth-terracotta" : "border-earth-clay/10 opacity-70 hover:opacity-100"
+                    }`}
                 >
                   <img src={url} alt={`Thumbnail ${idx}`} className="w-full h-full object-cover" />
                 </button>
@@ -336,10 +334,10 @@ export default function DestinationDetailPage({ params }: PageProps) {
 
           {/* 2. Core Information & Guidelines Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 pt-4">
-            
+
             {/* LEFT COLUMN: GUIDELINES & TIPS */}
             <div className="lg:col-span-7 space-y-8">
-              
+
               {/* Detailed Description Section */}
               <div className="bg-white border border-earth-clay/5 p-6 md:p-8 space-y-4 shadow-sm">
                 <h2 className="font-serif text-xl font-bold text-earth-forest">
@@ -378,7 +376,7 @@ export default function DestinationDetailPage({ params }: PageProps) {
 
             {/* RIGHT COLUMN: LOGISTICS & GEOGRAPHY */}
             <div className="lg:col-span-5 space-y-8">
-              
+
               {/* Logistics cards */}
               <div className="bg-white border border-earth-clay/5 p-6 md:p-8 space-y-6 shadow-sm">
                 <h3 className="font-serif text-lg font-bold text-earth-forest">
@@ -451,7 +449,7 @@ export default function DestinationDetailPage({ params }: PageProps) {
                       Lat: {destination.geo.lat}, Lng: {destination.geo.lng}
                     </span>
                   </div>
-                  
+
                   {/* Google Maps Embed iframe */}
                   <div className="relative aspect-video overflow-hidden border border-earth-clay/10 bg-stone-100">
                     <iframe
@@ -479,7 +477,7 @@ export default function DestinationDetailPage({ params }: PageProps) {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-              
+
               {/* REVIEWS LIST FEED */}
               <div className="lg:col-span-7 space-y-6">
                 {reviews.length > 0 ? (
@@ -524,9 +522,8 @@ export default function DestinationDetailPage({ params }: PageProps) {
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
-                                className={`h-3 w-3 ${
-                                  i < review.rating ? "fill-current" : "text-stone-200"
-                                }`}
+                                className={`h-3 w-3 ${i < review.rating ? "fill-current" : "text-stone-200"
+                                  }`}
                               />
                             ))}
                           </div>
@@ -562,7 +559,7 @@ export default function DestinationDetailPage({ params }: PageProps) {
 
                   {currentUser && currentUser.id !== "loading" ? (
                     <form onSubmit={handleReviewSubmit} className="space-y-4 text-xs font-sans">
-                      
+
                       {reviewSuccess && (
                         <div className="p-3 bg-green-50 border border-green-200 text-green-700 text-xs font-semibold flex items-center space-x-2">
                           <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
@@ -591,9 +588,8 @@ export default function DestinationDetailPage({ params }: PageProps) {
                               className="p-1 text-earth-saffron hover:scale-110 transition-transform cursor-pointer"
                             >
                               <Star
-                                className={`h-6 w-6 ${
-                                  stars <= reviewRating ? "fill-current" : "text-stone-200"
-                                }`}
+                                className={`h-6 w-6 ${stars <= reviewRating ? "fill-current" : "text-stone-200"
+                                  }`}
                               />
                             </button>
                           ))}

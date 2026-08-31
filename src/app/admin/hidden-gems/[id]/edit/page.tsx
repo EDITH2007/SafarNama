@@ -29,7 +29,7 @@ interface PageProps {
 export default function EditHiddenGemPage({ params }: PageProps) {
   const { id: rawId } = use(params);
   const gemId = rawId as Id<"hiddenGems">;
-  
+
   const router = useRouter();
   const { currentUser, isLoading } = useUser();
   const [isPending, startTransition] = useTransition();
@@ -132,7 +132,7 @@ export default function EditHiddenGemPage({ params }: PageProps) {
 
         setSuccess(true);
         window.scrollTo({ top: 0, behavior: "smooth" });
-        
+
         // Wait and redirect back to manager
         setTimeout(() => {
           router.push("/admin/hidden-gems");
@@ -147,13 +147,13 @@ export default function EditHiddenGemPage({ params }: PageProps) {
   const handleSelectMapLocation = (selectedLat: number, selectedLng: number, regionName: string) => {
     setLat(String(selectedLat));
     setLng(String(selectedLng));
-    
+
     // Auto-fill details if snap snapped
     if (regionName && regionName.includes(",")) {
       const parts = regionName.split(",");
       const locPart = parts[0].replace("Explore ", "").replace("Discover ", "").trim();
       const statePart = parts[1].trim();
-      
+
       if (!location) setLocation(locPart);
       if (!state) setState(statePart);
     }
@@ -263,7 +263,7 @@ export default function EditHiddenGemPage({ params }: PageProps) {
 
       <main className="flex-grow py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          
+
           {/* Back link */}
           <Link
             href="/admin/hidden-gems"
@@ -288,7 +288,7 @@ export default function EditHiddenGemPage({ params }: PageProps) {
 
           {/* Form container */}
           <div className="bg-white border border-earth-clay/10 p-6 md:p-10 shadow-lg">
-            
+
             {success && (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-3">
                 <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
@@ -344,11 +344,10 @@ export default function EditHiddenGemPage({ params }: PageProps) {
                                 setSelectedCategories([...selectedCategories, cat]);
                               }
                             }}
-                            className={`px-2 py-1 text-[9px] font-sans font-semibold uppercase tracking-wider transition-all border rounded-none cursor-pointer ${
-                              isSelected
+                            className={`px-2 py-1 text-[9px] font-sans font-semibold uppercase tracking-wider transition-all border rounded-none cursor-pointer ${isSelected
                                 ? "bg-earth-terracotta border-earth-terracotta text-white shadow-sm"
                                 : "bg-white border-earth-clay/10 text-earth-charcoal/80 hover:border-earth-terracotta hover:text-earth-terracotta"
-                            }`}
+                              }`}
                           >
                             {cat}
                           </button>
@@ -586,9 +585,9 @@ export default function EditHiddenGemPage({ params }: PageProps) {
       {/* Delete Confirmation Modal */}
       {isDeleteConfirmOpen && (
         <div className="fixed inset-0 bg-earth-charcoal/40 backdrop-blur-sm z-50 flex items-center justify-center p-4 animate-in fade-in duration-200">
-          
+
           <div className="max-w-md w-full bg-white border border-earth-clay/10 p-6 md:p-8 space-y-6 shadow-2xl text-center relative animate-in scale-in duration-200">
-            
+
             <div className="p-3 bg-red-50 border border-red-100 text-red-600 inline-block rounded-full">
               <AlertTriangle className="h-8 w-8 text-red-500" />
             </div>
@@ -598,7 +597,7 @@ export default function EditHiddenGemPage({ params }: PageProps) {
                 Unpublish / Delete Hidden Gem?
               </h3>
               <p className="font-sans text-xs text-earth-charcoal/70 leading-relaxed font-light">
-                Are you sure you want to permanently remove the hidden gem <span className="font-bold text-earth-charcoal">"{gem.title}"</span>? 
+                Are you sure you want to permanently remove the hidden gem <span className="font-bold text-earth-charcoal">"{gem.title}"</span>?
               </p>
               <div className="p-3 bg-amber-50 border border-amber-200 text-[10px] text-amber-800 text-left font-light leading-relaxed flex items-start space-x-2">
                 <span>⚠️</span>
@@ -614,7 +613,7 @@ export default function EditHiddenGemPage({ params }: PageProps) {
               >
                 Cancel
               </button>
-              
+
               <button
                 disabled={isDeleting}
                 onClick={handleDeleteConfirm}

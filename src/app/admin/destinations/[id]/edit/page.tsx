@@ -27,7 +27,7 @@ interface PageProps {
 export default function EditDestinationPage({ params }: PageProps) {
   const { id: rawId } = use(params);
   const destinationId = rawId as Id<"destinations">;
-  
+
   const router = useRouter();
   const { currentUser, isLoading } = useUser();
   const [isPending, startTransition] = useTransition();
@@ -147,7 +147,7 @@ export default function EditDestinationPage({ params }: PageProps) {
         });
 
         setSuccess(true);
-        
+
         // Wait and redirect back to manager
         setTimeout(() => {
           router.push("/admin/destinations");
@@ -162,13 +162,13 @@ export default function EditDestinationPage({ params }: PageProps) {
   const handleSelectMapLocation = (selectedLat: number, selectedLng: number, regionName: string) => {
     setLat(String(selectedLat));
     setLng(String(selectedLng));
-    
+
     // Auto-fill details if snap snapped
     if (regionName && regionName.includes(",")) {
       const parts = regionName.split(",");
       const locPart = parts[0].replace("Explore ", "").replace("Discover ", "").trim();
       const statePart = parts[1].trim();
-      
+
       if (!location) setLocation(locPart);
       if (!state) setState(statePart);
     }
@@ -260,7 +260,7 @@ export default function EditDestinationPage({ params }: PageProps) {
 
       <main className="flex-grow py-12 md:py-16">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          
+
           {/* Back link */}
           <Link
             href="/admin/destinations"
@@ -285,7 +285,7 @@ export default function EditDestinationPage({ params }: PageProps) {
 
           {/* Form container */}
           <div className="bg-white border border-earth-clay/10 p-6 md:p-10 shadow-lg">
-            
+
             {success && (
               <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-3">
                 <CheckCircle className="h-5 w-5 text-green-600 shrink-0" />
