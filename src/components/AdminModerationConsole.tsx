@@ -1002,9 +1002,20 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                         {b.status}
                       </span>
                     </div>
-                    <div className="text-[10px] text-earth-clay">
-                      Author: {b.author} ({b.authorTier}) • Date: {b.date}
+                    <div className="text-[10px] text-earth-clay flex flex-wrap items-center gap-2">
+                      <span>Author: {b.author} ({b.authorTier || "Bronze"})</span>
+                      <span>•</span>
+                      <span className="font-bold text-earth-forest uppercase">{b.category || "Travelogue"}</span>
+                      <span>•</span>
+                      <span>{b.readTime || 3} min read</span>
+                      <span>•</span>
+                      <span>Date: {b.date}</span>
                     </div>
+                    {b.excerpt && (
+                      <p className="text-[11px] text-earth-terracotta font-medium italic line-clamp-1">
+                        "{b.excerpt}"
+                      </p>
+                    )}
                     <p className="text-[11px] text-earth-charcoal/70 line-clamp-2">
                       {b.content}
                     </p>
@@ -1843,10 +1854,19 @@ export default function AdminModerationConsole({ currentUser }: AdminModerationC
                       </span>
                     </div>
                   </div>
-                  <div className="text-earth-clay text-[11px]">
-                    Date: {viewModal.item.date}
+                  <div className="text-earth-clay text-[11px] flex flex-col items-end">
+                    <span className="font-bold text-earth-forest uppercase">{viewModal.item.category || "Travelogue"}</span>
+                    <span>Date: {viewModal.item.date} • {viewModal.item.readTime || 3} min read</span>
                   </div>
                 </div>
+
+                {/* Excerpt if present */}
+                {viewModal.item.excerpt && (
+                  <div className="p-3 bg-amber-50/60 border border-amber-200/60 text-earth-charcoal text-xs space-y-1">
+                    <span className="font-bold uppercase text-[9px] text-earth-terracotta tracking-wider block">Excerpt / Summary</span>
+                    <p className="italic font-light">{viewModal.item.excerpt}</p>
+                  </div>
+                )}
 
                 {/* Cover Image preview */}
                 {viewModal.item.coverImage && (

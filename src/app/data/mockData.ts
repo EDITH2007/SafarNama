@@ -141,6 +141,9 @@ export interface Blog {
   title: string;
   content: string;
   coverImage: string;
+  category?: string;
+  excerpt?: string;
+  readTime?: number;
   author: string;
   authorImage?: string;
   authorTier: "Bronze" | "Silver" | "Gold" | "Platinum";

@@ -11,6 +11,8 @@ import Footer from "@/components/Footer";
 import Leaderboard from "@/components/Leaderboard";
 import MapPicker from "@/components/MapPicker";
 import HiddenGemForm from "@/components/HiddenGemForm";
+import JourneyForm from "@/components/JourneyForm";
+import TravelerStoryForm from "@/components/TravelerStoryForm";
 import { CategoryDonutChart, TripExpensesBarChart } from "@/components/ExpenseCharts";
 import { useUser, PlanDay } from "@/components/UserContext";
 import { useCurrency, SupportedCurrency } from "@/components/CurrencyContext";
@@ -228,23 +230,6 @@ function Dashboard() {
 
   const [activeRejectionJourneyId, setActiveRejectionJourneyId] = useState<string | null>(null);
 
-  // Add Journey Form State
-  const [jTitle, setJTitle] = useState("");
-  const [jDesc, setJDesc] = useState("");
-  const [jDuration, setJDuration] = useState("");
-  const [stopsList, setStopsList] = useState<string[]>([""]);
-  const [jSuccess, setJSuccess] = useState(false);
-  const [jError, setJError] = useState("");
-  const [jLoading, setJLoading] = useState(false);
-
-  // Add Blog Form State
-  const [bTitle, setBTitle] = useState("");
-  const [bContent, setBContent] = useState("");
-  const [bCover, setBCover] = useState("");
-  const [bSuccess, setBSuccess] = useState(false);
-  const [bError, setBError] = useState("");
-  const [bLoading, setBLoading] = useState(false);
-
   // Wishlist resolution helper
   const resolvedWishlistItems = useMemo(() => {
     return [
@@ -326,67 +311,6 @@ function Dashboard() {
   >("Food");
   const [expDesc, setExpDesc] = useState("");
   const [expDate, setExpDate] = useState("");
-
-  const handleAddJourneySubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!jTitle.trim() || !jDesc.trim() || !jDuration.trim()) {
-      setJError("Please fill out all required fields.");
-      return;
-    }
-    const filteredStops = stopsList.map((s) => s.trim()).filter(Boolean);
-    if (filteredStops.length === 0) {
-      setJError("Please add at least one stop for your journey.");
-      return;
-    }
-    setJLoading(true);
-    setJError("");
-    setJSuccess(false);
-    try {
-      await submitJourney({
-        title: jTitle,
-        description: jDesc,
-        duration: jDuration,
-        stops: filteredStops,
-      });
-      setJSuccess(true);
-      setJTitle("");
-      setJDesc("");
-      setJDuration("");
-      setStopsList([""]);
-    } catch (err: any) {
-      setJError(err.message || "Failed to submit journey. Please try again.");
-    } finally {
-      setJLoading(false);
-    }
-  };
-
-  const handleAddBlogSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!bTitle.trim() || !bContent.trim()) {
-      setBError("Please fill out all required fields.");
-      return;
-    }
-    setBLoading(true);
-    setBError("");
-    setBSuccess(false);
-    try {
-      await addBlog({
-        title: bTitle,
-        content: bContent,
-        coverImage:
-          bCover.trim() ||
-          "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
-      });
-      setBSuccess(true);
-      setBTitle("");
-      setBContent("");
-      setBCover("");
-    } catch (err: any) {
-      setBError(err.message || "Failed to publish blog post.");
-    } finally {
-      setBLoading(false);
-    }
-  };
 
   const handleAddExpense = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1757,72 +1681,11 @@ Ensure costs are in INR numbers.`;
                       </button>
                     </div>
 
-                    {jSuccess && (
-                      <div className="p-4 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-2">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span>Journey submitted successfully!</span>
-                      </div>
-                    )}
-
-                    <form onSubmit={handleAddJourneySubmit} className="space-y-6 font-sans text-xs">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="md:col-span-2 space-y-1">
-                          <label htmlFor="journey-title" className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                            Journey Title *
-                          </label>
-                          <input
-                            id="journey-title"
-                            name="journeyTitle"
-                            type="text"
-                            required
-                            value={jTitle}
-                            onChange={(e) => setJTitle(e.target.value)}
-                            placeholder="e.g. 5-Day Spiti Circuit"
-                            className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs"
-                          />
-                        </div>
-
-                        <div className="space-y-1">
-                          <label htmlFor="journey-duration" className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                            Duration *
-                          </label>
-                          <input
-                            id="journey-duration"
-                            name="journeyDuration"
-                            type="text"
-                            required
-                            value={jDuration}
-                            onChange={(e) => setJDuration(e.target.value)}
-                            placeholder="e.g. 5 Days"
-                            className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs"
-                          />
-                        </div>
-                      </div>
-
-                      <div className="space-y-1">
-                        <label htmlFor="journey-desc" className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                          Journey Story / Overview *
-                        </label>
-                        <textarea
-                          id="journey-desc"
-                          name="journeyDesc"
-                          rows={3}
-                          required
-                          value={jDesc}
-                          onChange={(e) => setJDesc(e.target.value)}
-                          placeholder="Describe the route, roads, and experiences..."
-                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={jLoading || !jTitle || !jDesc || !jDuration}
-                        className="w-full py-3 bg-earth-forest hover:bg-earth-terracotta disabled:opacity-50 text-white font-sans text-xs font-bold uppercase tracking-widest cursor-pointer"
-                      >
-                        Submit Journey (+100 PTS)
-                      </button>
-                    </form>
+                    <JourneyForm
+                      variant="inline"
+                      onSuccess={() => setExploreSubView("browse")}
+                      onCancel={() => setExploreSubView("browse")}
+                    />
                   </div>
                 )}
 
@@ -1841,54 +1704,11 @@ Ensure costs are in INR numbers.`;
                       </button>
                     </div>
 
-                    {bSuccess && (
-                      <div className="p-4 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-2">
-                        <CheckCircle className="h-5 w-5 text-green-600" />
-                        <span>Traveler story published!</span>
-                      </div>
-                    )}
-
-                    <form onSubmit={handleAddBlogSubmit} className="space-y-6 font-sans text-xs">
-                      <div className="space-y-1">
-                        <label htmlFor="blog-title" className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                          Story Title *
-                        </label>
-                        <input
-                          id="blog-title"
-                          name="blogTitle"
-                          type="text"
-                          required
-                          value={bTitle}
-                          onChange={(e) => setBTitle(e.target.value)}
-                          placeholder="Story Title"
-                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs"
-                        />
-                      </div>
-
-                      <div className="space-y-1">
-                        <label htmlFor="blog-content" className="block font-bold uppercase tracking-wider text-earth-charcoal">
-                          Story Content *
-                        </label>
-                        <textarea
-                          id="blog-content"
-                          name="blogContent"
-                          rows={8}
-                          required
-                          value={bContent}
-                          onChange={(e) => setBContent(e.target.value)}
-                          placeholder="Write your story..."
-                          className="w-full p-2.5 bg-white border border-earth-clay/20 text-xs"
-                        />
-                      </div>
-
-                      <button
-                        type="submit"
-                        disabled={bLoading || !bTitle || !bContent}
-                        className="w-full py-3 bg-earth-forest hover:bg-earth-terracotta disabled:opacity-50 text-white font-sans text-xs font-bold uppercase tracking-widest cursor-pointer"
-                      >
-                        Publish Story (+30 PTS)
-                      </button>
-                    </form>
+                    <TravelerStoryForm
+                      variant="inline"
+                      onSuccess={() => setExploreSubView("browse")}
+                      onCancel={() => setExploreSubView("browse")}
+                    />
                   </div>
                 )}
               </div>

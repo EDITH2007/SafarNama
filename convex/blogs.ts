@@ -15,6 +15,9 @@ export const addBlog = mutation({
     title: v.string(),
     content: v.string(),
     coverImage: v.optional(v.string()),
+    category: v.optional(v.string()),
+    excerpt: v.optional(v.string()),
+    readTime: v.optional(v.number()),
     author: v.id("users"),
     status: v.string(), // "draft" | "published" | "pending"
   },
@@ -23,6 +26,9 @@ export const addBlog = mutation({
       title: args.title,
       content: args.content,
       coverImage: args.coverImage,
+      category: args.category,
+      excerpt: args.excerpt,
+      readTime: args.readTime,
       author: args.author,
       status: args.status,
       createdAt: Date.now(),
@@ -86,6 +92,8 @@ export const editBlog = mutation({
     content: v.optional(v.string()),
     coverImage: v.optional(v.string()),
     category: v.optional(v.string()),
+    excerpt: v.optional(v.string()),
+    readTime: v.optional(v.number()),
   },
   handler: async (ctx, args) => {
     await requireAdmin(ctx);
@@ -136,6 +144,9 @@ export const getEnrichedBlogs = query({
         title: b.title || "Untitled",
         content: b.content || "",
         coverImage: b.coverImage || "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80",
+        category: b.category || "Travelogue",
+        excerpt: b.excerpt || (b.content ? b.content.slice(0, 150) + "..." : ""),
+        readTime: b.readTime || (b.content ? Math.max(1, Math.ceil(b.content.split(/\s+/).length / 200)) : 3),
         author: authorName,
         authorImage: authorAvatar,
         authorTier,

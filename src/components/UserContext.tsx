@@ -1255,6 +1255,9 @@ export function UserProvider({ children }: { children: React.ReactNode }) {
           title: blog.title,
           content: blog.content,
           coverImage: blog.coverImage,
+          category: blog.category,
+          excerpt: blog.excerpt,
+          readTime: blog.readTime,
           author: currentUser.id as any,
           status: "published",
         });

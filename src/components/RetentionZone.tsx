@@ -202,8 +202,11 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
                     className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-300"
                     loading="lazy"
                   />
+                  <span className="absolute top-4 left-4 bg-earth-forest text-earth-saffron px-2.5 py-0.5 font-sans text-[9px] font-bold uppercase tracking-wider shadow-sm">
+                    {b.category || "Travelogue"}
+                  </span>
                   <span className="absolute bottom-4 left-4 bg-earth-sand/90 text-earth-charcoal px-2.5 py-0.5 font-sans text-[10px] font-medium border border-earth-clay/15">
-                    {b.date}
+                    {b.date} • {b.readTime || 3} min read
                   </span>
                 </div>
 
@@ -216,7 +219,7 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
                       {b.title}
                     </h4>
                     <p className="font-sans text-xs text-earth-charcoal/70 line-clamp-3 leading-relaxed font-light">
-                      {b.content}
+                      {b.excerpt || b.content}
                     </p>
                   </div>
 
@@ -390,9 +393,14 @@ export default function RetentionZone({ onViewPlan, isLandingPage = false }: Ret
                 </div>
               </div>
               
-              <span className="text-[10px] text-earth-clay font-medium uppercase tracking-widest font-sans">
-                {selectedReadBlog.date}
-              </span>
+              <div className="flex items-center space-x-3">
+                <span className="px-2.5 py-1 bg-earth-forest text-earth-saffron text-[10px] font-bold uppercase tracking-wider">
+                  {selectedReadBlog.category || "Travelogue"}
+                </span>
+                <span className="text-[10px] text-earth-clay font-medium uppercase tracking-widest font-sans">
+                  {selectedReadBlog.date} • {selectedReadBlog.readTime || 3} min read
+                </span>
+              </div>
             </div>
 
             {/* Scrollable Content */}
