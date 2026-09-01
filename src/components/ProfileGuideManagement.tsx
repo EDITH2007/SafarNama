@@ -73,6 +73,11 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
 
   // Sub-tab for Bookings
   const [bookingSubTab, setBookingSubTab] = useState<"asGuide" | "asTraveler">("asGuide");
+  
+  // State for user clicking "Apply to become a guide" prompt
+  const [isApplying, setIsApplying] = useState<boolean>(false);
+
+  const hasGuideProfile = Boolean(viewer?.guideProfile);
 
   // Sync existing guide profile into form
   useEffect(() => {
@@ -120,6 +125,7 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
           ? "Guide Mode successfully ACTIVATED! You are now listed on the Local Guide Marketplace."
           : "Guide Profile updated. Guide Mode is currently inactive."
       );
+      setIsApplying(false);
     } catch (err: any) {
       setSaveErrorMsg(err.message || "Failed to update Guide Profile.");
     } finally {
@@ -179,56 +185,90 @@ export default function ProfileGuideManagement({ currentUser }: ProfileGuideMana
     }
   };
 
-  if (!isEligible) {
+  // If user does NOT have an active guideProfile and hasn't clicked Apply to start setup
+  if (!hasGuideProfile && !isApplying) {
     return (
-      <div className="bg-earth-sand/20 border border-earth-clay/15 p-6 space-y-4 font-sans text-xs">
-        <div className="flex items-center space-x-3 border-b border-earth-clay/10 pb-3">
-          <ShieldAlert className="h-6 w-6 text-amber-600 shrink-0" />
-          <div>
-            <h3 className="font-serif text-base font-bold text-earth-forest">
-              Local Guide Application & Management
-            </h3>
-            <p className="text-[11px] text-earth-charcoal/70">
-              Gold Explorer+ Status Required to Become a Guide
-            </p>
-          </div>
-        </div>
-
-        {/* Lock Callout */}
-        <div className="bg-amber-50 border border-amber-200 p-6 space-y-4">
-          <div className="flex items-start space-x-3">
-            <Award className="h-6 w-6 text-amber-600 shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h4 className="font-serif text-sm font-bold text-amber-900">
-                Gold Explorer Status Required
-              </h4>
-              <p className="text-xs text-amber-800 leading-relaxed font-light">
-                In SafarNama, local guides are verified community leaders. To maintain trust and quality, only members with <strong>Gold Explorer</strong> status or higher (2,500+ PTS or 5+ verified submissions) can activate Guide Mode.
+      <div className="bg-amber-50/20 border-2 border-amber-900/15 p-6 md:p-8 space-y-6 font-sans text-xs shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-earth-clay/10 pb-4 gap-4">
+          <div className="flex items-center space-x-3">
+            <div className="p-3 bg-amber-100 border border-amber-300 rounded-full text-amber-800">
+              <Award className="h-6 w-6" />
+            </div>
+            <div>
+              <h3 className="font-serif text-lg font-bold text-earth-forest">
+                Guide Hub — Become a Verified Local Guide
+              </h3>
+              <p className="text-xs text-earth-charcoal/70 font-light">
+                Offer custom guided experiences, publish fixed tour packages, and earn Explorer points.
               </p>
             </div>
           </div>
 
-          <div className="pt-2 border-t border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
-            <div>
-              <span className="font-bold text-amber-900 block">Your Current Status:</span>
-              <span className="text-amber-800">
-                {currentUser.tier} Explorer • {currentUser.points.toLocaleString()} PTS
-              </span>
+          <span className={`self-start sm:self-auto px-3 py-1 text-[10px] uppercase font-bold tracking-wider border ${
+            isEligible ? "bg-emerald-50 border-emerald-300 text-emerald-800" : "bg-amber-100 border-amber-300 text-amber-900"
+          }`}>
+            {isEligible ? "✓ Gold Explorer Eligible" : "Gold Status Locked"}
+          </span>
+        </div>
+
+        {isEligible ? (
+          <div className="bg-white border border-earth-clay/15 p-6 space-y-4 shadow-sm">
+            <div className="space-y-2">
+              <h4 className="font-serif text-base font-bold text-earth-forest">
+                You Are Eligible to Become a SafarNama Local Guide!
+              </h4>
+              <p className="text-xs text-earth-charcoal/80 leading-relaxed font-light">
+                As a Gold/Platinum Explorer or member with 2,500+ PTS, you are eligible to create your guide profile, showcase your regional expertise, and manage incoming traveler bookings on the marketplace.
+              </p>
             </div>
-            <div className="w-full sm:w-48 bg-amber-200/60 h-2 rounded-full overflow-hidden">
-              <div
-                className="bg-amber-600 h-full transition-all"
-                style={{ width: `${Math.min(100, (currentUser.points / 2500) * 100)}%` }}
-              />
+
+            <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsApplying(true)}
+                className="w-full sm:w-auto px-6 py-3 bg-earth-forest hover:bg-earth-terracotta text-white font-sans text-xs font-bold uppercase tracking-widest transition-colors cursor-pointer shadow-md flex items-center justify-center space-x-2"
+              >
+                <Sparkles className="h-4 w-4 text-earth-saffron" />
+                <span>Apply to Become a Guide</span>
+              </button>
             </div>
           </div>
-        </div>
+        ) : (
+          <div className="bg-amber-50 border border-amber-200 p-6 space-y-4">
+            <div className="flex items-start space-x-3">
+              <ShieldAlert className="h-6 w-6 text-amber-600 shrink-0 mt-0.5" />
+              <div className="space-y-1">
+                <h4 className="font-serif text-sm font-bold text-amber-900">
+                  Gold Explorer Status Required to Become a Guide
+                </h4>
+                <p className="text-xs text-amber-800 leading-relaxed font-light">
+                  In SafarNama, local guides are verified community leaders. To maintain trust and quality, only members with <strong>Gold Explorer</strong> status or higher (2,500+ PTS or 5+ verified submissions) can activate Guide Mode.
+                </p>
+              </div>
+            </div>
+
+            <div className="pt-2 border-t border-amber-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+              <div>
+                <span className="font-bold text-amber-900 block">Your Current Status:</span>
+                <span className="text-amber-800">
+                  {currentUser.tier} Explorer • {currentUser.points.toLocaleString()} PTS
+                </span>
+              </div>
+              <div className="w-full sm:w-48 bg-amber-200/60 h-2 rounded-full overflow-hidden">
+                <div
+                  className="bg-amber-600 h-full transition-all"
+                  style={{ width: `${Math.min(100, (currentUser.points / 2500) * 100)}%` }}
+                />
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     );
   }
 
   return (
-    <div className="bg-earth-sand/20 border border-earth-clay/15 p-6 space-y-8 font-sans text-xs">
+    <div className="bg-amber-50/20 border-2 border-amber-900/15 p-6 md:p-8 space-y-8 font-sans text-xs shadow-sm">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b border-earth-clay/10 pb-4 gap-4">
         <div>
           <div className="flex items-center space-x-2">

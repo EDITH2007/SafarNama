@@ -157,6 +157,9 @@ function Dashboard() {
   // My Trips sub-tabs ("itineraries" | "expenses" | "wishlist" | "stays" | "cancellations")
   const [tripsSubTab, setTripsSubTab] = useState<"itineraries" | "expenses" | "wishlist" | "stays" | "cancellations">("itineraries");
 
+  // Profile sub-tabs ("settings" | "achievements" | "submissions" | "guide")
+  const [profileSubTab, setProfileSubTab] = useState<"settings" | "achievements" | "submissions" | "guide">("settings");
+
   // Admin sub-navigation state
   const [adminSubTab, setAdminSubTab] = useState<"spots" | "reviews" | "blogs" | "add_destination" | "approved_gems" | "journeys">("spots");
   const hasRedirectedRef = useRef(false);
@@ -195,6 +198,7 @@ function Dashboard() {
         setTripsSubTab("wishlist");
       } else if (queryTab === "submissions") {
         setActiveTab("profile");
+        setProfileSubTab("submissions");
       } else if (queryTab === "admin") {
         setActiveTab("profile");
       } else if (["explore", "trips", "wallet", "guides", "profile"].includes(queryTab)) {
@@ -2605,216 +2609,287 @@ Ensure costs are in INR numbers.`;
             {/* TAB 5: PROFILE */}
             {activeTab === "profile" && (
               <div className="space-y-8 animate-in fade-in duration-300">
-                {/* Hire a Local Guide Management Section */}
-                <ProfileGuideManagement currentUser={currentUser} />
+                {/* Profile Sub-navigation Header & Tab Controls */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-earth-clay/10 pb-4">
+                  <div>
+                    <h2 className="font-serif text-xl font-bold text-earth-forest">
+                      Explorer Profile & Preferences
+                    </h2>
+                    <p className="font-sans text-xs text-earth-charcoal/70 font-light">
+                      Manage your account details, badges, submitted spots, and local guide settings.
+                    </p>
+                  </div>
 
-                {/* Account Settings & Preferences Section */}
-                <div className="bg-earth-sand/20 border border-earth-clay/15 p-6 space-y-6">
-                  <div className="flex items-center justify-between border-b border-earth-clay/10 pb-3">
-                    <h3 className="font-serif text-lg font-bold text-earth-forest">
-                      Account Settings & Preferences
-                    </h3>
+                  <div className="flex flex-wrap items-center gap-2">
                     <button
-                      onClick={toggleUserVerification}
-                      className="px-3 py-1.5 border border-earth-clay/20 bg-white text-[10px] uppercase font-bold tracking-wider hover:bg-earth-sand cursor-pointer"
+                      onClick={() => setProfileSubTab("settings")}
+                      className={`px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer ${
+                        profileSubTab === "settings"
+                          ? "bg-earth-forest text-white border-earth-forest"
+                          : "bg-white text-earth-charcoal border-earth-clay/20 hover:border-earth-forest"
+                      }`}
                     >
-                      {currentUser.isVerified ? "Revoke Verification" : "Grant Verified Perk"}
+                      Account Settings
+                    </button>
+                    <button
+                      onClick={() => setProfileSubTab("achievements")}
+                      className={`px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer ${
+                        profileSubTab === "achievements"
+                          ? "bg-earth-forest text-white border-earth-forest"
+                          : "bg-white text-earth-charcoal border-earth-clay/20 hover:border-earth-forest"
+                      }`}
+                    >
+                      Achievements & Standing
+                    </button>
+                    <button
+                      onClick={() => setProfileSubTab("submissions")}
+                      className={`px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer ${
+                        profileSubTab === "submissions"
+                          ? "bg-earth-forest text-white border-earth-forest"
+                          : "bg-white text-earth-charcoal border-earth-clay/20 hover:border-earth-forest"
+                      }`}
+                    >
+                      My Submissions
+                    </button>
+                    <button
+                      onClick={() => setProfileSubTab("guide")}
+                      className={`px-3.5 py-1.5 text-xs font-bold uppercase tracking-wider transition-colors border cursor-pointer flex items-center space-x-1 ${
+                        profileSubTab === "guide"
+                          ? "bg-earth-terracotta text-white border-earth-terracotta"
+                          : "bg-white text-earth-charcoal border-earth-clay/20 hover:border-earth-terracotta"
+                      }`}
+                    >
+                      <Award className="h-3.5 w-3.5 text-earth-saffron" />
+                      <span>Guide Hub</span>
                     </button>
                   </div>
+                </div>
 
-                  {prefSaveMsg && (
-                    <div className="p-3 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-2 animate-in fade-in duration-200">
-                      <Check className="h-4 w-4 text-green-600" />
-                      <span>{prefSaveMsg}</span>
-                    </div>
-                  )}
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans text-xs">
-                    {/* User Details */}
-                    <div className="space-y-3 bg-white p-4 border border-earth-clay/10">
-                      <div className="font-bold uppercase tracking-wider text-earth-forest text-[10px]">
-                        Explorer Details
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-earth-clay block text-[10px] uppercase">Name:</span>
-                        <span className="font-semibold text-earth-charcoal">{currentUser.name}</span>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-earth-clay block text-[10px] uppercase">Email:</span>
-                        <span className="font-mono text-earth-charcoal">{currentUser.email || "N/A"}</span>
-                      </div>
-                      <div className="space-y-1">
-                        <span className="text-earth-clay block text-[10px] uppercase">Hometown:</span>
-                        <span className="text-earth-charcoal">{currentUser.homeTown}</span>
-                      </div>
+                {/* SUB-TAB 1: ACCOUNT SETTINGS & PREFERENCES */}
+                {profileSubTab === "settings" && (
+                  <div className="bg-earth-sand/20 border border-earth-clay/15 p-6 space-y-6 animate-in fade-in duration-200">
+                    <div className="flex items-center justify-between border-b border-earth-clay/10 pb-3">
+                      <h3 className="font-serif text-lg font-bold text-earth-forest">
+                        Account Settings & Preferences
+                      </h3>
+                      <button
+                        onClick={toggleUserVerification}
+                        className="px-3 py-1.5 border border-earth-clay/20 bg-white text-[10px] uppercase font-bold tracking-wider hover:bg-earth-sand cursor-pointer"
+                      >
+                        {currentUser.isVerified ? "Revoke Verification" : "Grant Verified Perk"}
+                      </button>
                     </div>
 
-                    {/* Preferences Block: Google Translate & Currency Display */}
-                    <div className="space-y-4 bg-white p-4 border border-earth-clay/10">
-                      <div className="font-bold uppercase tracking-wider text-earth-forest text-[10px] flex items-center justify-between">
-                        <span>Regional Preferences</span>
-                        <span className="text-[9px] text-earth-terracotta font-mono">Convex Backed</span>
+                    {prefSaveMsg && (
+                      <div className="p-3 bg-green-50 border border-green-200 text-green-800 text-xs font-semibold flex items-center space-x-2 animate-in fade-in duration-200">
+                        <Check className="h-4 w-4 text-green-600" />
+                        <span>{prefSaveMsg}</span>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 font-sans text-xs">
+                      {/* User Details */}
+                      <div className="space-y-3 bg-white p-4 border border-earth-clay/10">
+                        <div className="font-bold uppercase tracking-wider text-earth-forest text-[10px]">
+                          Explorer Details
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-earth-clay block text-[10px] uppercase">Name:</span>
+                          <span className="font-semibold text-earth-charcoal">{currentUser.name}</span>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-earth-clay block text-[10px] uppercase">Email:</span>
+                          <span className="font-mono text-earth-charcoal">{currentUser.email || "N/A"}</span>
+                        </div>
+                        <div className="space-y-1">
+                          <span className="text-earth-clay block text-[10px] uppercase">Hometown:</span>
+                          <span className="text-earth-charcoal">{currentUser.homeTown}</span>
+                        </div>
                       </div>
 
-                      {/* Currency Display Preference Row (Task 3) */}
-                      <div className="space-y-1">
-                        <label htmlFor="pref-currency" className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay flex items-center space-x-1">
-                          <DollarSign className="h-3.5 w-3.5 text-earth-terracotta" />
-                          <span>Site-wide Display Currency</span>
-                        </label>
-                        <select
-                          id="pref-currency"
-                          name="prefCurrency"
-                          value={currentUser.currency || "INR"}
-                          disabled={isUpdatingPrefs}
-                          onChange={(e) => handlePreferenceChange("currency", e.target.value)}
-                          className="w-full p-2 bg-white border border-earth-clay/20 text-xs font-semibold text-earth-charcoal focus:outline-none focus:border-earth-terracotta cursor-pointer"
+                      {/* Preferences Block: Google Translate & Currency Display */}
+                      <div className="space-y-4 bg-white p-4 border border-earth-clay/10">
+                        <div className="font-bold uppercase tracking-wider text-earth-forest text-[10px] flex items-center justify-between">
+                          <span>Regional Preferences</span>
+                          <span className="text-[9px] text-earth-terracotta font-mono">Convex Backed</span>
+                        </div>
+
+                        {/* Currency Display Preference Row */}
+                        <div className="space-y-1">
+                          <label htmlFor="pref-currency" className="block text-[10px] font-bold uppercase tracking-wider text-earth-clay flex items-center space-x-1">
+                            <DollarSign className="h-3.5 w-3.5 text-earth-terracotta" />
+                            <span>Site-wide Display Currency</span>
+                          </label>
+                          <select
+                            id="pref-currency"
+                            name="prefCurrency"
+                            value={currentUser.currency || "INR"}
+                            disabled={isUpdatingPrefs}
+                            onChange={(e) => handlePreferenceChange("currency", e.target.value)}
+                            className="w-full p-2 bg-white border border-earth-clay/20 text-xs font-semibold text-earth-charcoal focus:outline-none focus:border-earth-terracotta cursor-pointer"
+                          >
+                            <option value="INR">INR (₹ Indian Rupee)</option>
+                            <option value="USD">USD ($ US Dollar)</option>
+                            <option value="EUR">EUR (€ Euro)</option>
+                            <option value="GBP">GBP (£ British Pound)</option>
+                            <option value="AED">AED (د.إ UAE Dirham)</option>
+                          </select>
+                          <p className="text-[9px] text-earth-clay/60 font-light">
+                            Sets the default currency used to format prices across SafarNama features.
+                          </p>
+                        </div>
+
+                        {/* Google Translate Integration Widget */}
+                        <GoogleTranslateWidget />
+                      </div>
+                    </div>
+
+                    {/* Standalone Live Currency Converter Tool */}
+                    <CurrencyConverterCard />
+                  </div>
+                )}
+
+                {/* SUB-TAB 2: ACHIEVEMENTS & STANDING */}
+                {profileSubTab === "achievements" && (
+                  <div className="space-y-6 animate-in fade-in duration-200">
+                    {/* Badges Drawer */}
+                    <div className="space-y-4 font-sans text-xs">
+                      <h3 className="font-serif text-lg font-bold text-earth-forest border-b border-earth-clay/10 pb-2">
+                        Explorer Achievements & Badges
+                      </h3>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                        <div
+                          className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${currentUser.isVerified
+                              ? "bg-blue-50/50 border-blue-200 text-blue-800"
+                              : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
+                            }`}
                         >
-                          <option value="INR">INR (₹ Indian Rupee)</option>
-                          <option value="USD">USD ($ US Dollar)</option>
-                          <option value="EUR">EUR (€ Euro)</option>
-                          <option value="GBP">GBP (£ British Pound)</option>
-                          <option value="AED">AED (د.إ UAE Dirham)</option>
-                        </select>
-                        <p className="text-[9px] text-earth-clay/60 font-light">
-                          Sets the default currency used to format prices across SafarNama features.
-                        </p>
+                          <ShieldCheck className={`h-8 w-8 ${currentUser.isVerified ? "text-blue-500" : ""}`} />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Verified Identity</span>
+                        </div>
+
+                        <div
+                          className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${hasSubmittedGem
+                              ? "bg-amber-50/50 border-amber-200 text-amber-800"
+                              : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
+                            }`}
+                        >
+                          <Compass className="h-8 w-8 text-earth-saffron" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Spot Discoverer</span>
+                        </div>
+
+                        <div
+                          className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${hasWrittenReview
+                              ? "bg-orange-50/50 border-orange-200 text-orange-800"
+                              : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
+                            }`}
+                        >
+                          <BookOpen className="h-8 w-8" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Logbook Writer</span>
+                        </div>
+
+                        <div
+                          className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${isGoldOrSilver
+                              ? "bg-earth-sand border-earth-clay/20 text-earth-clay"
+                              : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
+                            }`}
+                        >
+                          <Award className="h-8 w-8 text-earth-terracotta" />
+                          <span className="text-[10px] font-bold uppercase tracking-wider">Elite Guide</span>
+                        </div>
                       </div>
+                    </div>
 
-                      {/* Google Translate Integration Widget (Task 4) */}
-                      <GoogleTranslateWidget />
+                    {/* Leaderboard Standing Stat + Link */}
+                    <div className="bg-white border border-earth-clay/15 p-6 space-y-3 shadow-sm">
+                      <h3 className="font-serif text-lg font-bold text-earth-forest border-b border-earth-clay/10 pb-2">
+                        Explorer Leaderboard Standings
+                      </h3>
+
+                      <div className="font-sans text-sm pt-1">
+                        {leaderboard && leaderboard.length > 0 ? (
+                          (() => {
+                            const userRankInfo = leaderboard.find((u) => u.isCurrentUser);
+                            if (userRankInfo) {
+                              return (
+                                <Link
+                                  href="/leaderboard"
+                                  className="inline-flex items-center space-x-2 text-earth-forest hover:text-earth-terracotta transition-colors font-semibold group cursor-pointer"
+                                >
+                                  <Award className="h-5 w-5 text-earth-saffron" />
+                                  <span>Rank #{userRankInfo.rank} · {userRankInfo.points.toLocaleString()} pts</span>
+                                  <span className="text-xs text-earth-clay group-hover:translate-x-1 transition-transform"> (View Leaderboard) →</span>
+                                </Link>
+                              );
+                            } else {
+                              return (
+                                <Link
+                                  href="/leaderboard"
+                                  className="inline-flex items-center space-x-2 text-earth-forest hover:text-earth-terracotta transition-colors font-semibold group cursor-pointer"
+                                >
+                                  <Award className="h-5 w-5 text-earth-saffron" />
+                                  <span>Rank #N/A · {currentUser.points.toLocaleString()} pts</span>
+                                  <span className="text-xs text-earth-clay group-hover:translate-x-1 transition-transform font-normal">(View Leaderboard) →</span>
+                                </Link>
+                              );
+                            }
+                          })()
+                        ) : (
+                          <div className="animate-pulse flex space-x-2">
+                            <div className="h-4 bg-earth-clay/10 w-28 rounded" />
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
+                )}
 
-                  {/* Standalone Live Currency Converter Tool (Task 2) */}
-                  <CurrencyConverterCard />
-                </div>
+                {/* SUB-TAB 3: MY SUBMISSIONS */}
+                {profileSubTab === "submissions" && (
+                  <div className="space-y-6 animate-in fade-in duration-200 font-sans">
+                    <h3 className="font-serif text-lg font-bold text-earth-forest border-b border-earth-clay/10 pb-2">
+                      My Submitted Gems & Tracking Status
+                    </h3>
 
-                {/* Badges Drawer */}
-                <div className="space-y-4">
-                  <h3 className="font-serif text-lg font-bold text-earth-forest border-b border-earth-clay/10 pb-2">
-                    Explorer Achievements & Badges
-                  </h3>
+                    {mySubmissions && mySubmissions.length > 0 ? (
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                        {mySubmissions.map((gem) => (
+                          <div
+                            key={gem.id}
+                            className="bg-white border border-earth-clay/10 flex flex-col justify-between hover:border-earth-terracotta/30 transition-all p-4 space-y-3 shadow-sm"
+                          >
+                            <div className="space-y-1">
+                              <h4 className="font-serif text-base font-bold text-earth-charcoal">
+                                {gem.title}
+                              </h4>
+                              <p className="text-xs text-earth-charcoal/70 line-clamp-2">
+                                {gem.description}
+                              </p>
+                            </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    <div
-                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${currentUser.isVerified
-                          ? "bg-blue-50/50 border-blue-200 text-blue-800"
-                          : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
-                        }`}
-                    >
-                      <ShieldCheck className={`h-8 w-8 ${currentUser.isVerified ? "text-blue-500" : ""}`} />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Verified Identity</span>
-                    </div>
-
-                    <div
-                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${hasSubmittedGem
-                          ? "bg-amber-50/50 border-amber-200 text-amber-800"
-                          : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
-                        }`}
-                    >
-                      <Compass className="h-8 w-8 text-earth-saffron" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Spot Discoverer</span>
-                    </div>
-
-                    <div
-                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${hasWrittenReview
-                          ? "bg-orange-50/50 border-orange-200 text-orange-800"
-                          : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
-                        }`}
-                    >
-                      <BookOpen className="h-8 w-8" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Logbook Writer</span>
-                    </div>
-
-                    <div
-                      className={`p-4 border text-center flex flex-col items-center justify-center space-y-2 ${isGoldOrSilver
-                          ? "bg-earth-sand border-earth-clay/20 text-earth-clay"
-                          : "bg-stone-50 border-stone-200 opacity-40 text-stone-500"
-                        }`}
-                    >
-                      <Award className="h-8 w-8 text-earth-terracotta" />
-                      <span className="text-[10px] font-bold uppercase tracking-wider">Elite Guide</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Leaderboard Section */}
-                <div className="space-y-4">
-                  <h3 className="font-serif text-lg font-bold text-earth-forest border-b border-earth-clay/10 pb-2">
-                    Explorer Leaderboard Standings
-                  </h3>
-
-                  <div className="font-sans text-sm">
-                    {leaderboard && leaderboard.length > 0 ? (
-                      (() => {
-                        const userRankInfo = leaderboard.find((u) => u.isCurrentUser);
-                        if (userRankInfo) {
-                          return (
-                            <Link
-                              href="/leaderboard"
-                              className="inline-flex items-center space-x-2 text-earth-forest hover:text-earth-terracotta transition-colors font-semibold group cursor-pointer"
-                            >
-                              <span>Rank #{userRankInfo.rank} · {userRankInfo.points.toLocaleString()} pts</span>
-                              <span className="text-xs text-earth-clay group-hover:translate-x-1 transition-transform">→</span>
-                            </Link>
-                          );
-                        } else {
-                          return (
-                            <Link
-                              href="/leaderboard"
-                              className="inline-flex items-center space-x-2 text-earth-forest hover:text-earth-terracotta transition-colors font-semibold group cursor-pointer"
-                            >
-                              <span>Rank #N/A · {currentUser.points.toLocaleString()} pts</span>
-                              <span className="text-xs text-earth-clay group-hover:translate-x-1 transition-transform font-normal">(View Leaderboard) →</span>
-                            </Link>
-                          );
-                        }
-                      })()
+                            <div className="pt-2 border-t border-earth-clay/5">
+                              <VerificationStepper status={gem.status as any} />
+                            </div>
+                          </div>
+                        ))}
+                      </div>
                     ) : (
-                      <div className="animate-pulse flex space-x-2">
-                        <div className="h-4 bg-earth-clay/10 w-28 rounded" />
+                      <div className="text-center py-12 border border-dashed border-earth-clay/20 bg-earth-sand/5 text-xs text-earth-charcoal/60">
+                        You haven't submitted any spots yet. Switch to Explore tab to submit a spot!
                       </div>
                     )}
                   </div>
-                </div>
+                )}
 
-                {/* My Submissions Section */}
-                <div className="space-y-6">
-                  <h3 className="font-serif text-lg font-bold text-earth-forest border-b border-earth-clay/10 pb-2">
-                    My Submitted Gems & Tracking Status
-                  </h3>
+                {/* SUB-TAB 4: GUIDE HUB */}
+                {profileSubTab === "guide" && (
+                  <div className="animate-in fade-in duration-200">
+                    <ProfileGuideManagement currentUser={currentUser} />
+                  </div>
+                )}
 
-                  {mySubmissions && mySubmissions.length > 0 ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                      {mySubmissions.map((gem) => (
-                        <div
-                          key={gem.id}
-                          className="bg-white border border-earth-clay/10 flex flex-col justify-between hover:border-earth-terracotta/30 transition-all p-4 space-y-3"
-                        >
-                          <div className="space-y-1">
-                            <h4 className="font-serif text-base font-bold text-earth-charcoal">
-                              {gem.title}
-                            </h4>
-                            <p className="text-xs text-earth-charcoal/70 line-clamp-2">
-                              {gem.description}
-                            </p>
-                          </div>
-
-                          <div className="pt-2 border-t border-earth-clay/5">
-                            <VerificationStepper status={gem.status as any} />
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="text-center py-12 border border-dashed border-earth-clay/20 bg-earth-sand/5 text-xs text-earth-charcoal/60">
-                      You haven't submitted any spots yet. Switch to Explore tab to submit a spot!
-                    </div>
-                  )}
-                </div>
-
-                {/* Admin Moderation Console (Gated for admin user 230107anu@gmail.com / admin role) */}
+                {/* Admin Moderation Console (Gated for admin user 230107anu@gmail.com / admin role - UNCHANGED & UNTOUCHED) */}
                 {currentUser && (currentUser.email?.trim().toLowerCase() === "230107anu@gmail.com" || currentUser.role === "admin") && (
                   <AdminModerationConsole currentUser={currentUser} />
                 )}
