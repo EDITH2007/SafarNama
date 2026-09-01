@@ -99,141 +99,148 @@ export default function DestinationsPage() {
             </div>
           </div>
 
-          {/* Map Component Section */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="font-serif text-2xl font-bold text-earth-forest">
-                Interactive Exploration Route
-              </h2>
-              <span className="font-sans text-[11px] font-bold uppercase tracking-widest text-earth-terracotta bg-earth-terracotta/5 px-3 py-1 border border-earth-terracotta/10">
-                {sortedDestinations.length} Destination{sortedDestinations.length !== 1 ? "s" : ""} on Map
-              </span>
+          {/* Side-by-Side Layout (Map sticky on Left, Cards scrollable on Right on Desktop; Stacked on Mobile) */}
+          <div className="flex flex-col lg:flex-row items-start gap-8 relative">
+            {/* Left Column: Interactive Exploration Map (Sticky on Desktop) */}
+            <div className="w-full lg:w-5/12 lg:sticky lg:top-24 z-10 space-y-4 shrink-0">
+              <div className="flex items-center justify-between">
+                <h2 className="font-serif text-xl md:text-2xl font-bold text-earth-forest">
+                  Interactive Exploration Route
+                </h2>
+                <span className="font-sans text-[11px] font-bold uppercase tracking-widest text-earth-terracotta bg-earth-terracotta/5 px-3 py-1 border border-earth-terracotta/10">
+                  {sortedDestinations.length} Destination{sortedDestinations.length !== 1 ? "s" : ""} on Map
+                </span>
+              </div>
+              <DestinationMap
+                destinations={sortedDestinations}
+                activeDestinationId={activeDestinationId}
+              />
             </div>
-            <DestinationMap
-              destinations={sortedDestinations}
-              activeDestinationId={activeDestinationId}
-            />
-          </div>
 
-          {/* Grid Layout */}
-          {sortedDestinations.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {sortedDestinations.map((dest) => {
-                const crowdData = getCrowdData(dest);
-                const isOvercrowded = crowdData.crowdLevel === "overcrowded" || crowdData.crowdLevel === "high";
+            {/* Right Column: Destination Cards (2 per row on desktop, scrollable) */}
+            <div className="w-full lg:w-7/12 min-w-0 isolate">
+              {sortedDestinations.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                  {sortedDestinations.map((dest) => {
+                    const crowdData = getCrowdData(dest);
+                    const isOvercrowded = crowdData.crowdLevel === "overcrowded" || crowdData.crowdLevel === "high";
 
-                return (
-                  <article
-                    key={dest.id}
-                    id={`dest-card-${dest.id}`}
-                    onMouseEnter={() => setActiveDestinationId(dest.id)}
-                    onMouseLeave={() => setActiveDestinationId(null)}
-                    className={`group flex flex-col bg-white border hover:shadow-xl hover:border-earth-clay/10 transition-all duration-300 relative ${activeDestinationId === dest.id
-                        ? "ring-2 ring-earth-terracotta border-transparent shadow-xl scale-[1.01]"
-                        : "border-earth-clay/5"
-                      }`}
-                  >
-                    {/* Photo */}
-                    <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
-                      <Link href={`/destinations/${dest.id}`} className="block w-full h-full">
-                        <img
-                          src={dest.photos[0]}
-                          alt={dest.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                      </Link>
-
-                      <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
-                        <span className="bg-earth-sand text-earth-forest px-3 py-1 font-sans text-[10px] font-bold uppercase tracking-wider border border-earth-clay/15">
-                          {dest.category}
-                        </span>
-
-                        {/* Crowd Meter Badge */}
-                        <CrowdBadge
-                          crowdLevel={crowdData.crowdLevel}
-                          bestTimeToVisit={crowdData.bestTimeToVisit || dest.bestTimeToVisit}
-                          crowdSourceNote={crowdData.crowdSourceNote}
-                          variant="pill"
-                        />
-                      </div>
-
-                      {/* Heart button for wishlist */}
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          toggleWishlist(dest.id);
-                        }}
-                        className="absolute top-4 right-4 p-2 bg-white/90 hover:bg-white text-earth-charcoal rounded-full transition-all shadow-md z-20 cursor-pointer border border-earth-clay/10"
-                        title={isWishlisted(dest.id) ? "Remove from Wishlist" : "Save to Wishlist"}
+                    return (
+                      <article
+                        key={dest.id}
+                        id={`dest-card-${dest.id}`}
+                        onMouseEnter={() => setActiveDestinationId(dest.id)}
+                        onMouseLeave={() => setActiveDestinationId(null)}
+                        className={`group flex flex-col bg-white border transition-all duration-200 relative overflow-hidden ${
+                          activeDestinationId === dest.id
+                            ? "ring-2 ring-earth-terracotta border-transparent shadow-xl z-10"
+                            : "border-earth-clay/10 hover:border-earth-clay/30 hover:shadow-lg z-0"
+                        }`}
                       >
-                        <Heart
-                          className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${isWishlisted(dest.id)
-                              ? "fill-red-500 text-red-500"
-                              : "text-earth-clay/60 hover:text-red-500"
-                            }`}
-                        />
-                      </button>
-                    </div>
+                        {/* Photo */}
+                        <div className="relative aspect-[4/3] overflow-hidden bg-stone-100">
+                          <Link href={`/destinations/${dest.id}`} className="block w-full h-full">
+                            <img
+                              src={dest.photos[0]}
+                              alt={dest.title}
+                              className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                              loading="lazy"
+                            />
+                          </Link>
 
-                    {/* Content */}
-                    <div className="p-6 flex-1 flex flex-col justify-between space-y-4">
-                      <div className="space-y-2">
-                        <div className="flex items-center justify-between text-xs text-earth-clay/80 font-sans font-medium">
-                          <span className="flex items-center space-x-1">
-                            <MapPin className="h-3.5 w-3.5 text-earth-terracotta shrink-0" />
-                            <span>{dest.location}</span>
-                          </span>
-                          <span className="flex items-center space-x-1 text-earth-saffron">
-                            <Star className="h-3.5 w-3.5 fill-current shrink-0" />
-                            <span>{dest.rating}</span>
-                          </span>
+                          <div className="absolute top-3 left-3 flex flex-col gap-1.5 z-10">
+                            <span className="bg-earth-sand/95 backdrop-blur-xs text-earth-forest px-2.5 py-0.5 font-sans text-[10px] font-bold uppercase tracking-wider border border-earth-clay/15 shadow-xs">
+                              {dest.category}
+                            </span>
+
+                            {/* Crowd Meter Badge */}
+                            <CrowdBadge
+                              crowdLevel={crowdData.crowdLevel}
+                              bestTimeToVisit={crowdData.bestTimeToVisit || dest.bestTimeToVisit}
+                              crowdSourceNote={crowdData.crowdSourceNote}
+                              variant="pill"
+                            />
+                          </div>
+
+                          {/* Heart button for wishlist */}
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              toggleWishlist(dest.id);
+                            }}
+                            className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-white text-earth-charcoal rounded-full transition-all shadow-md z-20 cursor-pointer border border-earth-clay/10"
+                            title={isWishlisted(dest.id) ? "Remove from Wishlist" : "Save to Wishlist"}
+                          >
+                            <Heart
+                              className={`h-4 w-4 transition-transform duration-200 active:scale-75 ${
+                                isWishlisted(dest.id)
+                                  ? "fill-red-500 text-red-500"
+                                  : "text-earth-clay/60 hover:text-red-500"
+                              }`}
+                            />
+                          </button>
                         </div>
 
-                        <Link href={`/destinations/${dest.id}`} className="block">
-                          <h3 className="font-serif text-xl font-bold text-earth-charcoal group-hover:text-earth-terracotta transition-colors">
-                            {dest.title}
-                          </h3>
-                        </Link>
-                        <p className="font-sans text-sm text-earth-charcoal/70 line-clamp-3 leading-relaxed font-light">
-                          {dest.description}
-                        </p>
+                        {/* Content */}
+                        <div className="p-5 flex-1 flex flex-col justify-between space-y-4">
+                          <div className="space-y-2">
+                            <div className="flex items-center justify-between text-xs text-earth-clay/80 font-sans font-medium">
+                              <span className="flex items-center space-x-1">
+                                <MapPin className="h-3.5 w-3.5 text-earth-terracotta shrink-0" />
+                                <span className="truncate max-w-[130px]">{dest.location}</span>
+                              </span>
+                              <span className="flex items-center space-x-1 text-earth-saffron shrink-0">
+                                <Star className="h-3.5 w-3.5 fill-current shrink-0" />
+                                <span>{dest.rating}</span>
+                              </span>
+                            </div>
 
-                        {/* Overcrowded recommendation callout link */}
-                        {isOvercrowded && (
-                          <div className="pt-2">
-                            <Link
-                              href={`/destinations/${dest.id}#try-this-instead`}
-                              className="inline-flex items-center space-x-1 text-[10px] font-bold uppercase tracking-wider text-rose-800 bg-rose-50 px-2.5 py-1 border border-rose-200 hover:bg-rose-100 transition-colors"
-                            >
-                              <Sparkles className="h-3 w-3 text-rose-600 shrink-0" />
-                              <span>Overcrowded? View Quiet Gems →</span>
+                            <Link href={`/destinations/${dest.id}`} className="block">
+                              <h3 className="font-serif text-lg font-bold text-earth-charcoal group-hover:text-earth-terracotta transition-colors line-clamp-1">
+                                {dest.title}
+                              </h3>
+                            </Link>
+                            <p className="font-sans text-xs text-earth-charcoal/70 line-clamp-2 leading-relaxed font-light">
+                              {dest.description}
+                            </p>
+
+                            {/* Overcrowded recommendation callout link */}
+                            {isOvercrowded && (
+                              <div className="pt-1">
+                                <Link
+                                  href={`/destinations/${dest.id}#try-this-instead`}
+                                  className="inline-flex items-center space-x-1 text-[9px] font-bold uppercase tracking-wider text-rose-800 bg-rose-50 px-2 py-0.5 border border-rose-200 hover:bg-rose-100 transition-colors"
+                                >
+                                  <Sparkles className="h-3 w-3 text-rose-600 shrink-0" />
+                                  <span>Quiet Gems →</span>
+                                </Link>
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="pt-3 border-t border-earth-clay/10 flex items-center justify-between">
+                            <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-earth-clay/60">
+                              Verified Guide
+                            </span>
+                            <Link href={`/destinations/${dest.id}`} className="font-sans text-xs font-semibold text-earth-terracotta group-hover:translate-x-1 transition-transform duration-200 uppercase tracking-widest flex items-center space-x-1">
+                              <span>Read Route</span>
+                              <span>→</span>
                             </Link>
                           </div>
-                        )}
-                      </div>
-
-                      <div className="pt-4 border-t border-earth-clay/5 flex items-center justify-between">
-                        <span className="text-[10px] font-sans font-medium uppercase tracking-wider text-earth-clay/60">
-                          Verified Guide
-                        </span>
-                        <Link href={`/destinations/${dest.id}`} className="font-sans text-xs font-semibold text-earth-terracotta group-hover:translate-x-1 transition-transform duration-200 uppercase tracking-widest flex items-center space-x-1">
-                          <span>Read Route</span>
-                          <span>→</span>
-                        </Link>
-                      </div>
-                    </div>
-                  </article>
-                );
-              })}
+                        </div>
+                      </article>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-center py-24 border border-dashed border-earth-clay/20 bg-white">
+                  <p className="font-sans text-sm text-earth-charcoal/60 font-light">
+                    No matching destinations found for your query. Try clearing filters or searching for something else.
+                  </p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="text-center py-24 border border-dashed border-earth-clay/20 bg-white">
-              <p className="font-sans text-sm text-earth-charcoal/60 font-light">
-                No matching destinations found for your query. Try clearing filters or searching for something else.
-              </p>
-            </div>
-          )}
+          </div>
         </div>
       </main>
 

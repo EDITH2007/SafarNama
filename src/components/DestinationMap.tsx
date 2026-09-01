@@ -36,13 +36,13 @@ export default function DestinationMap({
     return destinations.find((d) => d.id === activeDestinationId) || null;
   }, [activeDestinationId, destinations]);
 
-  // Create custom marker icons
-  const createCustomIcon = (isActive: boolean) => {
+  // Pre-create custom marker icons to avoid re-creating icons on every state change
+  const defaultIcon = useMemo(() => {
     if (typeof window === "undefined") return null as any;
 
     return L.divIcon({
       html: `
-        <div class="custom-marker-wrapper ${isActive ? "marker-bounce-active" : ""}" style="width: 32px; height: 44px; display: flex; align-items: center; justify-content: center;">
+        <div class="custom-marker-wrapper" style="width: 32px; height: 44px; display: flex; align-items: center; justify-content: center;">
           <svg width="32" height="44" viewBox="0 0 32 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.25));">
             <!-- Teardrop Pin Body -->
             <path d="M16 0C7.16 0 0 7.16 0 16C0 28 16 44 16 44C16 44 32 28 32 16C32 7.16 24.84 0 16 0Z" fill="#c05621" stroke="#fdfbf7" stroke-width="2"/>
@@ -56,7 +56,28 @@ export default function DestinationMap({
       iconAnchor: [16, 44],
       popupAnchor: [0, -42],
     });
-  };
+  }, []);
+
+  const activeIcon = useMemo(() => {
+    if (typeof window === "undefined") return null as any;
+
+    return L.divIcon({
+      html: `
+        <div class="custom-marker-wrapper marker-bounce-active" style="width: 32px; height: 44px; display: flex; align-items: center; justify-content: center;">
+          <svg width="32" height="44" viewBox="0 0 32 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 4px 6px rgba(0,0,0,0.25));">
+            <!-- Teardrop Pin Body -->
+            <path d="M16 0C7.16 0 0 7.16 0 16C0 28 16 44 16 44C16 44 32 28 32 16C32 7.16 24.84 0 16 0Z" fill="#c05621" stroke="#fdfbf7" stroke-width="2"/>
+            <!-- Inner white dot representing the pin center -->
+            <circle cx="16" cy="16" r="6" fill="#fdfbf7" />
+          </svg>
+        </div>
+      `,
+      className: "custom-div-icon",
+      iconSize: [32, 44],
+      iconAnchor: [16, 44],
+      popupAnchor: [0, -42],
+    });
+  }, []);
 
   const handleMarkerClick = (destId: string) => {
     const cardElement = document.getElementById(`dest-card-${destId}`);
@@ -66,7 +87,7 @@ export default function DestinationMap({
   };
 
   return (
-    <div className="w-full h-[400px] md:h-[480px] rounded-2xl overflow-hidden border border-earth-clay/10 shadow-lg relative z-10 bg-white">
+    <div className="w-full h-[380px] lg:h-[calc(100vh-220px)] lg:min-h-[480px] lg:max-h-[680px] rounded-2xl overflow-hidden border border-earth-clay/10 shadow-lg relative z-10 bg-white">
       {/* Embed local animation CSS */}
       <style>{`
         @keyframes marker-bounce {
@@ -104,12 +125,13 @@ export default function DestinationMap({
           }
 
           const isActive = dest.id === activeDestinationId;
+          const currentIcon = isActive ? (activeIcon || defaultIcon) : defaultIcon;
 
           return (
             <Marker
               key={dest.id}
               position={[dest.geo.lat, dest.geo.lng]}
-              icon={createCustomIcon(isActive)}
+              icon={currentIcon}
               eventHandlers={{
                 click: () => handleMarkerClick(dest.id),
               }}
